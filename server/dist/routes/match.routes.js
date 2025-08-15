@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const rateLimiter_1 = require("../middleware/rateLimiter");
+const auth_1 = require("../middleware/auth");
+const match_controller_1 = require("../controllers/match.controller");
+const router = (0, express_1.Router)();
+router.post("/join", auth_1.requireAuth, rateLimiter_1.strictLimiter, match_controller_1.joinMatching);
+router.post("/leave", auth_1.requireAuth, rateLimiter_1.strictLimiter, match_controller_1.leaveMatching);
+exports.default = router;

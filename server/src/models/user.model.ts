@@ -32,7 +32,8 @@ export interface IUserDocument extends IUser, Document {
 }
 
 export interface IUserModel extends Model<IUserDocument> {
-	findMatchFor(userId: string): Promise<IUserDocument | null>;
+    paginate: (query?: any, options?: any, callback?: any) => Promise<any>;
+    findMatchFor(userId: string): Promise<IUserDocument | null>;
 }
 
 const SkillSchema = new Schema(

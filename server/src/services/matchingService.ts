@@ -171,7 +171,7 @@ export async function matchAndCreateSession(myId: string) {
 		await removeOnlineScore(myId);
 		await removeOnlineScore(candidateId);
 
-		return { sessionId: session._id.toString(), matchedUser };
+		return { sessionId: String((session as any)._id), matchedUser };
 	}
 
 	return null;
