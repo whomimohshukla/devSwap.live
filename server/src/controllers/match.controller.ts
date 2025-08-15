@@ -8,6 +8,9 @@ import {
 import User from "../models/user.model";
 
 export async function joinMatching(req: Request, res: Response) {
+	if (!req.user?.id) {
+		return res.status(401).json({ message: "Authentication required" });
+	}
 	const userId = req.user.id;
 	const user = await User.findById(userId);
 	if (!user) return res.status(404).json({ message: "User not found" });
@@ -34,6 +37,9 @@ export async function joinMatching(req: Request, res: Response) {
 }
 
 export async function leaveMatching(req: Request, res: Response) {
+	if (!req.user?.id) {
+		return res.status(401).json({ message: "Authentication required" });
+	}
 	const userId = req.user.id;
 	const user = await User.findById(userId);
 	if (!user) return res.json({ message: "already removed" });
