@@ -33,6 +33,17 @@ const io = new Server(server, {
 	},
 });
 
+// HTTP server performance tuning from env
+if (envConfig.MAX_CONNECTIONS && Number(envConfig.MAX_CONNECTIONS) > 0) {
+  server.maxConnections = Number(envConfig.MAX_CONNECTIONS);
+}
+if (envConfig.KEEP_ALIVE_TIMEOUT && Number(envConfig.KEEP_ALIVE_TIMEOUT) > 0) {
+  server.keepAliveTimeout = Number(envConfig.KEEP_ALIVE_TIMEOUT);
+}
+if (envConfig.HEADERS_TIMEOUT && Number(envConfig.HEADERS_TIMEOUT) > 0) {
+  server.headersTimeout = Number(envConfig.HEADERS_TIMEOUT);
+}
+
 // Initialize signaling controller
 if (envConfig.ENABLE_MATCHING) {
 	new SignalingController(io);
@@ -97,20 +108,7 @@ app.use("/api/auth", authLimiter);
 
 const PORT = process.env.PORT || 5000;
 
-app.get("/", (req, res) => {
-	res.json({
-		message: "DevSwap.live API Server",
-		version: "1.0.0",
-		services: [
-			"Auth Service",
-			"User Service",
-			"Matching Service",
-			"Session Service",
-			"AI Service",
-			"Signaling Service",
-		],
-	});
-});
+// Root endpoint is defined later; removing duplicate definition here.
 
 // API Documentation
 setupSwagger(app);
