@@ -13,4 +13,11 @@ export type SkillName =
 	| "HTML"
 	| string; // allow extension
 
-export type SkillLevel = "Beginner" | "Intermediate" | "Advanced";
+// Centralized source of truth for skill levels
+export const SKILL_LEVELS = [
+	"Beginner",
+	"Intermediate",
+	"Advanced",
+] as const;
+
+export type SkillLevel = (typeof SKILL_LEVELS)[number];
