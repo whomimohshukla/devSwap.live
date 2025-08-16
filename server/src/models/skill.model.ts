@@ -1,9 +1,10 @@
 import { Schema, model, Document } from "mongoose";
+import { SKILL_LEVELS, SkillLevel } from "./skill.data";
 
 export interface ISkill extends Document {
 	name: string;
 	category: string;
-	difficulty: "Beginner" | "Intermediate" | "Advanced";
+	difficulty: SkillLevel;
 }
 
 const skillSchema = new Schema<ISkill>(
@@ -12,7 +13,7 @@ const skillSchema = new Schema<ISkill>(
 		category: { type: String, required: true, index: true },
 		difficulty: {
 			type: String,
-			enum: ["Beginner", "Intermediate", "Advanced"],
+			enum: SKILL_LEVELS,
 			required: true,
 		},
 	},

@@ -2,7 +2,7 @@
 import mongoose, { Document, Schema, Model } from "mongoose";
 import bcrypt from "bcrypt";
 import mongoosePaginate from "mongoose-paginate-v2";
-import { SkillName, SkillLevel } from "./skill.data";
+import { SkillName, SkillLevel, SKILL_LEVELS } from "./skill.data";
 
 export interface ISkillLevel {
 	skillName: SkillName;
@@ -41,7 +41,7 @@ const SkillSchema = new Schema(
 		skillName: { type: String, required: true },
 		level: {
 			type: String,
-			enum: ["Beginner", "Intermediate", "Advanced"],
+			enum: SKILL_LEVELS,
 			required: true,
 		},
 	},

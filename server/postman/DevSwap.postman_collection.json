@@ -7,7 +7,8 @@
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "token", "value": "" }
+    { "key": "token", "value": "" },
+    { "key": "userId", "value": "{{userId}}" }
   ],
   "item": [
     {
@@ -132,7 +133,7 @@
             "url": { "raw": "{{baseUrl}}/api/users/me/password", "host": ["{{baseUrl}}"], "path": ["api", "users", "me", "password"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"oldPassword\": \"Passw0rd!\",\n  \"newPassword\": \"N3wPassw0rd!\"\n}"
+              "raw": "{\n  \"currentPassword\": \"Passw0rd!\",\n  \"newPassword\": \"N3wPassw0rd!\"\n}"
             }
           }
         },
@@ -142,14 +143,136 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/users/search?q=node&page=1",
+              "raw": "{{baseUrl}}/api/users/search?search=node&page=1&limit=10",
               "host": ["{{baseUrl}}"],
               "path": ["api", "users", "search"],
               "query": [
-                { "key": "q", "value": "node" },
-                { "key": "page", "value": "1" }
+                { "key": "search", "value": "node" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "teachSkill", "value": "" },
+                { "key": "learnSkill", "value": "" },
+                { "key": "isOnline", "value": "" },
+                { "key": "location", "value": "" }
               ]
             }
+          }
+        },
+        {
+          "name": "Get User By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{userId}}"] }
+          }
+        },
+        {
+          "name": "Delete My Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/me", "host": ["{{baseUrl}}"], "path": ["api", "users", "me"] }
+          }
+        },
+        {
+          "name": "Find Matches",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/matches", "host": ["{{baseUrl}}"], "path": ["api", "users", "matches"] }
+          }
+        },
+        {
+          "name": "Get Online Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/users/online?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["api", "users", "online"], "query": [
+              { "key": "page", "value": "1" },
+              { "key": "limit", "value": "20" }
+            ] }
+          }
+        },
+        {
+          "name": "Add Skill",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/skills", "host": ["{{baseUrl}}"], "path": ["api", "users", "skills"] },
+            "body": { "mode": "raw", "raw": "{\n  \"skillName\": \"node\",\n  \"skillType\": \"teach\",\n  \"level\": \"Intermediate\"\n}" }
+          }
+        },
+        {
+          "name": "Remove Skill",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/skills", "host": ["{{baseUrl}}"], "path": ["api", "users", "skills"] },
+            "body": { "mode": "raw", "raw": "{\n  \"skillName\": \"node\",\n  \"skillType\": \"teach\"\n}" }
+          }
+        },
+        {
+          "name": "Update Skill Level",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/skills/level", "host": ["{{baseUrl}}"], "path": ["api", "users", "skills", "level"] },
+            "body": { "mode": "raw", "raw": "{\n  \"skillName\": \"node\",\n  \"level\": \"Advanced\"\n}" }
+          }
+        },
+        {
+          "name": "Update Online Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/status/online", "host": ["{{baseUrl}}"], "path": ["api", "users", "status", "online"] },
+            "body": { "mode": "raw", "raw": "{\n  \"isOnline\": true\n}" }
+          }
+        },
+        {
+          "name": "Update Last Seen",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/status/last-seen", "host": ["{{baseUrl}}"], "path": ["api", "users", "status", "last-seen"] }
+          }
+        },
+        {
+          "name": "Stats Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/users/stats/overview", "host": ["{{baseUrl}}"], "path": ["api", "users", "stats", "overview"] }
+          }
+        },
+        {
+          "name": "My Activity",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/activity", "host": ["{{baseUrl}}"], "path": ["api", "users", "activity"] }
           }
         }
       ]

@@ -49,7 +49,7 @@ export async function removeUserFromPool(
 
 /**
  * findCandidateIds — do set intersections to find matching candidates
- * Strategy: try every pair of (myLearn, myTeach) and SINTER the two sets:
+ * Strategy: try every pair of (myLearn, mysTeach) and SINTER the two set:
  * SINTER teach:myLearnSkill  learn:myTeachSkill  -> candidates
  */
 export async function findCandidateIds(
