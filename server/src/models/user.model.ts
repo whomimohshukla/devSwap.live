@@ -69,16 +69,12 @@ const UserSchema = new Schema<IUserDocument>(
 // Plugins
 UserSchema.plugin(mongoosePaginate);
 
-// Text index for searching by name/bio/skills
+
 UserSchema.index({
-	name: "text",
-	bio: "text",
-	teachSkills: "text",
-	learnSkills: "text",
+    name: "text",
+    bio: "text",
 });
 
-// Compound index for matching: find users who teach X and learn Y
-UserSchema.index({ teachSkills: 1, learnSkills: 1 });
 
 // Pre-save hook: hash password if modified
 UserSchema.pre<IUserDocument>("save", async function (next) {

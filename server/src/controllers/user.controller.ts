@@ -58,6 +58,10 @@ export async function register(req: Request, res: Response) {
 			skillLevels,
 			isOnline: true,
 			lastSeen: new Date(),
+			// Use DiceBear v9, encode name for URL safety, and return PNG for broad client compatibility
+			avatar: `https://api.dicebear.com/9.x/initials/png?seed=${encodeURIComponent(
+				name.trim()
+			)}`,
 		};
 
 		const user = new User(userData);
@@ -172,8 +176,6 @@ export async function logout(req: AuthenticatedRequest, res: Response) {
 		});
 	}
 }
-
-// ======================= USER PROFILE CONTROLLERS =======================
 
 export async function getCurrentUser(req: AuthenticatedRequest, res: Response) {
 	try {
@@ -378,8 +380,6 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response) {
 	}
 }
 
-// ======================= USER SEARCH & DISCOVERY CONTROLLERS =======================
-
 export async function searchUsers(req: Request, res: Response) {
 	try {
 		const page = parseInt(req.query.page as string) || 1;
@@ -504,8 +504,6 @@ export async function getOnlineUsers(req: Request, res: Response) {
 		});
 	}
 }
-
-// ======================= SKILL MANAGEMENT CONTROLLERS =======================
 
 export async function addSkill(req: AuthenticatedRequest, res: Response) {
 	try {
@@ -702,8 +700,6 @@ export async function updateSkillLevel(
 	}
 }
 
-// ======================= STATUS & ACTIVITY CONTROLLERS =======================
-
 export async function updateOnlineStatus(
 	req: AuthenticatedRequest,
 	res: Response
@@ -775,8 +771,6 @@ export async function updateLastSeen(req: AuthenticatedRequest, res: Response) {
 		});
 	}
 }
-
-// ======================= STATISTICS & ANALYTICS CONTROLLERS =======================
 
 export async function getUserStats(req: Request, res: Response) {
 	try {
