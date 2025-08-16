@@ -1,1 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
+
+:root {
+  /* Allowed palette only */
+  --color-brand: #00ef68;
+  --color-ink: #0b0c0d;
+  --color-surface: #25282c;
+  --color-text: #ffffff; /* keep white for readability */
+
+  /* Map usage */
+  --color-primary: var(--color-brand);
+  --color-primary-dark: #00c657;
+  --color-primary-light: #33f483;
+  --color-bg-primary: var(--color-ink);
+  --color-bg-secondary: var(--color-surface);
+  --color-bg-tertiary: var(--color-surface);
+  --color-text-primary: var(--color-text);
+  --color-text-secondary: var(--color-text);
+  --color-text-muted: var(--color-text);
+  --color-border: var(--color-surface);
+  --color-border-light: var(--color-surface);
+}
+
+/* * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+} */
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Stabilize scrollbar to prevent layout shift between pages */
+html {
+  /* Reserve gutter for scrollbar to avoid content width changes */
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Prevent accidental horizontal scroll due to overflowing elements */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Smooth transitions (scoped to interactive elements) */
+a, button, input, select, textarea, [role="button"] {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Focus styles: show outlines only for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Selection styles */
+::selection {
+  background-color: var(--color-primary);
+  color: var(--color-ink);
+}
+
+/* Theme components & utilities (shared across pages) */
+.surface {
+  background-color: var(--color-surface);
+}
+
+.text-muted {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-surface);
+  border-radius: 0.75rem; /* 12px */
+}
+
+.input {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-surface);
+  color: var(--color-text);
+  border-radius: 0.5rem; /* 8px */
+  transition: box-shadow 150ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+.input::placeholder { color: rgba(255,255,255,0.5); }
+.input:focus { outline: none; border-color: var(--color-brand); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand) 60%, transparent); }
+
+.label { color: rgba(255,255,255,0.85); font-weight: 500; }
+
+.btn-primary {
+  background-color: var(--color-brand);
+  color: var(--color-ink);
+  border: none;
+  border-radius: 0.5rem;
+  transition: transform 200ms ease, box-shadow 200ms ease, background-color 150ms ease;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 28px rgba(0, 239, 104, 0.35); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-ghost {
+  color: rgba(255,255,255,0.8);
+  transition: color 150ms ease, transform 200ms ease;
+}
+.btn-ghost:hover { color: #fff; transform: translateY(-2px); }
+
+.chip-brand {
+  background-color: color-mix(in srgb, var(--color-brand) 20%, transparent);
+  color: var(--color-brand);
+  border: 1px solid color-mix(in srgb, var(--color-brand) 30%, transparent);
+  border-radius: 9999px;
+}
+
+.hover-lift { transition: transform 200ms ease; will-change: transform; }
+.hover-lift:hover { transform: translateY(-2px); }
