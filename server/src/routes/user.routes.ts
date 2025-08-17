@@ -23,7 +23,6 @@ const router = Router();
 
 // Profile & account
 router.get("/me", requireAuth, getCurrentUser);
-router.get("/:id", requireAuth, getUserById);
 router.put("/me", requireAuth, updateProfile);
 router.put("/me/password", requireAuth, updatePassword);
 router.delete("/me", requireAuth, deleteAccount);
@@ -43,5 +42,8 @@ router.put("/status/online", requireAuth, updateOnlineStatus);
 router.put("/status/last-seen", requireAuth, updateLastSeen);
 router.get("/stats/overview", strictLimiter, getUserStats);
 router.get("/activity", requireAuth, getUserActivity);
+
+// This MUST be last to avoid shadowing static routes like /search
+router.get("/:id", requireAuth, getUserById);
 
 export default router;

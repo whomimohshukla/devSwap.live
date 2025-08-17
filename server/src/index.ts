@@ -6,6 +6,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 
 // Configuration
 import { envConfig } from "./config/env.config";
@@ -77,6 +78,8 @@ app.use(
 // Body parsing
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// Cookie parsing (required for auth middleware to read token cookie)
+app.use(cookieParser());
 
 // Logging
 if (envConfig.ENABLE_REQUEST_LOGGING) {

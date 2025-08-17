@@ -1,0 +1,246 @@
+{
+  "info": {
+    "_postman_id": "e7b9c2c9-7a1c-4b8c-8f4e-000000000001",
+    "name": "DevSwap.live API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for DevSwap.live backend. Use {{baseUrl}} to switch environments. Run Auth -> Login or Register first to set httpOnly cookie."
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"Password123!\",\n  \"teachSkills\": [\"JavaScript\"],\n  \"learnSkills\": [\"Python\"],\n  \"bio\": \"Frontend dev learning Python\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/auth/profile", "host": ["{{baseUrl}}"], "path": ["api", "auth", "profile"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "auth", "refresh"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Me",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/users/me", "host": ["{{baseUrl}}"], "path": ["api", "users", "me"] } },
+          "response": []
+        },
+        {
+          "name": "Get User By Id",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{userId}}"] } },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/users/me", "host": ["{{baseUrl}}"], "path": ["api", "users", "me"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Alice Updated\",\n  \"bio\": \"Fullstack dev\"\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/users/me/password", "host": ["{{baseUrl}}"], "path": ["api", "users", "me", "password"] },
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword123!\"\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Account",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/users/me", "host": ["{{baseUrl}}"], "path": ["api", "users", "me"] } },
+          "response": []
+        },
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/users/search?q={{q}}&teach={{teach}}&learn={{learn}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "search"],
+              "query": [
+                { "key": "q", "value": "dev" },
+                { "key": "teach", "value": "JavaScript" },
+                { "key": "learn", "value": "Python" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Find Matches",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/users/matches", "host": ["{{baseUrl}}"], "path": ["api", "users", "matches"] } },
+          "response": []
+        },
+        {
+          "name": "Get Online Users",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/users/online", "host": ["{{baseUrl}}"], "path": ["api", "users", "online"] } },
+          "response": []
+        },
+        {
+          "name": "Add Skill",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/users/skills", "host": ["{{baseUrl}}"], "path": ["api", "users", "skills"] },
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"teach\",\n  \"skillName\": \"JavaScript\"\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Skill",
+          "request": {
+            "method": "DELETE",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/users/skills", "host": ["{{baseUrl}}"], "path": ["api", "users", "skills"] },
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"teach\",\n  \"skillName\": \"JavaScript\"\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Skill Level",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/users/skills/level", "host": ["{{baseUrl}}"], "path": ["api", "users", "skills", "level"] },
+            "body": { "mode": "raw", "raw": "{\n  \"skillName\": \"JavaScript\",\n  \"level\": \"Advanced\"\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Online Status",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/users/status/online", "host": ["{{baseUrl}}"], "path": ["api", "users", "status", "online"] },
+            "body": { "mode": "raw", "raw": "{\n  \"isOnline\": true\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Last Seen",
+          "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/users/status/last-seen", "host": ["{{baseUrl}}"], "path": ["api", "users", "status", "last-seen"] } },
+          "response": []
+        },
+        {
+          "name": "User Stats Overview",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/users/stats/overview", "host": ["{{baseUrl}}"], "path": ["api", "users", "stats", "overview"] } },
+          "response": []
+        },
+        {
+          "name": "Get My Activity",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/users/activity", "host": ["{{baseUrl}}"], "path": ["api", "users", "activity"] } },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "item": [
+        { "name": "Get Session", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "{{sessionId}}"] } }, "response": [] },
+        { "name": "Join Session", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/sessions/{{sessionId}}/join", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "{{sessionId}}", "join"] } }, "response": [] },
+        { "name": "End Session", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/sessions/{{sessionId}}/end", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "{{sessionId}}", "end"] } }, "response": [] },
+        { "name": "Get My Sessions", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/sessions", "host": ["{{baseUrl}}"], "path": ["api", "sessions"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "AI",
+      "item": [
+        {
+          "name": "Create Lesson Plan",
+          "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/ai/lesson-plan/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "ai", "lesson-plan", "{{sessionId}}"] } },
+          "response": []
+        },
+        {
+          "name": "Generate Summary",
+          "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/ai/summary/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "ai", "summary", "{{sessionId}}"] }, "body": { "mode": "raw", "raw": "{\n  \"sessionNotes\": \"Covered basics and built a demo\",\n  \"duration\": 60\n}" } },
+          "response": []
+        },
+        {
+          "name": "Get Cached Plans",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/ai/cached-plans?skill={{skill}}", "host": ["{{baseUrl}}"], "path": ["api", "ai", "cached-plans"], "query": [ { "key": "skill", "value": "JavaScript" } ] } },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Match",
+      "item": [
+        { "name": "Join Matching", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/match/join", "host": ["{{baseUrl}}"], "path": ["api", "match", "join"] } }, "response": [] },
+        { "name": "Leave Matching", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/match/leave", "host": ["{{baseUrl}}"], "path": ["api", "match", "leave"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        { "name": "Health Status", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] } }, "response": [] },
+        { "name": "Metrics", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/health/metrics", "host": ["{{baseUrl}}"], "path": ["health", "metrics"] } }, "response": [] },
+        { "name": "Readiness", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/health/ready", "host": ["{{baseUrl}}"], "path": ["health", "ready"] } }, "response": [] },
+        { "name": "Liveness", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/health/live", "host": ["{{baseUrl}}"], "path": ["health", "live"] } }, "response": [] }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "userId", "value": "64b1f2a2e4a1b2c3d4e5f6a7" },
+    { "key": "sessionId", "value": "64b1f2a2e4a1b2c3d4e5f6b8" },
+    { "key": "skill", "value": "JavaScript" },
+    { "key": "q", "value": "dev" },
+    { "key": "teach", "value": "JavaScript" },
+    { "key": "learn", "value": "Python" }
+  ]
+}
