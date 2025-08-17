@@ -129,7 +129,7 @@ const Register: React.FC = () => {
               <div className="absolute -inset-1 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity" style={{ backgroundColor: 'rgba(0,239,104,0.2)' }} />
             </div>
             <span className="text-2xl font-bold text-white">
-              DevSwap.live
+              DevSwap
             </span>
           </Link>
 
