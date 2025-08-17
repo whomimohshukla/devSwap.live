@@ -140,12 +140,19 @@ export async function matchAndCreateSession(myId: string) {
 	// try candidates one by one
 	for (const candidateId of candidates) {
 		// attempt atomic claim
+        // Correct key mapping:
+        // Candidate must be in:
+        //   teach:learnSkill (they teach what I want to learn)
+        //   learn:teachSkill (they learn what I can teach)
+        // I (self) must be in:
+        //   teach:teachSkill (I teach what they want to learn)
+        //   learn:learnSkill (I learn what they teach)
 		const success = await claimPairAtomically(
 			myId,
 			candidateId,
-			`${TEACH_PREFIX}${matchedPair.teachSkill}`, // candidate must teach myLearn
-			`${LEARN_PREFIX}${matchedPair.teachSkill}`, // candidate must learn myTeach (careful ordering)
 			`${TEACH_PREFIX}${matchedPair.learnSkill}`,
+			`${LEARN_PREFIX}${matchedPair.teachSkill}`,
+			`${TEACH_PREFIX}${matchedPair.teachSkill}`,
 			`${LEARN_PREFIX}${matchedPair.learnSkill}`
 		);
 		if (!success) continue; // someone else claimed them, try next
