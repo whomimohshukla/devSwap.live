@@ -15,100 +15,124 @@ interface AuthenticatedRequest extends Request {
 }
 
 export async function register(req: Request, res: Response) {
-	try {
-		const { name, email, password, teachSkills, learnSkills, bio } = req.body;
+  try {
+    const { name, email, password, teachSkills, learnSkills, bio } = req.body;
 
-		// Check if user already exists
-		const existingUser = await User.findOne({ email });
-		if (existingUser) {
-			return res.status(400).json({ message: "User already exists" });
-		}
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const trimmedName = (name || '').trim();
 
-		// Create new user
-		const user = new User({
-			name,
-			email,
-			password, // Will be hashed by pre-save hook
-			teachSkills: teachSkills || [],
-			learnSkills: learnSkills || [],
-			bio,
-			isOnline: true,
-			lastSeen: new Date(),
-		});
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: "User already exists" });
+    }
 
-		await user.save();
+    // Create new user
+    const user = new User({
+      name: trimmedName,
+      email: normalizedEmail,
+      password, // Will be hashed by pre-save hook
+      teachSkills: teachSkills || [],
+      learnSkills: learnSkills || [],
+      bio,
+      isOnline: true,
+      lastSeen: new Date(),
+    });
 
-		const token = jwt.sign(
-			{ id: (user._id as any).toString(), email: user.email },
-			JWT_SECRET as string,
-			{ expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
-		);
+    await user.save();
 
-		res.status(201).json({
-			message: "User registered successfully",
-			token,
-			user: user.safeProfile(),
-		});
-	} catch (error) {
-		console.error("Registration error:", error);
-		res.status(500).json({ message: "Registration failed" });
-	}
+    const token = jwt.sign(
+      { id: (user._id as any).toString(), email: user.email },
+      JWT_SECRET as string,
+      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+    );
+
+    // Set HTTP-only cookie for session
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      token,
+      user: user.safeProfile(),
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ success: false, message: "Registration failed" });
+  }
 }
 
 export async function login(req: Request, res: Response) {
-	try {
-		const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-		// Find user with password field
-		const user = await User.findOne({ email }).select("+password");
-		if (!user) {
-			return res.status(401).json({ message: "Invalid credentials" });
-		}
+    const normalizedEmail = (email || '').trim().toLowerCase();
 
-		// Check password
-		const isValidPassword = await user.comparePassword(password);
-		if (!isValidPassword) {
-			return res.status(401).json({ message: "Invalid credentials" });
-		}
+    // Find user with password field
+    const user = await User.findOne({ email: normalizedEmail }).select("+password");
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
 
-		// Update online status
-		user.isOnline = true;
-		user.lastSeen = new Date();
-		await user.save();
+    // Check password
+    const isValidPassword = await user.comparePassword(password);
+    if (!isValidPassword) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
 
-		const token = jwt.sign(
-			{ id: (user._id as any).toString(), email: user.email },
-			JWT_SECRET as string,
-			{ expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
-		);
-		res.json({
-			message: "Login successful",
-			token,
-			user: user.safeProfile(),
-		});
-	} catch (error) {
-		console.error("Login error:", error);
-		res.status(500).json({ message: "Login failed" });
-	}
+    // Update online status
+    user.isOnline = true;
+    user.lastSeen = new Date();
+    await user.save();
+
+    const token = jwt.sign(
+      { id: (user._id as any).toString(), email: user.email },
+      JWT_SECRET as string,
+      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+    );
+
+    // Set HTTP-only cookie for session
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    });
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: user.safeProfile(),
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ success: false, message: "Login failed" });
+  }
 }
 
 export async function logout(req: AuthenticatedRequest, res: Response) {
-	try {
-		if (!req.user?.id) {
-			return res.status(401).json({ message: "Authentication required" });
-		}
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
+    }
 
-		// Update user offline status
-		await User.findByIdAndUpdate(req.user.id, {
-			isOnline: false,
-			lastSeen: new Date(),
-		});
+    // Update user offline status
+    await User.findByIdAndUpdate(req.user.id, {
+      isOnline: false,
+      lastSeen: new Date(),
+    });
 
-		res.json({ message: "Logged out successfully" });
-	} catch (error) {
-		console.error("Logout error:", error);
-		res.status(500).json({ message: "Logout failed" });
-	}
+    return res.json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res.status(500).json({ success: false, message: "Logout failed" });
+  }
 }
 
 export async function refreshToken(req: AuthenticatedRequest, res: Response) {
