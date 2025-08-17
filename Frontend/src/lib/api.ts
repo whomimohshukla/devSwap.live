@@ -56,19 +56,44 @@ export const authAPI = {
 
 // Users API
 export const usersAPI = {
-  getUsers: (params?: any) => api.get('/users', { params }),
+  // If a search query is provided, hit /users/search; otherwise list online users
+  getUsers: (params?: { q?: string } & Record<string, any>) => {
+    if (params?.q && params.q.trim().length > 0) {
+      return api.get(`/users/search`, { params: { q: params.q } });
+    }
+    return api.get('/users/online');
+  },
+  // Current authenticated user profile
+  getMe: () => api.get('/users/me'),
   getUserById: (id: string) => api.get(`/users/${id}`),
-  updateProfile: (data: any) => api.put('/users/profile', data),
+  updateProfile: (data: any) => api.put('/users/me', data),
+  updatePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.put('/users/me/password', data),
+  deleteAccount: () => api.delete('/users/me'),
   searchUsers: (query: string) => api.get(`/users/search?q=${query}`),
+  getMatches: () => api.get('/users/matches'),
+  getOnline: () => api.get('/users/online'),
+  addSkill: (data: { skillName: string; skillType: 'teach' | 'learn'; level?: string }) =>
+    api.post('/users/skills', data),
+  removeSkill: (data: { skillName: string; skillType: 'teach' | 'learn' }) =>
+    api.delete('/users/skills', { data }),
+  updateSkillLevel: (data: { skillName: string; level: string }) =>
+    api.put('/users/skills/level', data),
+  updateOnlineStatus: (isOnline: boolean) =>
+    api.put('/users/status/online', { isOnline }),
+  updateLastSeen: () => api.put('/users/status/last-seen'),
+  getStatsOverview: () => api.get('/users/stats/overview'),
+  getActivity: () => api.get('/users/activity'),
 };
 
 // Sessions API
 export const sessionsAPI = {
-  createSession: (data: {
+  // Backend does not expose POST /sessions. Use matching flow to create sessions.
+  createSession: (_data: {
     partnerId: string;
     skillFromMe: string;
     skillFromPartner: string;
-  }) => api.post('/sessions', data),
+  }) => Promise.reject(new Error('Session creation is not supported by the backend. Use matching flow instead.')),
   
   getSessions: () => api.get('/sessions'),
   getSessionById: (id: string) => api.get(`/sessions/${id}`),
@@ -78,22 +103,35 @@ export const sessionsAPI = {
 
 // Matching API
 export const matchAPI = {
-  findMatch: () => api.post('/match/find'),
-  getMatches: () => api.get('/match'),
-  acceptMatch: (matchId: string) => api.post(`/match/${matchId}/accept`),
-  rejectMatch: (matchId: string) => api.post(`/match/${matchId}/reject`),
+  // Join the matching queue
+  findMatch: () => api.post('/match/join'),
+  // Matches list is available via users API on the backend
+  getMatches: () => api.get('/users/matches'),
+  // Not supported by backend currently
+  acceptMatch: (_matchId: string) => Promise.reject(new Error('Accepting a match is not supported by the backend yet.')),
+  // Leaving matching queue maps to /match/leave
+  rejectMatch: (_matchId: string) => api.post(`/match/leave`),
 };
 
 // AI API
 export const aiAPI = {
+  // Backend expects sessionId as a path param
   generateLessonPlan: (data: {
+    sessionId: string;
     skill: string;
     level: string;
     duration?: number;
-  }) => api.post('/ai/lesson-plan', data),
+  }) => {
+    const { sessionId, skill, level, duration } = data;
+    return api.post(`/ai/lesson-plan/${sessionId}`, { skill, level, duration });
+  },
   
+  // Backend uses POST /ai/summary/:sessionId
   getSessionSummary: (sessionId: string) => 
-    api.get(`/ai/session-summary/${sessionId}`),
+    api.post(`/ai/summary/${sessionId}`),
+
+  // Cached lesson plans
+  getCachedPlans: () => api.get('/ai/cached-plans'),
 };
 
 export default api;
@@ -102,4 +140,9 @@ export default api;
 export const startOAuth = (provider: 'google' | 'github') => {
   // Redirect to backend OAuth start endpoint
   window.location.href = `${API_BASE_URL}/auth/${provider}`;
+};
+
+// Health API helpers
+export const healthAPI = {
+  apiHealth: () => api.get('/health'), // backend mounts /api/health without auth
 };
