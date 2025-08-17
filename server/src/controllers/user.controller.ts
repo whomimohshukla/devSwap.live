@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { User } from "../models/user.model";
  // import jwt from "jsonwebtoken"; // removed: auth handlers moved to auth.controller
 import mongoose from "mongoose";
-import { SkillName } from "../models/skill.data";
+import { SkillName, SkillLevel, SKILL_LEVELS } from "../models/skill.data";
 
 // Extend Request interface to include user (for authenticated routes)
 interface AuthenticatedRequest extends Request {
@@ -11,6 +11,18 @@ interface AuthenticatedRequest extends Request {
 		id: string;
 		email: string;
 	};
+}
+
+// Helper: normalize a free-form level string to a valid SkillLevel enum
+function normalizeLevel(level?: string): SkillLevel | null {
+  if (!level) return null;
+  const trimmed = String(level).trim().toLowerCase();
+  const mapping: Record<string, SkillLevel> = {
+    beginner: "Beginner",
+    intermediate: "Intermediate",
+    advanced: "Advanced",
+  };
+  return mapping[trimmed] ?? null;
 }
 
 // ======================= AUTH CONTROLLERS MOVED =======================
@@ -386,14 +398,21 @@ export async function addSkill(req: AuthenticatedRequest, res: Response) {
 			});
 		}
 
-		// Also add to skillLevels if level is provided
+		// Also add to skillLevels if level is provided (case-insensitive support)
 		if (level) {
+			const normalized = normalizeLevel(level);
+			if (!normalized) {
+				return res.status(400).json({
+					success: false,
+					message: `Invalid level. Allowed: ${SKILL_LEVELS.join(", ")}`,
+				});
+			}
 			const existingSkillIndex = user.skillLevels?.findIndex(
 				(skill) => skill.skillName === skillName
 			);
 
 			if (existingSkillIndex === -1 || existingSkillIndex === undefined) {
-				user.skillLevels?.push({ skillName, level });
+				user.skillLevels?.push({ skillName, level: normalized });
 				await user.save();
 			}
 		}
@@ -499,6 +518,14 @@ export async function updateSkillLevel(
 			});
 		}
 
+		const normalized = normalizeLevel(level);
+		if (!normalized) {
+			return res.status(400).json({
+				success: false,
+				message: `Invalid level. Allowed: ${SKILL_LEVELS.join(", ")}`,
+			});
+		}
+
 		const user = await User.findById(req.user.id).select("-password");
 		if (!user) {
 			return res.status(404).json({
@@ -517,9 +544,9 @@ export async function updateSkillLevel(
 			existingSkillIndex !== -1 &&
 			user.skillLevels
 		) {
-			user.skillLevels[existingSkillIndex].level = level;
+			user.skillLevels[existingSkillIndex].level = normalized;
 		} else {
-			user.skillLevels?.push({ skillName, level });
+			user.skillLevels?.push({ skillName, level: normalized });
 		}
 
 		await user.save();
