@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { 
@@ -185,32 +186,40 @@ const Profile: React.FC = () => {
               )}
               {error && <p className="text-red-400 text-sm">{error}</p>}
             </div>
-            {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+            <div className="flex items-center gap-2">
+              <Link
+                to="/settings"
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm border border-gray-700"
               >
-                <Edit3 className="w-4 h-4" />
-                <span>Edit Profile</span>
-              </button>
-            ) : (
-              <div className="flex space-x-2">
+                Settings
+              </Link>
+              {!isEditing ? (
                 <button
-                  onClick={handleSubmit(onSubmit)}
+                  onClick={() => setIsEditing(true)}
                   className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>Save</span>
+                  <Edit3 className="w-4 h-4" />
+                  <span>Edit Profile</span>
                 </button>
-                <button
-                  onClick={handleCancel}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  <span>Cancel</span>
-                </button>
-              </div>
-            )}
+              ) : (
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleSubmit(onSubmit)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Save</span>
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="flex items-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Cancel</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </motion.div>
 

@@ -12,6 +12,7 @@ import Skills from './pages/Skills';
 import { useAuthStore } from './lib/auth';
 import AuthCallback from './pages/AuthCallback';
 import Privacy from './pages/Privacy';
+import Settings from './pages/Settings';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -70,6 +71,11 @@ function App() {
           <Route path="profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="settings" element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           } />
         </Route>

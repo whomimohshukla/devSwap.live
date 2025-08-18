@@ -38,10 +38,12 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      // Avoid redirect loops during auth flows
+      // Redirect to login only when on protected routes; stay on public pages
       const path = window.location.pathname;
       const isAuthFlow = path.startsWith('/login') || path.startsWith('/register');
-      if (!isAuthFlow) {
+      const protectedPrefixes = ['/dashboard', '/matches', '/sessions', '/profile', '/settings'];
+      const isProtected = protectedPrefixes.some((p) => path.startsWith(p));
+      if (!isAuthFlow && isProtected) {
         window.location.href = '/login';
       }
     }
