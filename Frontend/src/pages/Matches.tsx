@@ -238,16 +238,22 @@ const Matches: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-200 bg-clip-text text-transparent">
             Find Learning Partners
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-300 max-w-2xl">
             Connect with developers who have complementary skills
           </p>
           {error && <p className="text-red-400 mt-2 text-sm">{error}</p>}
-          <div className="mt-4 flex gap-3">
-            <button onClick={() => handleJoinQueue()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Join Matching Queue</button>
-            <button onClick={handleLeaveQueue} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg">Leave Queue</button>
+          <div className="mt-5 flex gap-3">
+            <button onClick={() => handleJoinQueue()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_0_28px_rgba(0,239,104,0.25)] transition">
+              <Users className="w-4 h-4" />
+              Join Matching Queue
+            </button>
+            <button onClick={handleLeaveQueue} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-100 border border-gray-700 transition">
+              <X className="w-4 h-4" />
+              Leave Queue
+            </button>
           </div>
         </motion.div>
 
@@ -258,7 +264,7 @@ const Matches: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mb-8"
         >
-          <div className="flex space-x-1 bg-gray-900 p-1 rounded-lg w-fit">
+          <div className="flex space-x-1 bg-[#0f1113] border border-gray-800 p-1 rounded-xl w-fit shadow-inner">
             {[
               { key: 'matches', label: 'Matches', count: normalizedMatches.length },
               { key: 'requests', label: 'Requests', count: requests.length },
@@ -267,10 +273,10 @@ const Matches: React.FC = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as any)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === tab.key
-                    ? 'bg-emerald-600 text-white'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-emerald-600 text-white shadow'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-900'
                 }`}
               >
                 {tab.label}
@@ -319,7 +325,17 @@ const Matches: React.FC = () => {
                 </>
               )}
               {!loading && normalizedMatches.length === 0 && (
-                <div className="text-gray-500">No matches yet. Join the queue to get matched.</div>
+                <div className="bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4">
+                    <Users className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">No matches yet</h3>
+                  <p className="text-gray-400 mb-6">Join the queue and we’ll find the best partners for you.</p>
+                  <button onClick={() => handleJoinQueue()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
+                    <Users className="w-4 h-4" />
+                    Join Matching Queue
+                  </button>
+                </div>
               )}
               {!loading && normalizedMatches.map((match, index) => (
                 <motion.div
