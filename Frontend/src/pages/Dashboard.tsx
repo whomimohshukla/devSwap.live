@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -10,62 +10,82 @@ import {
   Calendar,
   Award,
   Activity
-} from 'lucide-react';
+ } from 'lucide-react';
+import { usersAPI, sessionsAPI } from '../lib/api';
 import { useAuthStore } from '../lib/auth';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuthStore();
+  const [loading, setLoading] = useState(true);
+  const [statsData, setStatsData] = useState<any | null>(null);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const stats = [
-    { label: 'Sessions Completed', value: '12', icon: BookOpen, color: 'text-emerald-400' },
-    { label: 'Skills Taught', value: '5', icon: Code2, color: 'text-blue-400' },
-    { label: 'Skills Learned', value: '8', icon: TrendingUp, color: 'text-purple-400' },
-    { label: 'Hours Exchanged', value: '24', icon: Clock, color: 'text-orange-400' },
-  ];
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [statsRes, sessionsRes] = await Promise.all([
+          usersAPI.getStatsOverview(),
+          sessionsAPI.getSessions(),
+        ]);
+        if (!mounted) return;
+        setStatsData(statsRes.data?.data ?? statsRes.data ?? null);
+        const list = sessionsRes.data?.data ?? sessionsRes.data ?? [];
+        setSessions(Array.isArray(list) ? list : (list.sessions ?? []));
+      } catch (e: any) {
+        if (!mounted) return;
+        setError(e?.message ?? 'Failed to load dashboard');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-  const recentSessions = [
-    {
-      id: 1,
-      partner: 'Sarah Chen',
-      skill: 'React Hooks',
-      type: 'learned',
-      date: '2 hours ago',
-      rating: 5,
-    },
-    {
-      id: 2,
-      partner: 'Marcus Johnson',
-      skill: 'Python FastAPI',
-      type: 'taught',
-      date: '1 day ago',
-      rating: 5,
-    },
-    {
-      id: 3,
-      partner: 'Elena Rodriguez',
-      skill: 'TypeScript',
-      type: 'learned',
-      date: '3 days ago',
-      rating: 4,
-    },
-  ];
+  const stats = useMemo(() => {
+    const completed = statsData?.sessionsCompleted ?? statsData?.sessions_completed ?? 0;
+    const taught = statsData?.skillsTaught ?? statsData?.skills_taught ?? (user?.teachSkills?.length || 0);
+    const learned = statsData?.skillsLearned ?? statsData?.skills_learned ?? (user?.learnSkills?.length || 0);
+    const hours = statsData?.hoursExchanged ?? statsData?.hours_exchanged ?? 0;
+    return [
+      { label: 'Sessions Completed', value: String(completed), icon: BookOpen, color: 'text-emerald-400' },
+      { label: 'Skills Taught', value: String(taught), icon: Code2, color: 'text-blue-400' },
+      { label: 'Skills Learned', value: String(learned), icon: TrendingUp, color: 'text-purple-400' },
+      { label: 'Hours Exchanged', value: String(hours), icon: Clock, color: 'text-orange-400' },
+    ];
+  }, [statsData, user]);
 
-  const upcomingSessions = [
-    {
-      id: 1,
-      partner: 'Alex Kim',
-      skill: 'Docker Containers',
-      type: 'teaching',
-      time: 'Today, 3:00 PM',
-    },
-    {
-      id: 2,
-      partner: 'Maria Garcia',
-      skill: 'GraphQL',
-      type: 'learning',
-      time: 'Tomorrow, 10:00 AM',
-    },
-  ];
+  const recentSessions = useMemo(() => {
+    const completed = sessions.filter(s => (s.status ?? s.state) === 'completed');
+    // Sort by endTime/updatedAt desc
+    completed.sort((a, b) => new Date(b.endTime ?? b.updatedAt ?? 0).getTime() - new Date(a.endTime ?? a.updatedAt ?? 0).getTime());
+    return completed.slice(0, 5).map((s: any) => ({
+      id: s._id ?? s.id,
+      partner: s.partnerName ?? s.partner?.name ?? 'Partner',
+      skill: s.skill ?? s.topic ?? 'Skill',
+      type: s.role === 'learner' || s.type === 'learned' ? 'learned' : 'taught',
+      date: new Date(s.endTime ?? s.updatedAt ?? Date.now()).toLocaleString(),
+      rating: s.rating ?? 5,
+    }));
+  }, [sessions]);
+
+  const upcomingSessions = useMemo(() => {
+    const upcoming = sessions.filter(s => (s.status ?? s.state) === 'upcoming' || (s.status ?? s.state) === 'scheduled');
+    upcoming.sort((a, b) => new Date(a.startTime ?? a.scheduledAt ?? 0).getTime() - new Date(b.startTime ?? b.scheduledAt ?? 0).getTime());
+    return upcoming.slice(0, 5).map((s: any) => ({
+      id: s._id ?? s.id,
+      partner: s.partnerName ?? s.partner?.name ?? 'Partner',
+      skill: s.skill ?? s.topic ?? 'Skill',
+      type: s.role === 'learner' ? 'learning' : 'teaching',
+      time: new Date(s.startTime ?? s.scheduledAt ?? Date.now()).toLocaleString(),
+    }));
+  }, [sessions]);
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-8">
@@ -83,6 +103,9 @@ const Dashboard: React.FC = () => {
           <p className="text-gray-400">
             Here's what's happening with your skill exchange journey
           </p>
+          {error && (
+            <p className="text-red-400 mt-2 text-sm">{error}</p>
+          )}
         </motion.div>
 
         {/* Stats Grid */}
@@ -100,7 +123,7 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-sm">{stat.label}</p>
-                  <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+                  <p className="text-2xl font-bold text-white mt-1">{loading ? '—' : stat.value}</p>
                 </div>
                 <div className={`p-3 rounded-lg bg-gray-800 ${stat.color}`}>
                   <stat.icon className="w-6 h-6" />
@@ -159,6 +182,9 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {!loading && recentSessions.length === 0 && (
+                <p className="text-gray-500 text-sm">No recent sessions.</p>
+              )}
             </div>
           </motion.div>
 
@@ -198,7 +224,9 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               ))}
-              
+              {!loading && upcomingSessions.length === 0 && (
+                <p className="text-gray-500 text-sm">No upcoming sessions.</p>
+              )}
               <button className="w-full p-4 border-2 border-dashed border-gray-700 rounded-lg text-gray-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors">
                 + Schedule New Session
               </button>

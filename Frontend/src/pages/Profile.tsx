@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { 
@@ -16,8 +16,9 @@ import {
   BookOpen,
   Code2,
   Camera
-} from 'lucide-react';
+ } from 'lucide-react';
 import { useAuthStore, SKILLS } from '../lib/auth';
+import { usersAPI } from '../lib/api';
 
 interface ProfileForm {
   name: string;
@@ -26,12 +27,16 @@ interface ProfileForm {
 }
 
 const Profile: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedTeachSkills, setSelectedTeachSkills] = useState<string[]>(user?.teachSkills || []);
   const [selectedLearnSkills, setSelectedLearnSkills] = useState<string[]>(user?.learnSkills || []);
   const [skillSearchTerm, setSkillSearchTerm] = useState('');
   const [activeSkillType, setActiveSkillType] = useState<'teach' | 'learn' | null>(null);
+  const [statsData, setStatsData] = useState<any | null>(null);
+  const [activity, setActivity] = useState<Array<{ type: 'session' | 'skill' | 'rating'; description: string; time: string }>>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -46,11 +51,43 @@ const Profile: React.FC = () => {
     },
   });
 
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [statsRes, activityRes] = await Promise.all([
+          usersAPI.getStatsOverview(),
+          usersAPI.getActivity(),
+        ]);
+        if (!mounted) return;
+        setStatsData(statsRes.data?.data ?? statsRes.data ?? null);
+        const raw = activityRes.data?.data ?? activityRes.data ?? [];
+        const list = Array.isArray(raw) ? raw : (raw.activity ?? []);
+        // Normalize activity items to the UI shape
+        const normalized = list.map((a: any) => ({
+          type: (a.type === 'session' || a.kind === 'session') ? 'session' : (a.type === 'skill' ? 'skill' : 'rating'),
+          description: a.description ?? a.message ?? 'Activity',
+          time: a.time ?? a.createdAt ? new Date(a.time ?? a.createdAt).toLocaleString() : '',
+        }));
+        setActivity(normalized.slice(0, 20));
+      } catch (e: any) {
+        if (!mounted) return;
+        setError(e?.message ?? 'Failed to load profile data');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
   const stats = [
-    { label: 'Sessions Completed', value: '24', icon: BookOpen, color: 'text-emerald-400' },
-    { label: 'Skills Taught', value: '8', icon: Code2, color: 'text-blue-400' },
-    { label: 'Skills Learned', value: '12', icon: TrendingUp, color: 'text-purple-400' },
-    { label: 'Rating', value: '4.9', icon: Star, color: 'text-yellow-400' },
+    { label: 'Sessions Completed', value: String(statsData?.sessionsCompleted ?? statsData?.sessions_completed ?? 0), icon: BookOpen, color: 'text-emerald-400' },
+    { label: 'Skills Taught', value: String(statsData?.skillsTaught ?? statsData?.skills_taught ?? (user?.teachSkills?.length || 0)), icon: Code2, color: 'text-blue-400' },
+    { label: 'Skills Learned', value: String(statsData?.skillsLearned ?? statsData?.skills_learned ?? (user?.learnSkills?.length || 0)), icon: TrendingUp, color: 'text-purple-400' },
+    { label: 'Rating', value: String(statsData?.rating ?? statsData?.avgRating ?? '—'), icon: Star, color: 'text-yellow-400' },
   ];
 
   const achievements = [
@@ -60,38 +97,63 @@ const Profile: React.FC = () => {
     { name: 'Community Helper', description: 'Helped 50+ developers', earned: false },
   ];
 
-  const recentActivity = [
-    { type: 'session', description: 'Completed React Hooks session with Sarah Chen', time: '2 hours ago' },
-    { type: 'skill', description: 'Added TypeScript to teaching skills', time: '1 day ago' },
-    { type: 'rating', description: 'Received 5-star rating from Marcus Johnson', time: '2 days ago' },
-  ];
+  const recentActivity = activity;
 
   const filteredSkills = SKILLS.filter(skill =>
     skill.toLowerCase().includes(skillSearchTerm.toLowerCase())
   );
 
-  const addSkill = (skill: string, type: 'teach' | 'learn') => {
-    if (type === 'teach' && !selectedTeachSkills.includes(skill)) {
-      setSelectedTeachSkills([...selectedTeachSkills, skill]);
-    } else if (type === 'learn' && !selectedLearnSkills.includes(skill)) {
-      setSelectedLearnSkills([...selectedLearnSkills, skill]);
+  const addSkill = async (skill: string, type: 'teach' | 'learn') => {
+    try {
+      if (type === 'teach' && selectedTeachSkills.includes(skill)) return;
+      if (type === 'learn' && selectedLearnSkills.includes(skill)) return;
+      await usersAPI.addSkill({ skillName: skill, skillType: type });
+      // Update local state and auth store
+      if (type === 'teach') {
+        const updatedTeach = [...selectedTeachSkills, skill];
+        setSelectedTeachSkills(updatedTeach);
+        updateUser({ ...(user as any), teachSkills: updatedTeach });
+      } else {
+        const updatedLearn = [...selectedLearnSkills, skill];
+        setSelectedLearnSkills(updatedLearn);
+        updateUser({ ...(user as any), learnSkills: updatedLearn });
+      }
+    } catch (e) {
+      console.error('Failed to add skill', e);
+    } finally {
+      setSkillSearchTerm('');
+      setActiveSkillType(null);
     }
-    setSkillSearchTerm('');
-    setActiveSkillType(null);
   };
 
-  const removeSkill = (skill: string, type: 'teach' | 'learn') => {
-    if (type === 'teach') {
-      setSelectedTeachSkills(selectedTeachSkills.filter(s => s !== skill));
-    } else {
-      setSelectedLearnSkills(selectedLearnSkills.filter(s => s !== skill));
+  const removeSkill = async (skill: string, type: 'teach' | 'learn') => {
+    try {
+      await usersAPI.removeSkill({ skillName: skill, skillType: type });
+      if (type === 'teach') {
+        const updatedTeach = selectedTeachSkills.filter(s => s !== skill);
+        setSelectedTeachSkills(updatedTeach);
+        updateUser({ ...(user as any), teachSkills: updatedTeach });
+      } else {
+        const updatedLearn = selectedLearnSkills.filter(s => s !== skill);
+        setSelectedLearnSkills(updatedLearn);
+        updateUser({ ...(user as any), learnSkills: updatedLearn });
+      }
+    } catch (e) {
+      console.error('Failed to remove skill', e);
     }
   };
 
   const onSubmit = async (data: ProfileForm) => {
     try {
-      // Update user profile logic here
-      console.log('Updating profile:', { ...data, teachSkills: selectedTeachSkills, learnSkills: selectedLearnSkills });
+      const payload: any = {
+        name: data.name,
+        bio: data.bio,
+        teachSkills: selectedTeachSkills,
+        learnSkills: selectedLearnSkills,
+      };
+      const res = await usersAPI.updateProfile(payload);
+      const updated = res.data?.data ?? res.data?.user ?? payload;
+      updateUser({ ...(user as any), ...updated });
       setIsEditing(false);
     } catch (error) {
       console.error('Profile update failed:', error);
@@ -117,6 +179,12 @@ const Profile: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-white">Profile</h1>
+            <div className="flex items-center gap-3">
+              {loading && (
+                <span className="text-gray-400 text-sm">Loading…</span>
+              )}
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+            </div>
             {!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}

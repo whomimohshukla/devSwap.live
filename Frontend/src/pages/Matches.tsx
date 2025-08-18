@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -12,99 +12,87 @@ import {
   Heart,
   
 } from 'lucide-react';
+import { usersAPI, matchAPI } from '../lib/api';
 
 const Matches: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'matches' | 'requests' | 'sent'>('matches');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [matches, setMatches] = useState<any[]>([]);
+  const requests: any[] = [];
+  const sentRequests: any[] = [];
+  // no auth store usage needed here currently
 
-  const matches = [
-    {
-      id: 1,
-      name: 'Sarah Chen',
-      avatar: 'SC',
-      location: 'San Francisco, CA',
-      rating: 4.9,
-      sessionsCompleted: 45,
-      teachSkills: ['React', 'TypeScript', 'Node.js'],
-      learnSkills: ['Python', 'Machine Learning', 'AWS'],
-      bio: 'Senior Frontend Developer at Google. Passionate about modern web technologies and helping others learn.',
-      matchScore: 95,
-      isOnline: true,
-      lastSeen: 'now',
-    },
-    {
-      id: 2,
-      name: 'Marcus Johnson',
-      avatar: 'MJ',
-      location: 'New York, NY',
-      rating: 4.8,
-      sessionsCompleted: 32,
-      teachSkills: ['Python', 'Django', 'PostgreSQL'],
-      learnSkills: ['React', 'GraphQL', 'Docker'],
-      bio: 'Full-stack developer with 8 years of experience. Love teaching backend development.',
-      matchScore: 88,
-      isOnline: false,
-      lastSeen: '2 hours ago',
-    },
-    {
-      id: 3,
-      name: 'Elena Rodriguez',
-      avatar: 'ER',
-      location: 'Madrid, Spain',
-      rating: 4.9,
-      sessionsCompleted: 67,
-      teachSkills: ['Vue.js', 'JavaScript', 'CSS'],
-      learnSkills: ['React Native', 'Flutter', 'Swift'],
-      bio: 'Frontend specialist and UI/UX enthusiast. Always excited to share knowledge about modern web development.',
-      matchScore: 92,
-      isOnline: true,
-      lastSeen: 'now',
-    },
-  ];
-
-  const requests = [
-    {
-      id: 1,
-      name: 'Alex Kim',
-      avatar: 'AK',
-      skill: 'Docker Containers',
-      message: 'Hi! I saw you teach Docker and I\'d love to learn from you. I can teach you React in exchange.',
-      time: '2 hours ago',
-      type: 'received',
-    },
-    {
-      id: 2,
-      name: 'Lisa Wang',
-      avatar: 'LW',
-      skill: 'GraphQL',
-      message: 'Would love to exchange GraphQL knowledge for Python skills!',
-      time: '5 hours ago',
-      type: 'received',
-    },
-  ];
-
-  const sentRequests = [
-    {
-      id: 1,
-      name: 'David Park',
-      avatar: 'DP',
-      skill: 'Kubernetes',
-      message: 'Hi David! I\'d like to learn Kubernetes from you. I can teach React/TypeScript in return.',
-      time: '1 day ago',
-      status: 'pending',
-    },
-  ];
-
-  const handleConnect = (matchId: number) => {
-    console.log('Connecting with match:', matchId);
+  const fetchMatches = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await usersAPI.getMatches();
+      const data = res.data?.data ?? res.data ?? [];
+      setMatches(Array.isArray(data) ? data : (data.matches ?? []));
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to load matches');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAcceptRequest = (requestId: number) => {
-    console.log('Accepting request:', requestId);
+  // Requests are not yet backed by API in this UI; keep stubs to satisfy buttons if any remain
+  const handleAcceptRequest = (_id: string | number) => {
+    console.log('Accept request', _id);
+  };
+  const handleDeclineRequest = (_id: string | number) => {
+    console.log('Decline request', _id);
   };
 
-  const handleDeclineRequest = (requestId: number) => {
-    console.log('Declining request:', requestId);
+  useEffect(() => {
+    fetchMatches();
+  }, []);
+
+  const handleConnect = async (_matchId: string) => {
+    // Placeholder: integrate chat/session start later
+    console.log('Connecting with match:', _matchId);
   };
+
+  const handleJoinQueue = async () => {
+    try {
+      await matchAPI.findMatch();
+      await fetchMatches();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleLeaveQueue = async () => {
+    try {
+      await matchAPI.rejectMatch('');
+      await fetchMatches();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const normalizedMatches = useMemo(() => {
+    return matches.map((m: any) => ({
+      id: m._id ?? m.id,
+      name: m.name ?? m.partnerName ?? m.user?.name ?? 'Developer',
+      avatar: (m.name ?? m.partnerName ?? m.user?.name ?? 'D')
+        .split(' ')
+        .map((s: string) => s[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase(),
+      location: m.location ?? '—',
+      rating: m.rating ?? 5,
+      sessionsCompleted: m.sessionsCompleted ?? m.stats?.sessionsCompleted ?? 0,
+      teachSkills: m.teachSkills ?? m.skills?.teach ?? [],
+      learnSkills: m.learnSkills ?? m.skills?.learn ?? [],
+      bio: m.bio ?? '',
+      matchScore: m.matchScore ?? m.score ?? 0,
+      isOnline: m.isOnline ?? m.status?.online ?? false,
+      lastSeen: m.lastSeen ?? m.status?.lastSeen ?? '—',
+    }));
+  }, [matches]);
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-8">
@@ -122,6 +110,11 @@ const Matches: React.FC = () => {
           <p className="text-gray-400">
             Connect with developers who have complementary skills
           </p>
+          {error && <p className="text-red-400 mt-2 text-sm">{error}</p>}
+          <div className="mt-4 flex gap-3">
+            <button onClick={handleJoinQueue} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Join Matching Queue</button>
+            <button onClick={handleLeaveQueue} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg">Leave Queue</button>
+          </div>
         </motion.div>
 
         {/* Tabs */}
@@ -133,7 +126,7 @@ const Matches: React.FC = () => {
         >
           <div className="flex space-x-1 bg-gray-900 p-1 rounded-lg w-fit">
             {[
-              { key: 'matches', label: 'Matches', count: matches.length },
+              { key: 'matches', label: 'Matches', count: normalizedMatches.length },
               { key: 'requests', label: 'Requests', count: requests.length },
               { key: 'sent', label: 'Sent', count: sentRequests.length },
             ].map((tab) => (
@@ -166,7 +159,13 @@ const Matches: React.FC = () => {
               transition={{ duration: 0.3 }}
               className="grid grid-cols-1 lg:grid-cols-2 gap-6"
             >
-              {matches.map((match, index) => (
+              {loading && (
+                <div className="text-gray-400">Loading matches...</div>
+              )}
+              {!loading && normalizedMatches.length === 0 && (
+                <div className="text-gray-500">No matches yet. Join the queue to get matched.</div>
+              )}
+              {!loading && normalizedMatches.map((match, index) => (
                 <motion.div
                   key={match.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -223,7 +222,7 @@ const Matches: React.FC = () => {
                     <div>
                       <p className="text-gray-400 text-sm mb-2">Can teach:</p>
                       <div className="flex flex-wrap gap-2">
-                        {match.teachSkills.map((skill) => (
+                        {match.teachSkills.map((skill: string) => (
                           <span
                             key={skill}
                             className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm border border-emerald-500/30"
@@ -236,7 +235,7 @@ const Matches: React.FC = () => {
                     <div>
                       <p className="text-gray-400 text-sm mb-2">Wants to learn:</p>
                       <div className="flex flex-wrap gap-2">
-                        {match.learnSkills.map((skill) => (
+                        {match.learnSkills.map((skill: string) => (
                           <span
                             key={skill}
                             className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm border border-blue-500/30"
@@ -251,7 +250,7 @@ const Matches: React.FC = () => {
                   {/* Actions */}
                   <div className="flex space-x-3">
                     <button
-                      onClick={() => handleConnect(match.id)}
+                      onClick={() => handleConnect(String(match.id))}
                       className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
                     >
                       <MessageCircle className="w-4 h-4" />
@@ -372,7 +371,7 @@ const Matches: React.FC = () => {
         </div>
 
         {/* Empty State */}
-        {((activeTab === 'matches' && matches.length === 0) ||
+        {((activeTab === 'matches' && normalizedMatches.length === 0) ||
           (activeTab === 'requests' && requests.length === 0) ||
           (activeTab === 'sent' && sentRequests.length === 0)) && (
           <motion.div
