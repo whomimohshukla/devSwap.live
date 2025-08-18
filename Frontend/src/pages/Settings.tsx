@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '../lib/auth';
 import { usersAPI } from '../lib/api';
 import { CheckCircle2, AlertCircle, Trash2, Shield, Wifi, KeyRound, Globe, Bell, SlidersHorizontal, Clock } from 'lucide-react';
@@ -28,21 +28,6 @@ const Settings: React.FC = () => {
   const [notifProduct, setNotifProduct] = useState<boolean>(false);
   const [prefsSaving, setPrefsSaving] = useState<boolean>(false);
   const [prefsMsg, setPrefsMsg] = useState<string | null>(null);
-
-  // Hydrate settings from existing user preferences
-  useEffect(() => {
-    const prefs = (user as any)?.preferences || {};
-    if (typeof prefs.showInMatching === 'boolean') setShowInMatching(prefs.showInMatching);
-    if (typeof prefs.publicProfile === 'boolean') setPublicProfile(prefs.publicProfile);
-    if (typeof prefs.language === 'string') setLanguage(prefs.language);
-    if (typeof prefs.timezone === 'string') setTimezone(prefs.timezone);
-    if (typeof prefs.preferredTimes === 'string') setPreferredTimes(prefs.preferredTimes);
-    if (prefs.notifications) {
-      if (typeof prefs.notifications.email === 'boolean') setNotifEmail(prefs.notifications.email);
-      if (typeof prefs.notifications.productUpdates === 'boolean') setNotifProduct(prefs.notifications.productUpdates);
-    }
-    if (typeof (user as any)?.isOnline === 'boolean') setIsOnline(!!(user as any).isOnline);
-  }, [user]);
 
   const handleOnlineToggle = async (value: boolean) => {
     setSavingOnline(true);

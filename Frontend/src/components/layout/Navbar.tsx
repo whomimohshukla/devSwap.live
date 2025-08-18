@@ -10,9 +10,11 @@ import {
   Settings,
   Users,
   BookOpen,
-  Zap
+  Zap,
+  Loader2
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
+import { useMatchStore } from '../../lib/matchStore';
 
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -22,6 +24,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const searching = useMatchStore((s) => s.searching);
 
   // Prevent background scroll when mobile menu is open
   useEffect(() => {
@@ -125,6 +128,16 @@ const Navbar: React.FC = () => {
 
           {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
+            {isAuthenticated && searching && (
+              <Link
+                to="/matches"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-600/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/25 transition-colors"
+                title="Now searching for a match"
+              >
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-xs font-medium">Now searching…</span>
+              </Link>
+            )}
             {isAuthenticated ? (
               <div className="relative">
                 <button

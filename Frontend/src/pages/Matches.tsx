@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -10,15 +10,25 @@ import {
   CheckCircle,
   X,
   Heart,
-  
+  Loader2
 } from 'lucide-react';
 import { usersAPI, matchAPI } from '../lib/api';
+import { useLocation } from 'react-router-dom';
+import { getSocket } from '../lib/socket';
+import { useMatchStore } from '../lib/matchStore';
 
 const Matches: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'matches' | 'requests' | 'sent'>('matches');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [matches, setMatches] = useState<any[]>([]);
+  const searching = useMatchStore((s) => s.searching);
+  const setSearching = useMatchStore((s) => s.setSearching);
+  const matchedPartner = useMatchStore((s) => s.matchedPartner);
+  const setMatchedPartner = useMatchStore((s) => s.setMatchedPartner);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const location = useLocation();
+  const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
   const requests: any[] = [];
   const sentRequests: any[] = [];
   // no auth store usage needed here currently
@@ -37,6 +47,13 @@ const Matches: React.FC = () => {
     }
   };
 
+  // Cleanup socket ref on unmount
+  useEffect(() => {
+    return () => {
+      socketRef.current = null;
+    };
+  }, []);
+
   // Requests are not yet backed by API in this UI; keep stubs to satisfy buttons if any remain
   const handleAcceptRequest = (_id: string | number) => {
     console.log('Accept request', _id);
@@ -49,26 +66,77 @@ const Matches: React.FC = () => {
     fetchMatches();
   }, []);
 
+  // Auto-start matching when coming from dashboard with ?search=1
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const shouldSearch = params.get('search') === '1';
+    if (shouldSearch) {
+      handleJoinQueue(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
   const handleConnect = async (_matchId: string) => {
     // Placeholder: integrate chat/session start later
     console.log('Connecting with match:', _matchId);
   };
 
-  const handleJoinQueue = async () => {
+  // Setup socket listeners (once)
+  useEffect(() => {
+    const socket = getSocket();
+    socketRef.current = socket;
+    const onMatchFound = (payload: any) => {
+      setSearching(false);
+      setMatchedPartner({
+        id: payload?.partner?.id || payload?.partnerId,
+        name: payload?.partner?.name || payload?.name,
+        avatarUrl: payload?.partner?.avatarUrl,
+        skills: payload?.partner?.skills,
+        timezone: payload?.partner?.timezone,
+      });
+      setToast({ type: 'success', msg: 'We found a match for you!' });
+      setTimeout(() => setToast(null), 2500);
+      fetchMatches();
+    };
+    const onQueueJoined = () => {
+      // server acknowledged we are in queue
+    };
+    const onQueueLeft = () => {
+      setSearching(false);
+    };
+    socket.on('match:found', onMatchFound);
+    socket.on('match:queue:joined', onQueueJoined);
+    socket.on('match:queue:left', onQueueLeft);
+    return () => {
+      socket.off('match:found', onMatchFound);
+      socket.off('match:queue:joined', onQueueJoined);
+      socket.off('match:queue:left', onQueueLeft);
+    };
+  }, [setMatchedPartner, setSearching]);
+
+  const handleJoinQueue = async (fromAuto?: boolean) => {
     try {
+      setError(null);
+      setSearching(true);
       await matchAPI.findMatch();
-      await fetchMatches();
-    } catch (e) {
-      console.error(e);
+      if (!fromAuto) {
+        setToast({ type: 'success', msg: 'Searching for a matching partner…' });
+        setTimeout(() => setToast(null), 2500);
+      }
+    } catch (e: any) {
+      setSearching(false);
+      setToast({ type: 'error', msg: e?.response?.data?.message || e?.message || 'Failed to join matching queue' });
+      setTimeout(() => setToast(null), 3500);
     }
   };
 
   const handleLeaveQueue = async () => {
     try {
       await matchAPI.rejectMatch('');
-      await fetchMatches();
-    } catch (e) {
-      console.error(e);
+    } finally {
+      setSearching(false);
+      setToast({ type: 'success', msg: 'Stopped searching.' });
+      setTimeout(() => setToast(null), 2000);
     }
   };
 
@@ -96,6 +164,72 @@ const Matches: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-8">
+      {/* Match Found Modal */}
+      {matchedPartner && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white text-lg font-semibold">Match Found</h3>
+              <button onClick={() => setMatchedPartner(null)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 rounded-full bg-emerald-600/20 flex items-center justify-center text-white text-lg font-semibold">
+                {matchedPartner.name?.[0]?.toUpperCase() || 'U'}
+              </div>
+              <div>
+                <p className="text-white font-medium">{matchedPartner.name || 'Partner'}</p>
+                {matchedPartner.skills && matchedPartner.skills.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {matchedPartner.skills.slice(0,4).map((s, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-gray-800 rounded text-xs text-gray-300">{s}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="text-gray-300 mb-6">You’ve been matched! Start a session or chat to kick things off.</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setMatchedPartner(null)}
+                className="px-4 py-2 rounded-lg bg-gray-800 text-gray-200 hover:bg-gray-700"
+              >
+                Later
+              </button>
+              <button
+                onClick={() => { window.location.href = '/sessions'; }}
+                className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                Start Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Sticky Searching Banner */}
+      {searching && (
+        <div className="fixed top-16 left-0 right-0 z-30">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-4 py-3 flex items-center justify-between backdrop-blur">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <p className="text-sm">Searching for a matching partner… We’ll notify you here.</p>
+              </div>
+              <button onClick={handleLeaveQueue} className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast / Snackbar */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-30">
+          <div className={`px-4 py-3 rounded-lg border shadow-lg ${toast.type === 'success' ? 'bg-emerald-600/90 border-emerald-400 text-white' : 'bg-red-600/90 border-red-400 text-white'}`}>
+            {toast.msg}
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -112,7 +246,7 @@ const Matches: React.FC = () => {
           </p>
           {error && <p className="text-red-400 mt-2 text-sm">{error}</p>}
           <div className="mt-4 flex gap-3">
-            <button onClick={handleJoinQueue} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Join Matching Queue</button>
+            <button onClick={() => handleJoinQueue()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Join Matching Queue</button>
             <button onClick={handleLeaveQueue} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg">Leave Queue</button>
           </div>
         </motion.div>
@@ -159,8 +293,30 @@ const Matches: React.FC = () => {
               transition={{ duration: 0.3 }}
               className="grid grid-cols-1 lg:grid-cols-2 gap-6"
             >
-              {loading && (
-                <div className="text-gray-400">Loading matches...</div>
+              {(loading || searching) && (
+                <>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="bg-gray-900 rounded-xl p-6 border border-gray-800 animate-pulse">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-16 h-16 bg-gray-800 rounded-full" />
+                          <div>
+                            <div className="h-4 w-40 bg-gray-800 rounded mb-2" />
+                            <div className="h-3 w-24 bg-gray-800 rounded" />
+                          </div>
+                        </div>
+                        <div className="h-4 w-14 bg-gray-800 rounded" />
+                      </div>
+                      <div className="h-3 w-full bg-gray-800 rounded mb-2" />
+                      <div className="h-3 w-3/4 bg-gray-800 rounded mb-6" />
+                      <div className="flex gap-2">
+                        {Array.from({ length: 4 }).map((__, j) => (
+                          <div key={j} className="h-6 w-20 bg-gray-800 rounded" />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </>
               )}
               {!loading && normalizedMatches.length === 0 && (
                 <div className="text-gray-500">No matches yet. Join the queue to get matched.</div>

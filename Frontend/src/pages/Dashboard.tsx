@@ -9,10 +9,16 @@ import {
   Code2,
   Calendar,
   Award,
-  Activity
+  Activity,
+  Trophy,
+  Target,
+  Sparkles,
+  ListChecks,
+  ArrowRight
  } from 'lucide-react';
-import { usersAPI, sessionsAPI } from '../lib/api';
+import { usersAPI, sessionsAPI, matchAPI } from '../lib/api';
 import { useAuthStore } from '../lib/auth';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuthStore();
@@ -20,6 +26,9 @@ const Dashboard: React.FC = () => {
   const [statsData, setStatsData] = useState<any | null>(null);
   const [sessions, setSessions] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [activity, setActivity] = useState<any[]>([]);
+  const [findingMatch, setFindingMatch] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -27,14 +36,17 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const [statsRes, sessionsRes] = await Promise.all([
+        const [statsRes, sessionsRes, activityRes] = await Promise.all([
           usersAPI.getStatsOverview(),
           sessionsAPI.getSessions(),
+          usersAPI.getActivity(),
         ]);
         if (!mounted) return;
         setStatsData(statsRes.data?.data ?? statsRes.data ?? null);
         const list = sessionsRes.data?.data ?? sessionsRes.data ?? [];
         setSessions(Array.isArray(list) ? list : (list.sessions ?? []));
+        const activityList = activityRes.data?.data ?? activityRes.data ?? [];
+        setActivity(Array.isArray(activityList) ? activityList : (activityList.items ?? []));
       } catch (e: any) {
         if (!mounted) return;
         setError(e?.message ?? 'Failed to load dashboard');
@@ -60,6 +72,52 @@ const Dashboard: React.FC = () => {
       { label: 'Hours Exchanged', value: String(hours), icon: Clock, color: 'text-orange-400' },
     ];
   }, [statsData, user]);
+
+  const badges = useMemo(() => {
+    const completed = Number(statsData?.sessionsCompleted ?? statsData?.sessions_completed ?? 0);
+    const hours = Number(statsData?.hoursExchanged ?? statsData?.hours_exchanged ?? 0);
+    const taught = Number(statsData?.skillsTaught ?? statsData?.skills_taught ?? 0);
+    const items: { icon: any; label: string; desc: string }[] = [];
+    if (completed >= 1) items.push({ icon: Trophy, label: 'First Swap', desc: 'Completed your first session' });
+    if (completed >= 10) items.push({ icon: Award, label: 'Top Swapper', desc: '10+ sessions completed' });
+    if (hours >= 20) items.push({ icon: Clock, label: 'Time Investor', desc: '20+ hours exchanged' });
+    if (taught >= 1) items.push({ icon: Code2, label: 'Mentor', desc: 'Shared your skills' });
+    return items.slice(0, 6);
+  }, [statsData]);
+
+  const skillProgress = useMemo(() => {
+    const teach = (user?.teachSkills ?? []).slice(0, 6).map((s: any) => ({
+      kind: 'teach',
+      name: s.name ?? s,
+      level: s.level ?? 3,
+    }));
+    const learn = (user?.learnSkills ?? []).slice(0, 6).map((s: any) => ({
+      kind: 'learn',
+      name: s.name ?? s,
+      level: s.level ?? 2,
+    }));
+    return [...teach, ...learn].slice(0, 8);
+  }, [user]);
+
+  const handleGetMatched = async () => {
+    try {
+      setError(null);
+      setFindingMatch(true);
+      await matchAPI.findMatch();
+      navigate('/matches?search=1');
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e?.message || 'Failed to start matching');
+      setFindingMatch(false);
+    }
+  };
+
+  const handleCancelMatching = async () => {
+    try {
+      await matchAPI.rejectMatch('');
+    } finally {
+      setFindingMatch(false);
+    }
+  };
 
   const recentSessions = useMemo(() => {
     const completed = sessions.filter(s => (s.status ?? s.state) === 'completed');
@@ -88,7 +146,7 @@ const Dashboard: React.FC = () => {
   }, [sessions]);
 
   return (
-    <div className="min-h-screen bg-black pt-24 pb-8">
+    <div className="min-h-screen bg-[#0b0c0d] pt-24 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -100,7 +158,7 @@ const Dashboard: React.FC = () => {
           <h1 className="text-3xl font-bold text-white mb-2">
             Welcome back, {user?.name}! 👋
           </h1>
-          <p className="text-gray-400">
+          <p className="text-white/80">
             Here's what's happening with your skill exchange journey
           </p>
           {error && (
@@ -118,14 +176,14 @@ const Dashboard: React.FC = () => {
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="bg-gray-900 rounded-xl p-6 border border-gray-800 hover:border-gray-700 transition-colors"
+              className="bg-[#0b0c0d] rounded-xl p-6 border border-[#25282c] hover:border-[#00ef68]/40 transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">{stat.label}</p>
+                  <p className="text-white/80 text-sm">{stat.label}</p>
                   <p className="text-2xl font-bold text-white mt-1">{loading ? '—' : stat.value}</p>
                 </div>
-                <div className={`p-3 rounded-lg bg-gray-800 ${stat.color}`}>
+                <div className={`p-3 rounded-lg bg-[#25282c] text-[#00ef68]`}>
                   <stat.icon className="w-6 h-6" />
                 </div>
               </div>
@@ -139,7 +197,7 @@ const Dashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+            className="bg-[#25282c] rounded-xl p-6 border border-[#25282c]"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">Recent Sessions</h2>
@@ -150,17 +208,17 @@ const Dashboard: React.FC = () => {
               {recentSessions.map((session) => (
                 <div
                   key={session.id}
-                  className="flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
+                  className="flex items-center justify-between p-4 bg-[#0b0c0d] rounded-lg hover:bg-[#0b0c0d]/90 transition-colors"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-[#00ef68] rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-white">
                         {session.partner.charAt(0)}
                       </span>
                     </div>
                     <div>
                       <p className="text-white font-medium">{session.partner}</p>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-white/80 text-sm">
                         {session.type === 'learned' ? 'Learned' : 'Taught'} {session.skill}
                       </p>
                     </div>
@@ -173,17 +231,17 @@ const Dashboard: React.FC = () => {
                           className={`w-3 h-3 ${
                             i < session.rating
                               ? 'text-yellow-400 fill-current'
-                              : 'text-gray-600'
+                              : 'text-white/30'
                           }`}
                         />
                       ))}
                     </div>
-                    <p className="text-gray-400 text-sm">{session.date}</p>
+                    <p className="text-white/80 text-sm">{session.date}</p>
                   </div>
                 </div>
               ))}
               {!loading && recentSessions.length === 0 && (
-                <p className="text-gray-500 text-sm">No recent sessions.</p>
+                <p className="text-white/60 text-sm">No recent sessions.</p>
               )}
             </div>
           </motion.div>
@@ -193,7 +251,7 @@ const Dashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+            className="bg-[#25282c] rounded-xl p-6 border border-[#25282c]"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">Upcoming Sessions</h2>
@@ -204,30 +262,30 @@ const Dashboard: React.FC = () => {
               {upcomingSessions.map((session) => (
                 <div
                   key={session.id}
-                  className="flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
+                  className="flex items-center justify-between p-4 bg-[#0b0c0d] rounded-lg hover:bg-[#0b0c0d]/90 transition-colors"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-[#00ef68] rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-white">
                         {session.partner.charAt(0)}
                       </span>
                     </div>
                     <div>
                       <p className="text-white font-medium">{session.partner}</p>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-white/80 text-sm">
                         {session.type === 'learning' ? 'Learning' : 'Teaching'} {session.skill}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-emerald-400 text-sm font-medium">{session.time}</p>
+                    <p className="text-[#00ef68] text-sm font-medium">{session.time}</p>
                   </div>
                 </div>
               ))}
               {!loading && upcomingSessions.length === 0 && (
-                <p className="text-gray-500 text-sm">No upcoming sessions.</p>
+                <p className="text-white/60 text-sm">No upcoming sessions.</p>
               )}
-              <button className="w-full p-4 border-2 border-dashed border-gray-700 rounded-lg text-gray-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors">
+              <button className="w-full p-4 border-2 border-dashed border-[#25282c] rounded-lg text-white/80 hover:border-[#00ef68] hover:text-[#00ef68] transition-colors">
                 + Schedule New Session
               </button>
             </div>
@@ -243,43 +301,185 @@ const Dashboard: React.FC = () => {
         >
           <h2 className="text-xl font-semibold text-white mb-6">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <button className="group p-6 bg-gray-900 rounded-xl border border-gray-800 hover:border-emerald-500 transition-all duration-300 text-left">
+            <button onClick={handleGetMatched} className="group p-6 bg-[#0b0c0d] rounded-xl border border-[#25282c] hover:border-[#00ef68] transition-all duration-300 text-left">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-emerald-500/10 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
-                  <Users className="w-6 h-6 text-emerald-400" />
+                <div className="p-3 bg-[#00ef68]/10 rounded-lg group-hover:bg-[#00ef68]/20 transition-colors">
+                  <Users className="w-6 h-6 text-[#00ef68]" />
                 </div>
                 <div>
                   <h3 className="text-white font-medium">Find New Matches</h3>
-                  <p className="text-gray-400 text-sm">Discover learning partners</p>
+                  <p className="text-white/80 text-sm">Discover learning partners</p>
                 </div>
               </div>
             </button>
 
-            <button className="group p-6 bg-gray-900 rounded-xl border border-gray-800 hover:border-blue-500 transition-all duration-300 text-left">
+            <button className="group p-6 bg-[#0b0c0d] rounded-xl border border-[#25282c] hover:border-[#00ef68] transition-all duration-300 text-left">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
-                  <BookOpen className="w-6 h-6 text-blue-400" />
+                <div className="p-3 bg-[#00ef68]/10 rounded-lg group-hover:bg-[#00ef68]/20 transition-colors">
+                  <BookOpen className="w-6 h-6 text-[#00ef68]" />
                 </div>
                 <div>
                   <h3 className="text-white font-medium">Browse Skills</h3>
-                  <p className="text-gray-400 text-sm">Explore new technologies</p>
+                  <p className="text-white/80 text-sm">Explore new technologies</p>
                 </div>
               </div>
             </button>
 
-            <button className="group p-6 bg-gray-900 rounded-xl border border-gray-800 hover:border-purple-500 transition-all duration-300 text-left">
+            <button className="group p-6 bg-[#0b0c0d] rounded-xl border border-[#25282c] hover:border-[#00ef68] transition-all duration-300 text-left">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
-                  <Award className="w-6 h-6 text-purple-400" />
+                <div className="p-3 bg-[#00ef68]/10 rounded-lg group-hover:bg-[#00ef68]/20 transition-colors">
+                  <Award className="w-6 h-6 text-[#00ef68]" />
                 </div>
                 <div>
                   <h3 className="text-white font-medium">View Achievements</h3>
-                  <p className="text-gray-400 text-sm">Track your progress</p>
+                  <p className="text-white/80 text-sm">Track your progress</p>
                 </div>
               </div>
             </button>
           </div>
         </motion.div>
+
+        {/* Achievements & Skill Progress */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+          {/* Achievements */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true }}
+            className="bg-[#25282c] rounded-xl p-6 border border-[#25282c]"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Achievements</h3>
+              <Sparkles className="w-5 h-5 text-[#00ef68]" />
+            </div>
+            {badges.length === 0 ? (
+              <p className="text-white/70 text-sm">Start a session to earn your first badge!</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {badges.map((b, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-[#0b0c0d] rounded-lg border border-[#25282c]">
+                    <div className="p-2 rounded-md bg-[#00ef68]/10 text-[#00ef68]">
+                      <b.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-white text-sm font-medium">{b.label}</p>
+                      <p className="text-white/70 text-xs">{b.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+
+          {/* Skill Progress */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="bg-[#25282c] rounded-xl p-6 border border-[#25282c] lg:col-span-2"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Skill Progress</h3>
+              <ListChecks className="w-5 h-5 text-[#00ef68]" />
+            </div>
+            {skillProgress.length === 0 ? (
+              <p className="text-white/70 text-sm">Add skills on your profile to track progress.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {skillProgress.map((s, i) => (
+                  <div key={i} className="p-4 bg-[#0b0c0d] rounded-lg border border-[#25282c]">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-white font-medium text-sm">{s.name}</p>
+                      <span className="text-xs px-2 py-0.5 rounded-full border border-[#25282c] text-white/80">
+                        {s.kind === 'teach' ? 'Teach' : 'Learn'}
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-[#25282c] rounded">
+                      <div className="h-2 rounded bg-[#00ef68]" style={{ width: `${Math.min(100, s.level * 20)}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </div>
+
+        {/* Activity Feed & Tips */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+          {/* Activity Feed */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true }}
+            className="bg-[#25282c] rounded-xl p-6 border border-[#25282c] lg:col-span-2"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
+              <Activity className="w-5 h-5 text-[#00ef68]" />
+            </div>
+            <div className="space-y-3">
+              {activity.slice(0, 8).map((a: any, i: number) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-[#0b0c0d] rounded-lg border border-[#25282c]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#00ef68] text-[#0b0c0d] flex items-center justify-center text-xs font-bold">
+                      {(a.user?.name ?? user?.name ?? 'U').toString().charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-white text-sm">{a.action ?? a.type ?? 'Activity'}{a.skill ? ` • ${a.skill}` : ''}</p>
+                      <p className="text-white/70 text-xs">{new Date(a.createdAt ?? a.time ?? Date.now()).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  {a.meta?.points ? (
+                    <span className="text-[#00ef68] text-xs font-semibold">+{a.meta.points} pts</span>
+                  ) : null}
+                </div>
+              ))}
+              {!loading && activity.length === 0 && (
+                <p className="text-white/70 text-sm">No activity yet. Start by finding a match.</p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Tips / Getting Started */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="bg-[#25282c] rounded-xl p-6 border border-[#25282c]"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Tips</h3>
+              <Target className="w-5 h-5 text-[#00ef68]" />
+            </div>
+            <ul className="space-y-3 text-white/80 text-sm">
+              <li className="flex items-start gap-2"><span className="mt-1 block w-1.5 h-1.5 rounded-full bg-[#00ef68]" /> Add both teach and learn skills to improve matches.</li>
+              <li className="flex items-start gap-2"><span className="mt-1 block w-1.5 h-1.5 rounded-full bg-[#00ef68]" /> Set your availability in Settings for better scheduling.</li>
+              <li className="flex items-start gap-2"><span className="mt-1 block w-1.5 h-1.5 rounded-full bg-[#00ef68]" /> Use the session notes to track progress and goals.</li>
+            </ul>
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                onClick={handleGetMatched}
+                disabled={findingMatch}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-transform ${findingMatch ? 'bg-[#00ef68]/60 text-[#0b0c0d]/80 cursor-not-allowed' : 'bg-[#00ef68] text-[#0b0c0d] hover:translate-y-[-2px]'}`}
+              >
+                {findingMatch ? 'Finding match…' : 'Get Matched'}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              {findingMatch && (
+                <button
+                  onClick={handleCancelMatching}
+                  className="px-3 py-2 rounded-lg border border-[#25282c] text-white/80 hover:border-[#00ef68]"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
