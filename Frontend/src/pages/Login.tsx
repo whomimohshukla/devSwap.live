@@ -15,6 +15,7 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
   const { login } = useAuthStore();
 
@@ -27,12 +28,15 @@ const Login: React.FC = () => {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       await login(data.email, data.password);
-      navigate('/dashboard');
+      setSuccess('Logged in successfully! Redirecting...');
+      setTimeout(() => navigate('/dashboard'), 600);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      const msg = err?.response?.data?.message || err?.message || 'Login failed. Please try again.';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +120,11 @@ const Login: React.FC = () => {
               <div className="flex items-center space-x-2 p-4 card text-white/90">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 text-white/80" />
                 <span className="text-sm">{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="p-4 card text-emerald-400/90">
+                <span className="text-sm">{success}</span>
               </div>
             )}
 

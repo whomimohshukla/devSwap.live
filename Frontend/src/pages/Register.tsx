@@ -32,6 +32,7 @@ const Register: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [selectedTeachSkills, setSelectedTeachSkills] = useState<string[]>([]);
   const [selectedLearnSkills, setSelectedLearnSkills] = useState<string[]>([]);
   const [skillSearchTerm, setSkillSearchTerm] = useState('');
@@ -94,19 +95,44 @@ const Register: React.FC = () => {
 
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
+      // Sanitize inputs
+      const name = (data.name || '').trim();
+      const email = (data.email || '').trim();
+      const bio = (data.bio || '').trim();
+
+      // De-duplicate and prevent overlap between teach and learn
+      const teachSet = new Set<string>(selectedTeachSkills.map(s => s.trim()).filter(Boolean));
+      const learnSet = new Set<string>(selectedLearnSkills.map(s => s.trim()).filter(Boolean));
+      // Remove overlaps from learn if present in teach
+      for (const s of teachSet) {
+        if (learnSet.has(s)) learnSet.delete(s);
+      }
+
+      const teachSkills = Array.from(teachSet);
+      const learnSkills = Array.from(learnSet);
+
       await registerUser({
-        name: data.name,
-        email: data.email,
+        name,
+        email,
         password: data.password,
-        teachSkills: selectedTeachSkills,
-        learnSkills: selectedLearnSkills,
-        bio: data.bio,
+        teachSkills,
+        learnSkills,
+        bio,
       });
-      navigate('/dashboard');
+      setSuccess('Account created! Signing you in...');
+      // Small delay to let the user see success feedback
+      setTimeout(() => navigate('/dashboard'), 700);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      const msg = err?.response?.data?.message || err?.message || 'Registration failed. Please try again.';
+      // If it's an Axios network error (no response), show a more helpful message
+      if (!err?.response && typeof msg === 'string' && msg.toLowerCase().includes('network')) {
+        setError('Network error: Cannot reach API. Ensure the server is running, VITE_API_URL points to it, and CORS allows your frontend origin.');
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -184,6 +210,11 @@ const Register: React.FC = () => {
               <div className="flex items-center space-x-2 p-4 card text-white/90">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 text-white/80" />
                 <span className="text-sm">{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="flex items-center space-x-2 p-4 card text-emerald-400/90">
+                <span className="text-sm">{success}</span>
               </div>
             )}
 

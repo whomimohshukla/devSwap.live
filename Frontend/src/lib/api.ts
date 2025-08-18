@@ -1,6 +1,17 @@
 import axios from 'axios';
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Normalize base URL: if VITE_API_URL is provided without the "/api" prefix, append it.
+const RAW_BASE_URL = import.meta.env.VITE_API_URL as string | undefined;
+function ensureApiPrefix(url: string) {
+  // If it already ends with /api or /api/, use as-is
+  if (/\/api\/?$/.test(url)) return url.replace(/\/$/, '');
+  // Otherwise, append /api
+  return url.replace(/\/$/, '') + '/api';
+}
+
+export const API_BASE_URL = RAW_BASE_URL
+  ? ensureApiPrefix(RAW_BASE_URL)
+  : 'http://localhost:5000/api';
 
 // Create axios instance with default config
 export const api = axios.create({
@@ -27,7 +38,12 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Avoid redirect loops during auth flows
+      const path = window.location.pathname;
+      const isAuthFlow = path.startsWith('/login') || path.startsWith('/register');
+      if (!isAuthFlow) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
