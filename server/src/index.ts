@@ -36,13 +36,13 @@ const io = new Server(server, {
 
 // HTTP server performance tuning from env
 if (envConfig.MAX_CONNECTIONS && Number(envConfig.MAX_CONNECTIONS) > 0) {
-  server.maxConnections = Number(envConfig.MAX_CONNECTIONS);
+	server.maxConnections = Number(envConfig.MAX_CONNECTIONS);
 }
 if (envConfig.KEEP_ALIVE_TIMEOUT && Number(envConfig.KEEP_ALIVE_TIMEOUT) > 0) {
-  server.keepAliveTimeout = Number(envConfig.KEEP_ALIVE_TIMEOUT);
+	server.keepAliveTimeout = Number(envConfig.KEEP_ALIVE_TIMEOUT);
 }
 if (envConfig.HEADERS_TIMEOUT && Number(envConfig.HEADERS_TIMEOUT) > 0) {
-  server.headersTimeout = Number(envConfig.HEADERS_TIMEOUT);
+	server.headersTimeout = Number(envConfig.HEADERS_TIMEOUT);
 }
 
 // Initialize signaling controller
@@ -68,12 +68,30 @@ if (envConfig.HELMET_ENABLED) {
 }
 
 // CORS
+// Support multiple allowed origins via comma-separated env, plus FRONTEND_URL
+console.log(envConfig.FRONTEND_URL);
+const allowedOrigins = new Set(
+	[envConfig.CORS_ORIGIN, envConfig.FRONTEND_URL]
+		.filter(Boolean)
+		.flatMap((v) => v.split(",").map((s) => s.trim()))
+);
+
 app.use(
 	cors({
-		origin: envConfig.CORS_ORIGIN,
+		origin: (origin, callback) => {
+			// Allow non-browser clients (no Origin) and allowed origins
+			if (!origin || allowedOrigins.has(origin)) {
+				return callback(null, true);
+			}
+			return callback(new Error(`Not allowed by CORS: ${origin}`));
+		},
 		credentials: envConfig.CORS_CREDENTIALS,
+		methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+		allowedHeaders: ["Content-Type", "Authorization"],
+		exposedHeaders: ["Set-Cookie"],
 	})
 );
+// Note: cors() middleware handles preflight automatically. No explicit app.options needed.
 
 // Body parsing
 app.use(express.json({ limit: "10mb" }));
@@ -86,28 +104,30 @@ if (envConfig.ENABLE_REQUEST_LOGGING) {
 	app.use(morgan(envConfig.NODE_ENV === "production" ? "combined" : "dev"));
 }
 
-// Rate limiting
-const limiter = rateLimit({
-	windowMs: envConfig.RATE_LIMIT_WINDOW_MS,
-	max: envConfig.RATE_LIMIT_MAX_REQUESTS,
-	message: {
-		error: "Too many requests from this IP, please try again later.",
-		retryAfter: Math.ceil(envConfig.RATE_LIMIT_WINDOW_MS / 1000),
-	},
-	standardHeaders: true,
-	legacyHeaders: false,
-});
-app.use("/api", limiter);
+// Rate limiting (production only to ease local development)
+if (envConfig.NODE_ENV === 'production') {
+    const limiter = rateLimit({
+        windowMs: envConfig.RATE_LIMIT_WINDOW_MS,
+        max: envConfig.RATE_LIMIT_MAX_REQUESTS,
+        message: {
+            error: "Too many requests from this IP, please try again later.",
+            retryAfter: Math.ceil(envConfig.RATE_LIMIT_WINDOW_MS / 1000),
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+    app.use("/api", limiter);
 
-// Strict rate limiting for auth endpoints
-const authLimiter = rateLimit({
-	windowMs: envConfig.RATE_LIMIT_WINDOW_MS,
-	max: envConfig.STRICT_RATE_LIMIT_MAX,
-	message: {
-		error: "Too many authentication attempts, please try again later.",
-	},
-});
-app.use("/api/auth", authLimiter);
+    // Strict rate limiting for auth endpoints
+    const authLimiter = rateLimit({
+        windowMs: envConfig.RATE_LIMIT_WINDOW_MS,
+        max: envConfig.STRICT_RATE_LIMIT_MAX,
+        message: {
+            error: "Too many authentication attempts, please try again later.",
+        },
+    });
+    app.use("/api/auth", authLimiter);
+}
 
 const PORT = process.env.PORT || 5000;
 
