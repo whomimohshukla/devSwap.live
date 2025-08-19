@@ -6,6 +6,7 @@ import {
 	removeUserFromPool,
 } from "../services/matchingService";
 import User from "../models/user.model";
+import { getIO } from "../lib/socket";
 
 export async function joinMatching(req: Request, res: Response) {
 	if (!req.user?.id) {
@@ -18,6 +19,13 @@ export async function joinMatching(req: Request, res: Response) {
 	// Add to pool
 	await addUserToPool(userId, user.teachSkills || [], user.learnSkills || []);
 
+	// Notify this user that they joined the queue (Frontend listens for 'match:queue:joined')
+	try {
+		getIO().to(userId).emit("match:queue:joined", { userId, timestamp: Date.now() });
+	} catch (e) {
+		console.warn("socket emit match:queue:joined failed", e);
+	}
+
 	// Attempt to find match and create session
 	const result = await matchAndCreateSession(userId);
 	if (!result) {
@@ -28,6 +36,24 @@ export async function joinMatching(req: Request, res: Response) {
 
 	// Respond with session info and matched user safe profile
 	const matchedUser = result.matchedUser;
+
+	// Emit match:found to both participants using their personal rooms
+	try {
+		const meSafe = user.safeProfile ? user.safeProfile() : user;
+		const youSafe = matchedUser.safeProfile ? matchedUser.safeProfile() : matchedUser;
+		getIO().to(userId).emit("match:found", {
+			sessionId: result.sessionId,
+			partner: youSafe,
+			from: matchedUser._id?.toString?.() || undefined,
+		});
+		getIO().to((matchedUser._id as any).toString()).emit("match:found", {
+			sessionId: result.sessionId,
+			partner: meSafe,
+			from: userId,
+		});
+	} catch (e) {
+		console.warn("socket emit match:found failed", e);
+	}
 	return res.json({
 		sessionId: result.sessionId,
 		matchedUser: matchedUser.safeProfile
@@ -49,5 +75,12 @@ export async function leaveMatching(req: Request, res: Response) {
 		user.teachSkills || [],
 		user.learnSkills || []
 	);
+
+	// Notify this user that they left the queue
+	try {
+		getIO().to(userId).emit("match:queue:left", { userId, timestamp: Date.now() });
+	} catch (e) {
+		console.warn("socket emit match:queue:left failed", e);
+	}
 	return res.json({ message: "removed from pool" });
 }

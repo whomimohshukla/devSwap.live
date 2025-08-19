@@ -28,7 +28,8 @@ export class SignalingController {
 
 	private async authenticateSocket(socket: AuthenticatedSocket, next: any) {
 		try {
-			const token = socket.handshake.auth.token;
+			const rawToken = socket.handshake.auth.token as string | undefined;
+			const token = rawToken ? rawToken.replace(/^Bearer\s+/i, "") : "";
 			if (!token) {
 				return next(new Error("Authentication required"));
 			}
@@ -52,6 +53,8 @@ export class SignalingController {
 		
 		if (socket.userId) {
 			this.connectedUsers.set(socket.userId, socket.id);
+			// Join personal room for targeted user events
+			socket.join(socket.userId);
 			
 			// Update user online status
 			User.findByIdAndUpdate(socket.userId, {

@@ -305,11 +305,12 @@ export async function findMatches(req: AuthenticatedRequest, res: Response) {
 			});
 		}
 
-		const matches = await User.findMatchFor(req.user.id);
+		const match = await User.findMatchFor(req.user.id);
 
 		res.status(200).json({
 			success: true,
-			data: matches,
+			// Always return an array for frontend consumption
+			data: match ? [match] : [],
 		});
 	} catch (error: any) {
 		console.error("Find matches error:", error);
