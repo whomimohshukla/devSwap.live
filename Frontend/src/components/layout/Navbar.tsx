@@ -11,10 +11,12 @@ import {
   Users,
   BookOpen,
   Zap,
-  Loader2
+  Loader2,
+  Bell
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { useMatchStore } from '../../lib/matchStore';
+import { useRequestsStore } from '../../lib/requestsStore';
 
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -25,6 +27,10 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
   const searching = useMatchStore((s) => s.searching);
+  const unreadIncoming = useRequestsStore((s) => s.unreadIncomingCount);
+  const notifications = useRequestsStore((s) => s.notifications);
+  const markAllRead = useRequestsStore((s) => s.markAllRead);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   // Prevent background scroll when mobile menu is open
   useEffect(() => {
@@ -105,22 +111,28 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-6">
             {navLinks.map((link) => {
               if (link.protected && !isAuthenticated) return null;
-              
               return (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`group relative px-3 py-2 text-sm font-medium transition-colors duration-200 transform-gpu will-change-transform hover:-translate-y-0.5 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:bg-transparent ${
-                    isActivePath(link.path)
-                      ? 'text-[#00ef68]'
-                      : 'text-white/80 hover:text-white'
+                  className={`group relative px-3 py-2 text-sm font-medium transition-colors duration-200 transform-gpu will-change-transform hover:-translate-y-0.5 focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${
+                    isActivePath(link.path) ? 'text-[#00ef68]' : 'text-white/80 hover:text-white'
                   }`}
                 >
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-2">
                     {link.icon && <link.icon className="h-4 w-4" />}
-                    <span>{link.name}</span>
+                    <span className="relative inline-flex items-center">
+                      {link.name}
+                      {link.path === '/matches' && unreadIncoming > 0 && (
+                        <span className="ml-2 inline-flex items-center justify-center text-[10px] leading-none h-4 min-w-[16px] px-1 rounded-full bg-[#00ef68] text-[#0b0c0d] font-bold">
+                          {unreadIncoming > 99 ? '99+' : unreadIncoming}
+                        </span>
+                      )}
+                      {link.path === '/matches' && searching && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-emerald-700/40 text-emerald-300 text-[10px] px-2 py-0.5">Searching</span>
+                      )}
+                    </span>
                   </div>
-                  {/* Simple navbar: no active underline or hover bar */}
                 </Link>
               );
             })}
@@ -137,6 +149,40 @@ const Navbar: React.FC = () => {
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-xs font-medium">Now searching…</span>
               </Link>
+            )}
+            {isAuthenticated && (
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsNotifOpen((v) => !v);
+                    if (!isNotifOpen) markAllRead();
+                  }}
+                  className="relative p-2 rounded-lg hover:bg-white/5 focus:outline-none focus-visible:outline-none"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-5 w-5 text-white/80" />
+                  {unreadIncoming > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-[#00ef68] rounded-full ring-2 ring-[#0b0c0d]" />
+                  )}
+                </button>
+                {isNotifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-[#0b0c0d] border border-[#25282c] rounded-xl shadow-xl overflow-hidden z-50">
+                    <div className="px-4 py-2 border-b border-[#25282c] text-white/80 text-sm">Notifications</div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-4 text-white/60 text-sm">No notifications</div>
+                      ) : (
+                        notifications.map((n) => (
+                          <div key={n.id} className="px-4 py-3 border-b border-[#25282c] last:border-b-0">
+                            <div className="text-white text-sm font-medium">{n.title}</div>
+                            <div className="text-white/70 text-xs mt-0.5">{n.message}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {isAuthenticated ? (
               <div className="relative">
@@ -231,24 +277,71 @@ const Navbar: React.FC = () => {
           >
             <div className="px-4 py-4 space-y-2 max-h-[calc(100vh-64px)] overflow-y-auto">
               {navLinks.map((link) => {
-                if (link.protected && !isAuthenticated) return null;
-                
-                return (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 transform-gpu will-change-transform hover:translate-x-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${
-                      isActivePath(link.path)
-                        ? 'text-[#00ef68]'
-                        : 'text-white/80 hover:text-white'
-                    }`}
-                  >
-                    {link.icon && <link.icon className="h-4 w-4" />}
-                    <span>{link.name}</span>
-                  </Link>
-                );
-              })}
+              if (link.protected && !isAuthenticated) return null;
+              
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 transform-gpu will-change-transform hover:translate-y-[-1px] focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${
+                    isActivePath(link.path)
+                      ? 'text-[#00ef68]'
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  {link.icon && <link.icon className="h-4 w-4" />}
+                  <span className="relative inline-flex items-center">
+                    {link.name}
+                    {link.path === '/matches' && unreadIncoming > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center text-[10px] leading-none h-4 min-w-[16px] px-1 rounded-full bg-[#00ef68] text-[#0b0c0d] font-bold">
+                        {unreadIncoming > 99 ? '99+' : unreadIncoming}
+                      </span>
+                    )}
+                    {link.path === '/matches' && searching && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-emerald-700/40 text-emerald-300 text-[10px] px-2 py-0.5">Searching</span>
+                    )}
+                  </span>
+                </Link>
+              );
+            })}
+            
+            {/* Notification Bell */}
+            {isAuthenticated && (
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsNotifOpen((v) => !v);
+                    if (!isNotifOpen) markAllRead();
+                  }}
+                  className="relative p-2 rounded-lg hover:bg-white/5 focus:outline-none focus-visible:outline-none"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-5 w-5 text-white/80" />
+                  {unreadIncoming > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-[#00ef68] rounded-full ring-2 ring-[#0b0c0d]" />
+                  )}
+                </button>
+                {isNotifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-[#0b0c0d] border border-[#25282c] rounded-xl shadow-xl overflow-hidden z-50">
+                    <div className="px-4 py-2 border-b border-[#25282c] text-white/80 text-sm">Notifications</div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-4 text-white/60 text-sm">No notifications</div>
+                      ) : (
+                        notifications.map((n) => (
+                          <div key={n.id} className="px-4 py-3 border-b border-[#25282c] last:border-b-0">
+                            <div className="text-white text-sm font-medium">{n.title}</div>
+                            <div className="text-white/70 text-xs mt-0.5">{n.message}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
               
               <hr className="my-4 border-[#25282c]" />
               
@@ -291,7 +384,6 @@ const Navbar: React.FC = () => {
                   </Link>
                 </div>
               )}
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
