@@ -34,6 +34,7 @@ interface EnvConfig {
   RATE_LIMIT_WINDOW_MS: number;
   RATE_LIMIT_MAX_REQUESTS: number;
   STRICT_RATE_LIMIT_MAX: number;
+  STRICT_RATE_LIMIT_WINDOW_MS: number;
 
   // CORS
   CORS_ORIGIN: string;
@@ -143,8 +144,9 @@ export const envConfig: EnvConfig = {
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: parseNumber(process.env.RATE_LIMIT_WINDOW_MS, 900000),
-  RATE_LIMIT_MAX_REQUESTS: parseNumber(process.env.RATE_LIMIT_MAX_REQUESTS, 100),
-  STRICT_RATE_LIMIT_MAX: parseNumber(process.env.STRICT_RATE_LIMIT_MAX, 10),
+  RATE_LIMIT_MAX_REQUESTS: parseNumber(process.env.RATE_LIMIT_MAX_REQUESTS, 1000),
+  STRICT_RATE_LIMIT_MAX: parseNumber(process.env.STRICT_RATE_LIMIT_MAX, 50),
+  STRICT_RATE_LIMIT_WINDOW_MS: parseNumber(process.env.STRICT_RATE_LIMIT_WINDOW_MS, 5 * 60 * 1000),
 
   // CORS
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
