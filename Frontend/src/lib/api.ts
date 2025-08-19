@@ -152,6 +152,15 @@ export const aiAPI = {
   getCachedPlans: () => api.get('/ai/cached-plans'),
 };
 
+// Requests API
+export const requestsAPI = {
+  getIncoming: () => api.get('/requests/incoming'),
+  getSent: () => api.get('/requests/sent'),
+  create: (data: { toUserId: string; message?: string }) => api.post('/requests', data),
+  accept: (id: string) => api.post(`/requests/${id}/accept`),
+  decline: (id: string) => api.post(`/requests/${id}/decline`),
+};
+
 export default api;
 
 // Helper to start OAuth flow
