@@ -20,19 +20,34 @@ import matchRoutes from "./routes/match.routes";
 import sessionRoutes from "./routes/session.routes";
 import aiRoutes from "./routes/ai.routes";
 import healthRoutes from "./routes/health.routes";
+import requestsRoutes from "./routes/requests.routes";
 
 // Controllers
 import { SignalingController } from "./controllers/signaling.controller";
+// Socket accessor
+import { setIO } from "./lib/socket";
 
 const app = express();
 const server = createServer(app);
+// Build allowed origins list for Socket.io similar to HTTP CORS
+const ioAllowedOrigins = Array.from(
+    new Set(
+        [envConfig.CORS_ORIGIN, envConfig.FRONTEND_URL]
+            .filter(Boolean)
+            .flatMap((v) => v.split(",").map((s) => s.trim()).filter(Boolean))
+    )
+);
+
 const io = new Server(server, {
-	cors: {
-		origin: envConfig.CORS_ORIGIN,
-		methods: ["GET", "POST"],
-		credentials: envConfig.CORS_CREDENTIALS,
-	},
+    cors: {
+        origin: ioAllowedOrigins,
+        methods: ["GET", "POST"],
+        credentials: envConfig.CORS_CREDENTIALS,
+    },
 });
+
+// Make io globally accessible to controllers/services
+setIO(io);
 
 // HTTP server performance tuning from env
 if (envConfig.MAX_CONNECTIONS && Number(envConfig.MAX_CONNECTIONS) > 0) {
@@ -105,28 +120,28 @@ if (envConfig.ENABLE_REQUEST_LOGGING) {
 }
 
 // Rate limiting (production only to ease local development)
-if (envConfig.NODE_ENV === 'production') {
-    const limiter = rateLimit({
-        windowMs: envConfig.RATE_LIMIT_WINDOW_MS,
-        max: envConfig.RATE_LIMIT_MAX_REQUESTS,
-        message: {
-            error: "Too many requests from this IP, please try again later.",
-            retryAfter: Math.ceil(envConfig.RATE_LIMIT_WINDOW_MS / 1000),
-        },
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
-    app.use("/api", limiter);
+if (envConfig.NODE_ENV === "production") {
+	const limiter = rateLimit({
+		windowMs: envConfig.RATE_LIMIT_WINDOW_MS,
+		max: envConfig.RATE_LIMIT_MAX_REQUESTS,
+		message: {
+			error: "Too many requests from this IP, please try again later.",
+			retryAfter: Math.ceil(envConfig.RATE_LIMIT_WINDOW_MS / 1000),
+		},
+		standardHeaders: true,
+		legacyHeaders: false,
+	});
+	app.use("/api", limiter);
 
-    // Strict rate limiting for auth endpoints
-    const authLimiter = rateLimit({
-        windowMs: envConfig.RATE_LIMIT_WINDOW_MS,
-        max: envConfig.STRICT_RATE_LIMIT_MAX,
-        message: {
-            error: "Too many authentication attempts, please try again later.",
-        },
-    });
-    app.use("/api/auth", authLimiter);
+	// Strict rate limiting for auth endpoints
+	const authLimiter = rateLimit({
+		windowMs: envConfig.STRICT_RATE_LIMIT_WINDOW_MS,
+		max: envConfig.STRICT_RATE_LIMIT_MAX,
+		message: {
+			error: "Too many authentication attempts, please try again later.",
+		},
+	});
+	app.use("/api/auth", authLimiter);
 }
 
 const PORT = process.env.PORT || 5000;
@@ -144,6 +159,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/match", matchRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/requests", requestsRoutes);
 if (envConfig.ENABLE_AI_FEATURES) {
 	app.use("/api/ai", aiRoutes);
 }
