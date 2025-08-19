@@ -7,31 +7,38 @@ import {
   Star, 
   Clock,
   MapPin,
-  CheckCircle,
   X,
   Heart,
   Loader2
 } from 'lucide-react';
-import { usersAPI, matchAPI } from '../lib/api';
-import { useLocation } from 'react-router-dom';
+import { usersAPI, matchAPI, sessionsAPI, requestsAPI } from '../lib/api';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getSocket } from '../lib/socket';
 import { useMatchStore } from '../lib/matchStore';
+import { useRequestsStore } from '../lib/requestsStore';
 
 const Matches: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'matches' | 'requests' | 'sent'>('matches');
+  const [activeTab, setActiveTab] = useState<'matches' | 'requests' | 'sent' | 'upcoming'>('matches');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [matches, setMatches] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [sentRequests, setSentRequests] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
   const searching = useMatchStore((s) => s.searching);
   const setSearching = useMatchStore((s) => s.setSearching);
   const matchedPartner = useMatchStore((s) => s.matchedPartner);
   const setMatchedPartner = useMatchStore((s) => s.setMatchedPartner);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
-  const requests: any[] = [];
-  const sentRequests: any[] = [];
   // no auth store usage needed here currently
+  const addIncoming = useRequestsStore((s) => s.addIncoming);
+  const addSentNotif = useRequestsStore((s) => s.addSent);
+  const markAcceptedNotif = useRequestsStore((s) => s.markAccepted);
+  const markDeclinedNotif = useRequestsStore((s) => s.markDeclined);
+  const markAllRead = useRequestsStore((s) => s.markAllRead);
 
   const fetchMatches = async () => {
     setLoading(true);
@@ -47,6 +54,31 @@ const Matches: React.FC = () => {
     }
   };
 
+  const fetchRequests = async () => {
+    try {
+      const [incRes, sentRes] = await Promise.all([
+        requestsAPI.getIncoming(),
+        requestsAPI.getSent(),
+      ]);
+      const inc = incRes.data?.data ?? [];
+      const sent = sentRes.data?.data ?? [];
+      setRequests(Array.isArray(inc) ? inc : []);
+      setSentRequests(Array.isArray(sent) ? sent : []);
+    } catch (_e) {
+      // non-blocking; keep UI functional even if requests fail
+    }
+  };
+
+  const fetchSessions = async () => {
+    try {
+      const res = await sessionsAPI.getSessions();
+      const list = res.data?.data ?? res.data ?? [];
+      setSessions(Array.isArray(list) ? list : (list.sessions ?? []));
+    } catch (_e) {
+      // ignore; Sessions page handles deeper errors
+    }
+  };
+
   // Cleanup socket ref on unmount
   useEffect(() => {
     return () => {
@@ -54,16 +86,37 @@ const Matches: React.FC = () => {
     };
   }, []);
 
-  // Requests are not yet backed by API in this UI; keep stubs to satisfy buttons if any remain
-  const handleAcceptRequest = (_id: string | number) => {
-    console.log('Accept request', _id);
+  // Requests actions backed by API
+  const handleAcceptRequest = async (id: string | number) => {
+    try {
+      await requestsAPI.accept(String(id));
+      setRequests((prev) => prev.filter((r: any) => (r._id ?? r.id) !== id));
+      setToast({ type: 'success', msg: 'Request accepted' });
+      markAcceptedNotif({ requestId: String(id) });
+      // Auto-open Sessions page
+      navigate('/sessions');
+    } catch (e: any) {
+      setToast({ type: 'error', msg: e?.response?.data?.message || e?.message || 'Failed to accept request' });
+    } finally {
+      setTimeout(() => setToast(null), 2000);
+    }
   };
-  const handleDeclineRequest = (_id: string | number) => {
-    console.log('Decline request', _id);
+  const handleDeclineRequest = async (id: string | number) => {
+    try {
+      await requestsAPI.decline(String(id));
+      setRequests((prev) => prev.filter((r: any) => (r._id ?? r.id) !== id));
+      setToast({ type: 'success', msg: 'Request declined' });
+    } catch (e: any) {
+      setToast({ type: 'error', msg: e?.response?.data?.message || e?.message || 'Failed to decline request' });
+    } finally {
+      setTimeout(() => setToast(null), 2000);
+    }
   };
 
   useEffect(() => {
     fetchMatches();
+    fetchSessions();
+    fetchRequests();
   }, []);
 
   // Auto-start matching when coming from dashboard with ?search=1
@@ -77,8 +130,24 @@ const Matches: React.FC = () => {
   }, [location.search]);
 
   const handleConnect = async (_matchId: string) => {
-    // Placeholder: integrate chat/session start later
-    console.log('Connecting with match:', _matchId);
+    try {
+      // Send a partner request to this user
+      const toUserId = String(_matchId);
+      const res = await requestsAPI.create({ toUserId });
+      // Optimistically update sent requests list
+      const created = res.data?.data || res.data;
+      if (created) {
+        setSentRequests((prev) => [created, ...prev]);
+      } else {
+        // Fallback: re-fetch requests if shape is unexpected
+        fetchRequests();
+      }
+      setToast({ type: 'success', msg: 'Request sent!' });
+    } catch (e: any) {
+      setToast({ type: 'error', msg: e?.response?.data?.message || e?.message || 'Failed to send request' });
+    } finally {
+      setTimeout(() => setToast(null), 2000);
+    }
   };
 
   // Setup socket listeners (once)
@@ -86,6 +155,8 @@ const Matches: React.FC = () => {
     const socket = getSocket();
     socketRef.current = socket;
     const onMatchFound = (payload: any) => {
+      // eslint-disable-next-line no-console
+      console.log('[matches] event match:found', payload);
       setSearching(false);
       setMatchedPartner({
         id: payload?.partner?.id || payload?.partnerId,
@@ -100,31 +171,108 @@ const Matches: React.FC = () => {
     };
     const onQueueJoined = () => {
       // server acknowledged we are in queue
+      // eslint-disable-next-line no-console
+      console.log('[matches] event match:queue:joined');
     };
     const onQueueLeft = () => {
+      // eslint-disable-next-line no-console
+      console.log('[matches] event match:queue:left');
       setSearching(false);
     };
+
+    // Requests realtime events
+    const onRequestCreated = (payload: any) => {
+      // Incoming request for me
+      // eslint-disable-next-line no-console
+      console.log('[matches] event request:created', payload);
+      const req = payload?.request;
+      if (!req) return;
+      setRequests((prev) => [req, ...prev.filter((r: any) => (r._id ?? r.id) !== (req._id ?? req.id))]);
+      setToast({ type: 'success', msg: `New request from ${req?.fromUser?.name || 'a developer'}` });
+      setTimeout(() => setToast(null), 2500);
+      addIncoming({ requestId: String(req._id ?? req.id), fromName: req?.fromUser?.name });
+    };
+    const onRequestSent = (payload: any) => {
+      // I sent a request
+      // eslint-disable-next-line no-console
+      console.log('[matches] event request:sent', payload);
+      const req = payload?.request;
+      if (!req) return;
+      setSentRequests((prev) => [req, ...prev.filter((r: any) => (r._id ?? r.id) !== (req._id ?? req.id))]);
+      addSentNotif({ requestId: String(req._id ?? req.id), toName: req?.toUser?.name });
+    };
+    const onRequestAccepted = (payload: any) => {
+      // eslint-disable-next-line no-console
+      console.log('[matches] event request:accepted', payload);
+      const req = payload?.request;
+      if (!req) return;
+      const targetId = req._id ?? req.id;
+      setRequests((prev) => prev.filter((r: any) => (r._id ?? r.id) !== targetId));
+      setSentRequests((prev) => prev.map((r: any) => ((r._id ?? r.id) === targetId ? { ...r, status: 'accepted' } : r)));
+      setToast({ type: 'success', msg: 'Request accepted' });
+      setTimeout(() => setToast(null), 2000);
+      markAcceptedNotif({ requestId: String(targetId) });
+      navigate('/sessions');
+    };
+    const onRequestDeclined = (payload: any) => {
+      // eslint-disable-next-line no-console
+      console.log('[matches] event request:declined', payload);
+      const req = payload?.request;
+      if (!req) return;
+      const targetId = req._id ?? req.id;
+      setRequests((prev) => prev.filter((r: any) => (r._id ?? r.id) !== targetId));
+      setSentRequests((prev) => prev.map((r: any) => ((r._id ?? r.id) === targetId ? { ...r, status: 'declined' } : r)));
+      setToast({ type: 'success', msg: 'Request declined' });
+      setTimeout(() => setToast(null), 2000);
+      markDeclinedNotif({ requestId: String(targetId) });
+    };
+
     socket.on('match:found', onMatchFound);
     socket.on('match:queue:joined', onQueueJoined);
     socket.on('match:queue:left', onQueueLeft);
+    socket.on('request:created', onRequestCreated);
+    socket.on('request:sent', onRequestSent);
+    socket.on('request:accepted', onRequestAccepted);
+    socket.on('request:declined', onRequestDeclined);
     return () => {
       socket.off('match:found', onMatchFound);
       socket.off('match:queue:joined', onQueueJoined);
       socket.off('match:queue:left', onQueueLeft);
+      socket.off('request:created', onRequestCreated);
+      socket.off('request:sent', onRequestSent);
+      socket.off('request:accepted', onRequestAccepted);
+      socket.off('request:declined', onRequestDeclined);
     };
   }, [setMatchedPartner, setSearching]);
+
+  // Mark requests as read when Requests tab is active
+  useEffect(() => {
+    if (activeTab === 'requests') {
+      markAllRead();
+    }
+  }, [activeTab, markAllRead]);
 
   const handleJoinQueue = async (fromAuto?: boolean) => {
     try {
       setError(null);
       setSearching(true);
+      // eslint-disable-next-line no-console
+      console.log('[matches] POST /match/join start');
       await matchAPI.findMatch();
+      // eslint-disable-next-line no-console
+      console.log('[matches] POST /match/join success');
       if (!fromAuto) {
         setToast({ type: 'success', msg: 'Searching for a matching partner…' });
         setTimeout(() => setToast(null), 2500);
       }
     } catch (e: any) {
       setSearching(false);
+      // eslint-disable-next-line no-console
+      console.error('[matches] POST /match/join error', {
+        status: e?.response?.status,
+        data: e?.response?.data,
+        message: e?.message,
+      });
       setToast({ type: 'error', msg: e?.response?.data?.message || e?.message || 'Failed to join matching queue' });
       setTimeout(() => setToast(null), 3500);
     }
@@ -132,7 +280,11 @@ const Matches: React.FC = () => {
 
   const handleLeaveQueue = async () => {
     try {
+      // eslint-disable-next-line no-console
+      console.log('[matches] POST /match/leave start');
       await matchAPI.rejectMatch('');
+      // eslint-disable-next-line no-console
+      console.log('[matches] POST /match/leave success');
     } finally {
       setSearching(false);
       setToast({ type: 'success', msg: 'Stopped searching.' });
@@ -161,6 +313,28 @@ const Matches: React.FC = () => {
       lastSeen: m.lastSeen ?? m.status?.lastSeen ?? '—',
     }));
   }, [matches]);
+
+  // Normalize requests to backend shape
+  const incomingRequests = useMemo(() => {
+    return (requests || []).map((r: any) => ({
+      id: r._id ?? r.id,
+      name: r.fromUser?.name || r.from?.name || 'Developer',
+      fromUserId: r.fromUser?._id || r.from?.id,
+      createdAt: r.createdAt,
+      message: r.message,
+    }));
+  }, [requests]);
+
+  const outgoingRequests = useMemo(() => {
+    return (sentRequests || []).map((r: any) => ({
+      id: r._id ?? r.id,
+      name: r.toUser?.name || r.to?.name || 'Developer',
+      toUserId: r.toUser?._id || r.to?.id,
+      createdAt: r.createdAt,
+      message: r.message,
+      status: r.status,
+    }));
+  }, [sentRequests]);
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-8">
@@ -269,6 +443,7 @@ const Matches: React.FC = () => {
               { key: 'matches', label: 'Matches', count: normalizedMatches.length },
               { key: 'requests', label: 'Requests', count: requests.length },
               { key: 'sent', label: 'Sent', count: sentRequests.length },
+              { key: 'upcoming', label: 'Upcoming', count: sessions.length },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -420,123 +595,208 @@ const Matches: React.FC = () => {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => handleConnect(String(match.id))}
-                      className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>Connect</span>
-                    </button>
-                    <button className="px-4 py-2 border border-gray-600 hover:border-emerald-500 text-gray-300 hover:text-white rounded-lg transition-colors">
-                      <Video className="w-4 h-4" />
-                    </button>
-                    <button className="px-4 py-2 border border-gray-600 hover:border-red-500 text-gray-300 hover:text-red-400 rounded-lg transition-colors">
-                      <Heart className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {(() => {
+                    const hasPending = outgoingRequests.some((r) => r.toUserId === match.id && (r.status === 'pending' || !r.status));
+                    return (
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={() => handleConnect(String(match.id))}
+                          disabled={hasPending}
+                          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors ${hasPending ? 'bg-gray-700 text-gray-300 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          <span>{hasPending ? 'Requested' : 'Connect'}</span>
+                        </button>
+                        <button className="px-4 py-2 border border-gray-600 hover:border-emerald-500 text-gray-300 hover:text-white rounded-lg transition-colors">
+                          <Video className="w-4 h-4" />
+                        </button>
+                        <button className="px-4 py-2 border border-gray-600 hover:border-red-500 text-gray-300 hover:text-red-400 rounded-lg transition-colors">
+                          <Heart className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </motion.div>
               ))}
             </motion.div>
           )}
 
           {activeTab === 'requests' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-4"
-            >
-              {requests.map((request, index) => (
-                <motion.div
-                  key={request.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4 flex-1">
-                      <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                        {request.avatar}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-white font-semibold">{request.name}</h3>
-                          <span className="text-gray-400 text-sm">wants to learn</span>
-                          <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-sm">
-                            {request.skill}
-                          </span>
-                        </div>
-                        <p className="text-gray-300 mb-3">{request.message}</p>
-                        <div className="flex items-center space-x-2 text-gray-400 text-sm">
-                          <Clock className="w-4 h-4" />
-                          <span>{request.time}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2 ml-4">
-                      <button
-                        onClick={() => handleAcceptRequest(request.id)}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeclineRequest(request.id)}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+              {incomingRequests.length === 0 ? (
+                <div className="bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4">
+                    <Users className="w-8 h-8 text-emerald-400" />
                   </div>
-                </motion.div>
-              ))}
+                  <h3 className="text-xl font-semibold text-white mb-2">No incoming requests</h3>
+                  <p className="text-gray-400">You’ll see partner requests here.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {incomingRequests.map((r) => (
+                    <div key={r.id} className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-white font-medium">
+                            {r.name?.[0]?.toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <div className="text-white font-medium">{r.name || 'Developer'}</div>
+                            <div className="text-gray-400 text-sm">sent a request</div>
+                          </div>
+                        </div>
+                        <div className="text-gray-400 text-xs">{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</div>
+                      </div>
+                      {r.message && <p className="text-gray-300 text-sm mb-3">{r.message}</p>}
+                      <div className="flex gap-3 justify-end">
+                        <button onClick={() => handleDeclineRequest(r.id)} className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200">Decline</button>
+                        <button onClick={() => handleAcceptRequest(r.id)} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white">Accept</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
           {activeTab === 'sent' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-4"
-            >
-              {sentRequests.map((request, index) => (
-                <motion.div
-                  key={request.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4 flex-1">
-                      <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                        {request.avatar}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-white font-semibold">{request.name}</h3>
-                          <span className="text-gray-400 text-sm">•</span>
-                          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-sm">
-                            {request.skill}
-                          </span>
-                        </div>
-                        <p className="text-gray-300 mb-3">{request.message}</p>
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-2 text-gray-400 text-sm">
-                            <Clock className="w-4 h-4" />
-                            <span>{request.time}</span>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+              {outgoingRequests.length === 0 ? (
+                <div className="bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4">
+                    <Users className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">No sent requests</h3>
+                  <p className="text-gray-400">Your outgoing requests will appear here.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {outgoingRequests.map((r) => (
+                    <div key={r.id} className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-white font-medium">
+                            {r.name?.[0]?.toUpperCase() || 'U'}
                           </div>
-                          <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-sm">
-                            {request.status}
-                          </span>
+                          <div>
+                            <div className="text-white font-medium">{r.name || 'Developer'}</div>
+                            <div className="text-gray-400 text-sm">request pending</div>
+                          </div>
+                        </div>
+                        <div className="text-gray-400 text-xs">{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</div>
+                      </div>
+                      {r.message && <p className="text-gray-300 text-sm mb-1">{r.message}</p>}
+                      {r.status && (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs">
+                          {r.status}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+          {activeTab === 'requests' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+              {requests.length === 0 ? (
+                <div className="bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4">
+                    <Users className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">No incoming requests</h3>
+                  <p className="text-gray-400">You’ll see partner requests here.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {requests.map((r) => (
+                    <div key={r.id} className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-white font-medium">
+                            {r.name?.[0]?.toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <div className="text-white font-medium">{r.name || 'Developer'}</div>
+                            <div className="text-gray-400 text-sm">wants to connect</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 justify-end">
+                        <button onClick={() => handleDeclineRequest(r.id)} className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200">Decline</button>
+                        <button onClick={() => handleAcceptRequest(r.id)} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white">Accept</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+          {activeTab === 'sent' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+              {sentRequests.length === 0 ? (
+                <div className="bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4">
+                    <Users className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">No sent requests</h3>
+                  <p className="text-gray-400">Your outgoing requests will appear here.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {sentRequests.map((r) => (
+                    <div key={r.id} className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-white font-medium">
+                            {r.name?.[0]?.toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <div className="text-white font-medium">{r.name || 'Developer'}</div>
+                            <div className="text-gray-400 text-sm">request pending</div>
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+          {activeTab === 'upcoming' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {(loading && sessions.length === 0) && (
+                <>
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="bg-gray-900 rounded-xl p-6 border border-gray-800 animate-pulse">
+                      <div className="h-4 w-40 bg-gray-800 rounded mb-2" />
+                      <div className="h-3 w-28 bg-gray-800 rounded mb-4" />
+                      <div className="h-3 w-full bg-gray-800 rounded mb-2" />
+                      <div className="h-3 w-3/4 bg-gray-800 rounded" />
+                    </div>
+                  ))}
+                </>
+              )}
+              {!loading && sessions.length === 0 && (
+                <div className="bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center lg:col-span-2">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4">
+                    <Clock className="w-8 h-8 text-emerald-400" />
                   </div>
-                </motion.div>
+                  <h3 className="text-xl font-semibold text-white mb-2">No upcoming sessions</h3>
+                  <p className="text-gray-400">Join the matching queue to schedule a new session.</p>
+                </div>
+              )}
+              {sessions.map((s) => (
+                <div key={s.id || s._id} className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="text-white font-semibold">{s.topic || 'Skill Swap Session'}</div>
+                      <div className="text-gray-400 text-sm">with {s.partner?.name || s.user?.name || 'Partner'}</div>
+                    </div>
+                    <span className="text-emerald-400 text-sm">{new Date(s.scheduledAt || s.createdAt || Date.now()).toLocaleString()}</span>
+                  </div>
+                  {s.notes && <p className="text-gray-300 text-sm">{s.notes}</p>}
+                </div>
               ))}
             </motion.div>
           )}
@@ -544,8 +804,8 @@ const Matches: React.FC = () => {
 
         {/* Empty State */}
         {((activeTab === 'matches' && normalizedMatches.length === 0) ||
-          (activeTab === 'requests' && requests.length === 0) ||
-          (activeTab === 'sent' && sentRequests.length === 0)) && (
+          (activeTab === 'requests' && incomingRequests.length === 0) ||
+          (activeTab === 'sent' && outgoingRequests.length === 0)) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
