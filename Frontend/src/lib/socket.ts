@@ -9,12 +9,22 @@ function getBaseUrl() {
 }
 
 export function getSocket(): Socket {
-  if (socket && socket.connected) return socket;
+  // Reuse existing instance even if not yet connected to avoid duplicates
+  if (socket) return socket;
   const token = localStorage.getItem('authToken');
   socket = io(getBaseUrl(), {
     transports: ['websocket'],
     withCredentials: true,
     auth: token ? { token: `Bearer ${token}` } : undefined,
+  });
+  // Debug listeners to surface CORS/auth issues
+  socket.on('connect', () => {
+    // eslint-disable-next-line no-console
+    console.log('[socket] connected', { id: socket?.id, url: getBaseUrl() });
+  });
+  socket.on('connect_error', (err) => {
+    // eslint-disable-next-line no-console
+    console.error('[socket] connect_error', err?.message || err);
   });
   return socket;
 }
