@@ -19,13 +19,14 @@ const Skills: React.FC = () => {
   ];
 
   const skillCategories = {
-    Frontend: ['JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular'],
+    Frontend: ['JavaScript', 'TypeScript', 'HTML-5', 'CSS ' ,'React', 'Vue.js', 'Angular',"Next.js , TailwindCSS"],
     Backend: ['Node.js', 'Express.js', 'Django', 'Flask', 'Spring Boot'],
     Mobile: ['iOS Development', 'Android Development', 'Flutter', 'React Native'],
     DevOps: ['Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'DevOps'],
     'Data Science': ['Python', 'Machine Learning', 'Data Science'],
     Design: ['UI/UX Design'],
     Languages: ['JavaScript', 'TypeScript', 'Python', 'Java', 'C++'],
+
   };
 
   const getSkillsForCategory = (category: string) => {
