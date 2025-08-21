@@ -336,7 +336,7 @@ const Home: React.FC = () => {
 								<div className='flex items-center mb-3'>
 									<MessageSquare className='w-5 h-5 text-[#00ef68] mr-2' />
 									<h3 className='text-white font-semibold'>
-										Auto Session Summaries
+										Auto Session Summaries (Coming Soon)
 									</h3>
 								</div>
 								<p className='text-white/80 text-sm leading-relaxed'>
