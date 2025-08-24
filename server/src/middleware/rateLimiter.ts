@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 import { Request, Response } from "express";
 import envConfig from "../config/env.config";
 
-// General limiter — for normal routes
+
 export const generalLimiter = rateLimit({
     windowMs: envConfig.RATE_LIMIT_WINDOW_MS,
     max: envConfig.RATE_LIMIT_MAX_REQUESTS,
@@ -16,7 +16,7 @@ export const generalLimiter = rateLimit({
     },
 });
 
-// Strict limiter — for sensitive actions like login or match
+
 export const strictLimiter = rateLimit({
     windowMs: envConfig.STRICT_RATE_LIMIT_WINDOW_MS,
     max: envConfig.STRICT_RATE_LIMIT_MAX,

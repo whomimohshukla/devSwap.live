@@ -1,4 +1,4 @@
-// src/lib/redisClient.ts
+
 import Redis from "ioredis";
 
 const DISABLE_REDIS = String(process.env.DISABLE_REDIS || "").toLowerCase() === "true";
