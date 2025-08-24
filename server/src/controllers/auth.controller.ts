@@ -2,9 +2,10 @@
 import { Request, Response } from "express";
 import jwt, { SignOptions } from "jsonwebtoken";
 import User from "../models/user.model";
+import { envConfig } from "../config/env.config";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const JWT_SECRET = envConfig.JWT_SECRET;
+const JWT_EXPIRES_IN = envConfig.JWT_EXPIRES_IN || "7d";
 
 // Extend Request interface to include user property
 interface AuthenticatedRequest extends Request {
