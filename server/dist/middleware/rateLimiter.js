@@ -6,10 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.strictLimiter = exports.generalLimiter = void 0;
 // src/middleware/rateLimiter.ts
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
-// General limiter — for normal routes
+const env_config_1 = __importDefault(require("../config/env.config"));
 exports.generalLimiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests per IP
+    windowMs: env_config_1.default.RATE_LIMIT_WINDOW_MS,
+    max: env_config_1.default.RATE_LIMIT_MAX_REQUESTS,
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req, res) => {
@@ -18,10 +18,9 @@ exports.generalLimiter = (0, express_rate_limit_1.default)({
         });
     },
 });
-// Strict limiter — for sensitive actions like login or match
 exports.strictLimiter = (0, express_rate_limit_1.default)({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 5, // Only 5 attempts per IP
+    windowMs: env_config_1.default.STRICT_RATE_LIMIT_WINDOW_MS,
+    max: env_config_1.default.STRICT_RATE_LIMIT_MAX,
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req, res) => {

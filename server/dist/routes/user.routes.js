@@ -7,7 +7,6 @@ const user_controller_1 = require("../controllers/user.controller");
 const router = (0, express_1.Router)();
 // Profile & account
 router.get("/me", auth_1.requireAuth, user_controller_1.getCurrentUser);
-router.get("/:id", auth_1.requireAuth, user_controller_1.getUserById);
 router.put("/me", auth_1.requireAuth, user_controller_1.updateProfile);
 router.put("/me/password", auth_1.requireAuth, user_controller_1.updatePassword);
 router.delete("/me", auth_1.requireAuth, user_controller_1.deleteAccount);
@@ -24,4 +23,6 @@ router.put("/status/online", auth_1.requireAuth, user_controller_1.updateOnlineS
 router.put("/status/last-seen", auth_1.requireAuth, user_controller_1.updateLastSeen);
 router.get("/stats/overview", rateLimiter_1.strictLimiter, user_controller_1.getUserStats);
 router.get("/activity", auth_1.requireAuth, user_controller_1.getUserActivity);
+// This MUST be last to avoid shadowing static routes like /search
+router.get("/:id", auth_1.requireAuth, user_controller_1.getUserById);
 exports.default = router;

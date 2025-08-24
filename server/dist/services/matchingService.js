@@ -44,7 +44,7 @@ async function removeUserFromPool(userId, teach, learn) {
 }
 /**
  * findCandidateIds — do set intersections to find matching candidates
- * Strategy: try every pair of (myLearn, myTeach) and SINTER the two sets:
+ * Strategy: try every pair of (myLearn, mysTeach) and SINTER the two set:
  * SINTER teach:myLearnSkill  learn:myTeachSkill  -> candidates
  */
 async function findCandidateIds(myId, myTeach, myLearn) {
@@ -106,9 +106,14 @@ async function matchAndCreateSession(myId) {
     // try candidates one by one
     for (const candidateId of candidates) {
         // attempt atomic claim
-        const success = await claimPairAtomically(myId, candidateId, `${TEACH_PREFIX}${matchedPair.teachSkill}`, // candidate must teach myLearn
-        `${LEARN_PREFIX}${matchedPair.teachSkill}`, // candidate must learn myTeach (careful ordering)
-        `${TEACH_PREFIX}${matchedPair.learnSkill}`, `${LEARN_PREFIX}${matchedPair.learnSkill}`);
+        // Correct key mapping:
+        // Candidate must be in:
+        //   teach:learnSkill (they teach what I want to learn)
+        //   learn:teachSkill (they learn what I can teach)
+        // I (self) must be in:
+        //   teach:teachSkill (I teach what they want to learn)
+        //   learn:learnSkill (I learn what they teach)
+        const success = await claimPairAtomically(myId, candidateId, `${TEACH_PREFIX}${matchedPair.learnSkill}`, `${LEARN_PREFIX}${matchedPair.teachSkill}`, `${TEACH_PREFIX}${matchedPair.teachSkill}`, `${LEARN_PREFIX}${matchedPair.learnSkill}`);
         if (!success)
             continue; // someone else claimed them, try next
         // load matched user

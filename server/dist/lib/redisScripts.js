@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CLAIM_PAIR_LUA = void 0;
 exports.loadClaimScript = loadClaimScript;
-// src/lib/redisScripts.ts
 const redisClient_1 = __importDefault(require("./redisClient"));
 exports.CLAIM_PAIR_LUA = `
 -- ARGV: myId, candidateId, myTeachSkillKey..., myLearnSkillKey..., candidateTeachSkillKey..., candidateLearnSkillKey...

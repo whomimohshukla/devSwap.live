@@ -3,9 +3,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.register = register;
-exports.login = login;
-exports.logout = logout;
 exports.getCurrentUser = getCurrentUser;
 exports.getUserById = getUserById;
 exports.updateProfile = updateProfile;
@@ -22,137 +19,23 @@ exports.updateLastSeen = updateLastSeen;
 exports.getUserStats = getUserStats;
 exports.getUserActivity = getUserActivity;
 const user_model_1 = require("../models/user.model");
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+// import jwt from "jsonwebtoken"; // removed: auth handlers moved to auth.controller
 const mongoose_1 = __importDefault(require("mongoose"));
-// ======================= AUTHENTICATION CONTROLLERS =======================
-async function register(req, res) {
-    try {
-        const { name, email, password, bio, teachSkills, learnSkills, location, skillLevels, } = req.body;
-        if (!name || !email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields",
-            });
-        }
-        const normalizedEmail = email.trim().toLowerCase();
-        // Check if user already exists
-        const existingUser = await user_model_1.User.findOne({ email: normalizedEmail });
-        if (existingUser) {
-            return res.status(409).json({
-                success: false,
-                message: "Email already in use",
-            });
-        }
-        // Create new user
-        const userData = {
-            name: name.trim(),
-            email: normalizedEmail,
-            password,
-            bio,
-            teachSkills,
-            learnSkills,
-            location,
-            skillLevels,
-            isOnline: true,
-            lastSeen: new Date(),
-        };
-        const user = new user_model_1.User(userData);
-        await user.save();
-        res.status(201).json({
-            success: true,
-            message: "User created successfully",
-            data: user.safeProfile(),
-        });
-    }
-    catch (error) {
-        console.error("Register error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Error creating user",
-            error: error.message,
-        });
-    }
+const skill_data_1 = require("../models/skill.data");
+// Helper: normalize a free-form level string to a valid SkillLevel enum
+function normalizeLevel(level) {
+    if (!level)
+        return null;
+    const trimmed = String(level).trim().toLowerCase();
+    const mapping = {
+        beginner: "Beginner",
+        intermediate: "Intermediate",
+        advanced: "Advanced",
+    };
+    return mapping[trimmed] ?? null;
 }
-async function login(req, res) {
-    try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields",
-            });
-        }
-        const normalizedEmail = email.trim().toLowerCase();
-        // Need password in query, so use .select("+password")
-        const user = await user_model_1.User.findOne({ email: normalizedEmail }).select("+password");
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found",
-            });
-        }
-        const isMatch = await user.comparePassword(password);
-        if (!isMatch) {
-            return res.status(401).json({
-                success: false,
-                message: "Incorrect password",
-            });
-        }
-        // Update user online status and last seen
-        await user_model_1.User.findByIdAndUpdate(user._id, {
-            isOnline: true,
-            lastSeen: new Date(),
-        });
-        const token = jsonwebtoken_1.default.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "7d" });
-        // Set HTTP-only cookie
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-            sameSite: "lax",
-        });
-        res.status(200).json({
-            success: true,
-            message: "User logged in successfully",
-            data: user.safeProfile(),
-            token, // optionally send token in body too
-        });
-    }
-    catch (error) {
-        console.error("Login error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Error logging in",
-            error: error.message,
-        });
-    }
-}
-async function logout(req, res) {
-    try {
-        if (req.user?.id) {
-            // Update user offline status
-            await user_model_1.User.findByIdAndUpdate(req.user.id, {
-                isOnline: false,
-                lastSeen: new Date(),
-            });
-        }
-        // Clear the cookie
-        res.clearCookie("token");
-        res.status(200).json({
-            success: true,
-            message: "User logged out successfully",
-        });
-    }
-    catch (error) {
-        console.error("Logout error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Error logging out",
-            error: error.message,
-        });
-    }
-}
-// ======================= USER PROFILE CONTROLLERS =======================
+// ======================= AUTH CONTROLLERS MOVED =======================
+// register, login, and logout are now defined in src/controllers/auth.controller.ts
 async function getCurrentUser(req, res) {
     try {
         if (!req.user?.id) {
@@ -331,7 +214,6 @@ async function deleteAccount(req, res) {
         });
     }
 }
-// ======================= USER SEARCH & DISCOVERY CONTROLLERS =======================
 async function searchUsers(req, res) {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -396,10 +278,11 @@ async function findMatches(req, res) {
                 message: "Authentication required",
             });
         }
-        const matches = await user_model_1.User.findMatchFor(req.user.id);
+        const match = await user_model_1.User.findMatchFor(req.user.id);
         res.status(200).json({
             success: true,
-            data: matches,
+            // Always return an array for frontend consumption
+            data: match ? [match] : [],
         });
     }
     catch (error) {
@@ -443,7 +326,6 @@ async function getOnlineUsers(req, res) {
         });
     }
 }
-// ======================= SKILL MANAGEMENT CONTROLLERS =======================
 async function addSkill(req, res) {
     try {
         const { skillName, skillType, level } = req.body; // skillType: 'teach' | 'learn'
@@ -481,11 +363,18 @@ async function addSkill(req, res) {
                 message: "User not found",
             });
         }
-        // Also add to skillLevels if level is provided
+        // Also add to skillLevels if level is provided (case-insensitive support)
         if (level) {
+            const normalized = normalizeLevel(level);
+            if (!normalized) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid level. Allowed: ${skill_data_1.SKILL_LEVELS.join(", ")}`,
+                });
+            }
             const existingSkillIndex = user.skillLevels?.findIndex((skill) => skill.skillName === skillName);
             if (existingSkillIndex === -1 || existingSkillIndex === undefined) {
-                user.skillLevels?.push({ skillName, level });
+                user.skillLevels?.push({ skillName, level: normalized });
                 await user.save();
             }
         }
@@ -576,6 +465,13 @@ async function updateSkillLevel(req, res) {
                 message: "Skill name and level are required",
             });
         }
+        const normalized = normalizeLevel(level);
+        if (!normalized) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid level. Allowed: ${skill_data_1.SKILL_LEVELS.join(", ")}`,
+            });
+        }
         const user = await user_model_1.User.findById(req.user.id).select("-password");
         if (!user) {
             return res.status(404).json({
@@ -588,10 +484,10 @@ async function updateSkillLevel(req, res) {
         if (existingSkillIndex !== undefined &&
             existingSkillIndex !== -1 &&
             user.skillLevels) {
-            user.skillLevels[existingSkillIndex].level = level;
+            user.skillLevels[existingSkillIndex].level = normalized;
         }
         else {
-            user.skillLevels?.push({ skillName, level });
+            user.skillLevels?.push({ skillName, level: normalized });
         }
         await user.save();
         res.status(200).json({
@@ -609,7 +505,6 @@ async function updateSkillLevel(req, res) {
         });
     }
 }
-// ======================= STATUS & ACTIVITY CONTROLLERS =======================
 async function updateOnlineStatus(req, res) {
     try {
         const { isOnline } = req.body;
@@ -669,7 +564,6 @@ async function updateLastSeen(req, res) {
         });
     }
 }
-// ======================= STATISTICS & ANALYTICS CONTROLLERS =======================
 async function getUserStats(req, res) {
     try {
         const stats = await user_model_1.User.aggregate([

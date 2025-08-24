@@ -33,19 +33,14 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Session = void 0;
-// src/models/session.model.ts
+exports.RequestModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const SessionSchema = new mongoose_1.Schema({
-    userA: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
-    userB: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
-    skillFromA: { type: String, required: true },
-    skillFromB: { type: String, required: true },
-    isActive: { type: Boolean, default: true, index: true },
-    startedAt: { type: Date, default: Date.now },
-    endedAt: { type: Date },
-});
-// Index for recent active sessions
-SessionSchema.index({ isActive: 1, startedAt: -1 });
-exports.Session = mongoose_1.default.model("Session", SessionSchema);
-exports.default = exports.Session;
+const RequestSchema = new mongoose_1.Schema({
+    fromUser: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    toUser: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    message: { type: String },
+    status: { type: String, enum: ["pending", "accepted", "declined"], default: "pending", index: true },
+}, { timestamps: true });
+RequestSchema.index({ fromUser: 1, toUser: 1, status: 1 });
+exports.RequestModel = mongoose_1.default.model("Request", RequestSchema);
+exports.default = exports.RequestModel;

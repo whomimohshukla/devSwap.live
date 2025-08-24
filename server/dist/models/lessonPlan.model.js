@@ -33,19 +33,41 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Session = void 0;
-// src/models/session.model.ts
+exports.LessonPlan = void 0;
+// src/models/lessonPlan.model.ts
 const mongoose_1 = __importStar(require("mongoose"));
-const SessionSchema = new mongoose_1.Schema({
-    userA: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
-    userB: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
-    skillFromA: { type: String, required: true },
-    skillFromB: { type: String, required: true },
-    isActive: { type: Boolean, default: true, index: true },
-    startedAt: { type: Date, default: Date.now },
-    endedAt: { type: Date },
+const LessonPlanSchema = new mongoose_1.Schema({
+    sessionId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Session", required: true, index: true },
+    teacherSkill: { type: String, required: true, index: true },
+    learnerSkill: { type: String, required: true, index: true },
+    teacherLevel: { type: String, required: true },
+    learnerLevel: { type: String, required: true },
+    content: {
+        title: { type: String, required: true },
+        objectives: [{ type: String, required: true }],
+        activities: [{
+                type: {
+                    type: String,
+                    enum: ['explanation', 'practice', 'demo', 'discussion'],
+                    required: true
+                },
+                description: { type: String, required: true },
+                duration: { type: Number, required: true },
+                resources: [String]
+            }],
+        assessments: [String],
+        nextSteps: [String]
+    },
+    aiModel: { type: String, required: true },
+    generatedAt: { type: Date, default: Date.now },
+    cached: { type: Boolean, default: false, index: true }
 });
-// Index for recent active sessions
-SessionSchema.index({ isActive: 1, startedAt: -1 });
-exports.Session = mongoose_1.default.model("Session", SessionSchema);
-exports.default = exports.Session;
+// Compound index for caching similar lesson plans
+LessonPlanSchema.index({
+    teacherSkill: 1,
+    learnerSkill: 1,
+    teacherLevel: 1,
+    learnerLevel: 1
+});
+exports.LessonPlan = mongoose_1.default.model("LessonPlan", LessonPlanSchema);
+exports.default = exports.LessonPlan;
