@@ -3,6 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.googleAuthStart = googleAuthStart;
+exports.googleAuthCallback = googleAuthCallback;
+exports.githubAuthStart = githubAuthStart;
+exports.githubAuthCallback = githubAuthCallback;
 exports.register = register;
 exports.login = login;
 exports.logout = logout;
@@ -10,8 +14,214 @@ exports.refreshToken = refreshToken;
 exports.getProfile = getProfile;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_model_1 = __importDefault(require("../models/user.model"));
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const env_config_1 = require("../config/env.config");
+const JWT_SECRET = env_config_1.envConfig.JWT_SECRET;
+const JWT_EXPIRES_IN = env_config_1.envConfig.JWT_EXPIRES_IN || "7d";
+// =====================
+// OAuth: Google & GitHub
+// =====================
+function buildFrontendCallbackUrl(query) {
+    const base = (env_config_1.envConfig.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");
+    const qs = new URLSearchParams(query).toString();
+    return `${base}/auth/callback${qs ? `?${qs}` : ""}`;
+}
+function signJwtForUser(user) {
+    return jsonwebtoken_1.default.sign({ id: user._id.toString(), email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+async function findOrCreateUserFromOAuth(profile) {
+    const email = (profile.email || "").trim().toLowerCase();
+    if (!email)
+        throw new Error("Email not provided by OAuth provider");
+    let user = await user_model_1.default.findOne({ email });
+    if (!user) {
+        user = new user_model_1.default({
+            name: profile.name || email.split("@")[0],
+            email,
+            avatar: profile.avatar,
+            isOnline: true,
+            lastSeen: new Date(),
+        });
+        await user.save();
+    }
+    else {
+        // Update last seen / avatar if changed
+        const updates = { isOnline: true, lastSeen: new Date() };
+        if (profile.avatar && user.avatar !== profile.avatar)
+            updates.avatar = profile.avatar;
+        await user_model_1.default.findByIdAndUpdate(user._id, updates);
+    }
+    return user;
+}
+// ---- Google OAuth ----
+async function googleAuthStart(req, res) {
+    try {
+        const clientId = env_config_1.envConfig.GOOGLE_CLIENT_ID;
+        const redirectUri = env_config_1.envConfig.GOOGLE_REDIRECT_URI;
+        if (!clientId || !redirectUri) {
+            return res.status(500).json({ success: false, message: "Google OAuth not configured" });
+        }
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: "code",
+            scope: "openid email profile",
+            access_type: "offline",
+            include_granted_scopes: "true",
+            prompt: "consent",
+        });
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+        return res.redirect(authUrl);
+    }
+    catch (e) {
+        const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Google auth init failed") });
+        return res.redirect(url);
+    }
+}
+async function googleAuthCallback(req, res) {
+    try {
+        const code = String(req.query.code || "");
+        const clientId = env_config_1.envConfig.GOOGLE_CLIENT_ID;
+        const clientSecret = env_config_1.envConfig.GOOGLE_CLIENT_SECRET;
+        const redirectUri = env_config_1.envConfig.GOOGLE_REDIRECT_URI;
+        if (!code || !clientId || !clientSecret || !redirectUri) {
+            const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Invalid Google callback") });
+            return res.redirect(url);
+        }
+        // Exchange code for tokens
+        const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+                code,
+                client_id: clientId,
+                client_secret: clientSecret,
+                redirect_uri: redirectUri,
+                grant_type: "authorization_code",
+            }),
+        });
+        const tokenJson = await tokenResp.json();
+        if (!tokenResp.ok) {
+            const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Google token exchange failed") });
+            return res.redirect(url);
+        }
+        // Fetch userinfo
+        const userResp = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+            headers: { Authorization: `Bearer ${tokenJson.access_token}` },
+        });
+        const userInfo = await userResp.json();
+        if (!userResp.ok) {
+            const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Failed to fetch Google user info") });
+            return res.redirect(url);
+        }
+        const user = await findOrCreateUserFromOAuth({
+            email: userInfo.email,
+            name: userInfo.name,
+            avatar: userInfo.picture,
+        });
+        const token = signJwtForUser(user);
+        // Optionally set cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 1000 * 60 * 60 * 24 * 7,
+        });
+        const url = buildFrontendCallbackUrl({ token });
+        return res.redirect(url);
+    }
+    catch (e) {
+        const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Google auth failed") });
+        return res.redirect(url);
+    }
+}
+// ---- GitHub OAuth ----
+async function githubAuthStart(req, res) {
+    try {
+        const clientId = env_config_1.envConfig.GITHUB_CLIENT_ID;
+        const redirectUri = env_config_1.envConfig.GITHUB_REDIRECT_URI;
+        if (!clientId || !redirectUri) {
+            return res.status(500).json({ success: false, message: "GitHub OAuth not configured" });
+        }
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            scope: "read:user user:email",
+            allow_signup: "true",
+        });
+        const authUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
+        return res.redirect(authUrl);
+    }
+    catch (e) {
+        const url = buildFrontendCallbackUrl({ error: encodeURIComponent("GitHub auth init failed") });
+        return res.redirect(url);
+    }
+}
+async function githubAuthCallback(req, res) {
+    try {
+        const code = String(req.query.code || "");
+        const clientId = env_config_1.envConfig.GITHUB_CLIENT_ID;
+        const clientSecret = env_config_1.envConfig.GITHUB_CLIENT_SECRET;
+        const redirectUri = env_config_1.envConfig.GITHUB_REDIRECT_URI;
+        if (!code || !clientId || !clientSecret || !redirectUri) {
+            const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Invalid GitHub callback") });
+            return res.redirect(url);
+        }
+        // Exchange code for access token
+        const tokenResp = await fetch("https://github.com/login/oauth/access_token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({
+                client_id: clientId,
+                client_secret: clientSecret,
+                code,
+                redirect_uri: redirectUri,
+            }),
+        });
+        const tokenJson = await tokenResp.json();
+        if (!tokenResp.ok || !tokenJson.access_token) {
+            const url = buildFrontendCallbackUrl({ error: encodeURIComponent("GitHub token exchange failed") });
+            return res.redirect(url);
+        }
+        // Fetch user info
+        const ghUserResp = await fetch("https://api.github.com/user", {
+            headers: { Authorization: `Bearer ${tokenJson.access_token}`, "User-Agent": "DevSwap.live" },
+        });
+        const ghUser = await ghUserResp.json();
+        if (!ghUserResp.ok) {
+            const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Failed to fetch GitHub user") });
+            return res.redirect(url);
+        }
+        // Fetch emails to get primary verified email
+        let email = "";
+        try {
+            const ghEmailResp = await fetch("https://api.github.com/user/emails", {
+                headers: { Authorization: `Bearer ${tokenJson.access_token}`, "User-Agent": "DevSwap.live" },
+            });
+            const emails = await ghEmailResp.json();
+            const primary = Array.isArray(emails) ? emails.find((e) => e.primary && e.verified) : null;
+            email = primary?.email || emails?.[0]?.email || "";
+        }
+        catch { }
+        const user = await findOrCreateUserFromOAuth({
+            email,
+            name: ghUser.name || ghUser.login,
+            avatar: ghUser.avatar_url,
+        });
+        const token = signJwtForUser(user);
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 1000 * 60 * 60 * 24 * 7,
+        });
+        const url = buildFrontendCallbackUrl({ token });
+        return res.redirect(url);
+    }
+    catch (e) {
+        const url = buildFrontendCallbackUrl({ error: encodeURIComponent("GitHub auth failed") });
+        return res.redirect(url);
+    }
+}
 async function register(req, res) {
     try {
         const { name, email, password, teachSkills, learnSkills, bio } = req.body;

@@ -81,6 +81,14 @@ interface EnvConfig {
   MAX_CONNECTIONS: number;
   KEEP_ALIVE_TIMEOUT: number;
   HEADERS_TIMEOUT: number;
+
+  // OAuth (optional)
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  GOOGLE_REDIRECT_URI?: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
+  GITHUB_REDIRECT_URI?: string;
 }
 
 const requiredEnvVars = [
@@ -193,6 +201,14 @@ export const envConfig: EnvConfig = {
   MAX_CONNECTIONS: parseNumber(process.env.MAX_CONNECTIONS, 1000),
   KEEP_ALIVE_TIMEOUT: parseNumber(process.env.KEEP_ALIVE_TIMEOUT, 65000),
   HEADERS_TIMEOUT: parseNumber(process.env.HEADERS_TIMEOUT, 66000),
+
+  // OAuth (optional)
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || `${process.env.BACKEND_PUBLIC_URL || `http://localhost:${process.env.PORT || 5000}`}/api/auth/google/callback`,
+  GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+  GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+  GITHUB_REDIRECT_URI: process.env.GITHUB_REDIRECT_URI || `${process.env.BACKEND_PUBLIC_URL || `http://localhost:${process.env.PORT || 5000}`}/api/auth/github/callback`,
 };
 
 export default envConfig;

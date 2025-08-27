@@ -12,7 +12,7 @@ export interface ISkillLevel {
 export interface IUser {
 	name: string;
 	email: string;
-	password: string;
+	password?: string;
 	avatar?: string;
 	bio?: string;
 	teachSkills: SkillName[];
@@ -52,7 +52,8 @@ const UserSchema = new Schema<IUserDocument>(
 	{
 		name: { type: String, required: true, index: true },
 		email: { type: String, required: true, unique: true, index: true },
-		password: { type: String, required: true, select: false },
+		// Password is optional to allow OAuth-based users
+		password: { type: String, select: false },
 		avatar: String,
 		bio: String,
 		teachSkills: { type: [String], index: true }, // multikey index
@@ -69,24 +70,26 @@ const UserSchema = new Schema<IUserDocument>(
 // Plugins
 UserSchema.plugin(mongoosePaginate);
 
-
+// Text index for search
 UserSchema.index({
     name: "text",
     bio: "text",
 });
 
-
 // Pre-save hook: hash password if modified
 UserSchema.pre<IUserDocument>("save", async function (next) {
-	if (!this.isModified("password")) return next();
-	const salt = await bcrypt.genSalt(10);
-	this.password = await bcrypt.hash(this.password, salt);
-	next();
+    // Only hash if password exists and was modified
+    if (!this.isModified("password") || !this.password) return next();
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
 });
 
 // Instance method: compare password
 UserSchema.methods.comparePassword = function (candidate: string) {
-	return bcrypt.compare(candidate, this.password);
+    // If no password is set (OAuth user), comparison fails
+    if (!this.password) return Promise.resolve(false);
+    return bcrypt.compare(candidate, this.password);
 };
 
 // Instance method: safe profile
