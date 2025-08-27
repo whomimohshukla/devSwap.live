@@ -24,6 +24,11 @@ export interface IUser {
 	pastSessions?: mongoose.Types.ObjectId[];
 	createdAt?: Date;
 	updatedAt?: Date;
+	// OAuth provider linkage (internal)
+	oauthProviders?: {
+		google?: { id: string };
+		github?: { id: string };
+	};
 }
 
 export interface IUserDocument extends IUser, Document {
@@ -63,6 +68,14 @@ const UserSchema = new Schema<IUserDocument>(
 		location: String,
 		lastSeen: Date,
 		pastSessions: [{ type: Schema.Types.ObjectId, ref: "Session" }],
+		oauthProviders: {
+			google: {
+				id: { type: String },
+			},
+			github: {
+				id: { type: String },
+			},
+		},
 	},
 	{ timestamps: true }
 );

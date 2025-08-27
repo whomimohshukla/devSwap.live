@@ -19,7 +19,13 @@ exports.RequestsController = {
         if (!userId)
             return res.status(401).json({ message: "Authentication required" });
         try {
-            const items = await request_model_1.default.find({ toUser: userId })
+            const status = String(req.query.status || 'pending').toLowerCase();
+            const statusFilter = status === 'all'
+                ? {}
+                : ['pending', 'accepted', 'declined'].includes(status)
+                    ? { status }
+                    : { status: 'pending' };
+            const items = await request_model_1.default.find({ toUser: userId, ...statusFilter })
                 .sort({ createdAt: -1 })
                 .populate("fromUser", "name avatar bio")
                 .lean();
@@ -36,7 +42,13 @@ exports.RequestsController = {
         if (!userId)
             return res.status(401).json({ message: "Authentication required" });
         try {
-            const items = await request_model_1.default.find({ fromUser: userId })
+            const status = String(req.query.status || 'pending').toLowerCase();
+            const statusFilter = status === 'all'
+                ? {}
+                : ['pending', 'accepted', 'declined'].includes(status)
+                    ? { status }
+                    : { status: 'pending' };
+            const items = await request_model_1.default.find({ fromUser: userId, ...statusFilter })
                 .sort({ createdAt: -1 })
                 .populate("toUser", "name avatar bio")
                 .lean();

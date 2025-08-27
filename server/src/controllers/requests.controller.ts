@@ -16,7 +16,15 @@ export const RequestsController = {
     if (!userId) return res.status(401).json({ message: "Authentication required" });
 
     try {
-      const items = await RequestModel.find({ toUser: userId })
+      const status = String((req.query.status as string) || 'pending').toLowerCase();
+      const statusFilter =
+        status === 'all'
+          ? {}
+          : ['pending', 'accepted', 'declined'].includes(status)
+          ? { status }
+          : { status: 'pending' };
+
+      const items = await RequestModel.find({ toUser: userId, ...statusFilter })
         .sort({ createdAt: -1 })
         .populate("fromUser", "name avatar bio")
         .lean();
@@ -33,7 +41,15 @@ export const RequestsController = {
     if (!userId) return res.status(401).json({ message: "Authentication required" });
 
     try {
-      const items = await RequestModel.find({ fromUser: userId })
+      const status = String((req.query.status as string) || 'pending').toLowerCase();
+      const statusFilter =
+        status === 'all'
+          ? {}
+          : ['pending', 'accepted', 'declined'].includes(status)
+          ? { status }
+          : { status: 'pending' };
+
+      const items = await RequestModel.find({ fromUser: userId, ...statusFilter })
         .sort({ createdAt: -1 })
         .populate("toUser", "name avatar bio")
         .lean();

@@ -64,6 +64,14 @@ const UserSchema = new mongoose_1.Schema({
     location: String,
     lastSeen: Date,
     pastSessions: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Session" }],
+    oauthProviders: {
+        google: {
+            id: { type: String },
+        },
+        github: {
+            id: { type: String },
+        },
+    },
 }, { timestamps: true });
 // Plugins
 UserSchema.plugin(mongoose_paginate_v2_1.default);
