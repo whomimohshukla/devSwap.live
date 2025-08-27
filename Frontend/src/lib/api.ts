@@ -154,8 +154,10 @@ export const aiAPI = {
 
 // Requests API
 export const requestsAPI = {
-  getIncoming: () => api.get('/requests/incoming'),
-  getSent: () => api.get('/requests/sent'),
+  getIncoming: (status: 'pending' | 'accepted' | 'declined' | 'all' = 'pending') =>
+    api.get('/requests/incoming', { params: { status } }),
+  getSent: (status: 'pending' | 'accepted' | 'declined' | 'all' = 'pending') =>
+    api.get('/requests/sent', { params: { status } }),
   create: (data: { toUserId: string; message?: string }) => api.post('/requests', data),
   accept: (id: string) => api.post(`/requests/${id}/accept`),
   decline: (id: string) => api.post(`/requests/${id}/decline`),

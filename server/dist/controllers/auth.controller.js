@@ -12,6 +12,7 @@ exports.login = login;
 exports.logout = logout;
 exports.refreshToken = refreshToken;
 exports.getProfile = getProfile;
+const crypto_1 = __importDefault(require("crypto"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_model_1 = __importDefault(require("../models/user.model"));
 const env_config_1 = require("../config/env.config");
@@ -28,7 +29,7 @@ function buildFrontendCallbackUrl(query) {
 function signJwtForUser(user) {
     return jsonwebtoken_1.default.sign({ id: user._id.toString(), email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
-async function findOrCreateUserFromOAuth(profile) {
+async function findOrCreateUserFromOAuth(profile, provider) {
     const email = (profile.email || "").trim().toLowerCase();
     if (!email)
         throw new Error("Email not provided by OAuth provider");
@@ -40,6 +41,7 @@ async function findOrCreateUserFromOAuth(profile) {
             avatar: profile.avatar,
             isOnline: true,
             lastSeen: new Date(),
+            oauthProviders: provider?.name && provider?.id ? { [provider.name]: { id: provider.id } } : undefined,
         });
         await user.save();
     }
@@ -48,6 +50,9 @@ async function findOrCreateUserFromOAuth(profile) {
         const updates = { isOnline: true, lastSeen: new Date() };
         if (profile.avatar && user.avatar !== profile.avatar)
             updates.avatar = profile.avatar;
+        if (provider?.name && provider?.id) {
+            updates["oauthProviders." + provider.name + ".id"] = provider.id;
+        }
         await user_model_1.default.findByIdAndUpdate(user._id, updates);
     }
     return user;
@@ -60,6 +65,14 @@ async function googleAuthStart(req, res) {
         if (!clientId || !redirectUri) {
             return res.status(500).json({ success: false, message: "Google OAuth not configured" });
         }
+        // CSRF protection: generate state and store in short-lived cookie
+        const state = crypto_1.default.randomBytes(16).toString("hex");
+        res.cookie("oauth_state_google", state, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 1000 * 60 * 10, // 10 minutes
+        });
         const params = new URLSearchParams({
             client_id: clientId,
             redirect_uri: redirectUri,
@@ -68,6 +81,7 @@ async function googleAuthStart(req, res) {
             access_type: "offline",
             include_granted_scopes: "true",
             prompt: "consent",
+            state,
         });
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
         return res.redirect(authUrl);
@@ -80,11 +94,18 @@ async function googleAuthStart(req, res) {
 async function googleAuthCallback(req, res) {
     try {
         const code = String(req.query.code || "");
+        const state = String(req.query.state || "");
         const clientId = env_config_1.envConfig.GOOGLE_CLIENT_ID;
         const clientSecret = env_config_1.envConfig.GOOGLE_CLIENT_SECRET;
         const redirectUri = env_config_1.envConfig.GOOGLE_REDIRECT_URI;
         if (!code || !clientId || !clientSecret || !redirectUri) {
             const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Invalid Google callback") });
+            return res.redirect(url);
+        }
+        // Validate state
+        const cookieState = req.cookies?.oauth_state_google;
+        if (!state || !cookieState || state !== cookieState) {
+            const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Invalid state parameter") });
             return res.redirect(url);
         }
         // Exchange code for tokens
@@ -117,7 +138,7 @@ async function googleAuthCallback(req, res) {
             email: userInfo.email,
             name: userInfo.name,
             avatar: userInfo.picture,
-        });
+        }, { name: "google", id: userInfo.sub });
         const token = signJwtForUser(user);
         // Optionally set cookie
         res.cookie('token', token, {
@@ -126,7 +147,9 @@ async function googleAuthCallback(req, res) {
             sameSite: 'lax',
             maxAge: 1000 * 60 * 60 * 24 * 7,
         });
-        const url = buildFrontendCallbackUrl({ token });
+        // Clear state cookie and redirect to frontend without leaking token in URL
+        res.clearCookie('oauth_state_google');
+        const url = buildFrontendCallbackUrl({});
         return res.redirect(url);
     }
     catch (e) {
@@ -142,11 +165,19 @@ async function githubAuthStart(req, res) {
         if (!clientId || !redirectUri) {
             return res.status(500).json({ success: false, message: "GitHub OAuth not configured" });
         }
+        const state = crypto_1.default.randomBytes(16).toString("hex");
+        res.cookie("oauth_state_github", state, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 1000 * 60 * 10,
+        });
         const params = new URLSearchParams({
             client_id: clientId,
             redirect_uri: redirectUri,
             scope: "read:user user:email",
             allow_signup: "true",
+            state,
         });
         const authUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
         return res.redirect(authUrl);
@@ -159,11 +190,17 @@ async function githubAuthStart(req, res) {
 async function githubAuthCallback(req, res) {
     try {
         const code = String(req.query.code || "");
+        const state = String(req.query.state || "");
         const clientId = env_config_1.envConfig.GITHUB_CLIENT_ID;
         const clientSecret = env_config_1.envConfig.GITHUB_CLIENT_SECRET;
         const redirectUri = env_config_1.envConfig.GITHUB_REDIRECT_URI;
         if (!code || !clientId || !clientSecret || !redirectUri) {
             const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Invalid GitHub callback") });
+            return res.redirect(url);
+        }
+        const cookieState = req.cookies?.oauth_state_github;
+        if (!state || !cookieState || state !== cookieState) {
+            const url = buildFrontendCallbackUrl({ error: encodeURIComponent("Invalid state parameter") });
             return res.redirect(url);
         }
         // Exchange code for access token
@@ -206,7 +243,7 @@ async function githubAuthCallback(req, res) {
             email,
             name: ghUser.name || ghUser.login,
             avatar: ghUser.avatar_url,
-        });
+        }, { name: "github", id: String(ghUser.id || "") });
         const token = signJwtForUser(user);
         res.cookie('token', token, {
             httpOnly: true,
@@ -214,7 +251,8 @@ async function githubAuthCallback(req, res) {
             sameSite: 'lax',
             maxAge: 1000 * 60 * 60 * 24 * 7,
         });
-        const url = buildFrontendCallbackUrl({ token });
+        res.clearCookie('oauth_state_github');
+        const url = buildFrontendCallbackUrl({});
         return res.redirect(url);
     }
     catch (e) {

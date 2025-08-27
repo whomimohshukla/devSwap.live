@@ -18,29 +18,36 @@ const AuthCallback: React.FC = () => {
 			return;
 		}
 
-		if (token) {
+		const storeTokenIfConsented = (t: string) => {
 			try {
-				localStorage.setItem("authToken", token);
-				// Verify token and fetch profile, then go to dashboard
-				checkAuth()
-					.then(() => navigate("/dashboard"))
-					.catch(() => navigate("/login"));
-			} catch {
-				navigate("/login");
-			}
-		} else {
-			// Some providers may send hash fragments, try parsing that as well
-			const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
-			const hashToken = hash.get("token");
-			if (hashToken) {
-				localStorage.setItem("authToken", hashToken);
-				checkAuth()
-					.then(() => navigate("/dashboard"))
-					.catch(() => navigate("/login"));
-			} else {
-				navigate("/login");
-			}
+				if (localStorage.getItem("cookieConsent") === "accepted") {
+					localStorage.setItem("authToken", t);
+				}
+			} catch {}
+		};
+
+		const tryFinalize = () =>
+			checkAuth()
+				.then(() => navigate("/dashboard"))
+				.catch(() => navigate("/login"));
+
+		if (token) {
+			storeTokenIfConsented(token);
+			tryFinalize();
+			return;
 		}
+
+		// Some providers may send hash fragments; try parsing that as well
+		const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+		const hashToken = hash.get("token");
+		if (hashToken) {
+			storeTokenIfConsented(hashToken);
+			tryFinalize();
+			return;
+		}
+
+		// No token present: attempt cookie-based session (backend set httpOnly cookie)
+		tryFinalize();
 	}, [location.search, location.hash, checkAuth, navigate]);
 
 	return (
