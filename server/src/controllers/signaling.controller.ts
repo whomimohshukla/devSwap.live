@@ -117,6 +117,36 @@ export class SignalingController {
 		socket.on("chat-message", this.handleChatMessage.bind(this, socket));
 		socket.on("chat:send", (data) => this.handleChatMessage(socket, { text: data.text, clientId: data?.clientId }));
 		
+		// Request-to-speak workflow (lightweight moderation for who has the mic)
+		// speak:request -> broadcast to session so peer(s) can approve/deny
+		socket.on("speak:request", (data: { to?: string } = {}) => {
+			if (!socket.sessionId) return;
+			const payload = { from: socket.userId, to: data?.to };
+			// notify peers in session
+			socket.to(socket.sessionId).emit("speak:request", payload);
+		});
+
+		// speak:grant -> grant speaking to requester; clients can choose to auto-unmute requester locally
+		socket.on("speak:grant", (data: { to: string }) => {
+			if (!socket.sessionId) return;
+			const payload = { from: socket.userId, to: data?.to };
+			this.io.to(socket.sessionId).emit("speak:grant", payload);
+		});
+
+		// speak:deny -> inform requester their request was denied
+		socket.on("speak:deny", (data: { to: string }) => {
+			if (!socket.sessionId) return;
+			const payload = { from: socket.userId, to: data?.to };
+			this.io.to(socket.sessionId).emit("speak:deny", payload);
+		});
+
+		// speak:revoke -> revoke previously granted speaking permission
+		socket.on("speak:revoke", (data: { to?: string } = {}) => {
+			if (!socket.sessionId) return;
+			const payload = { from: socket.userId, to: data?.to };
+			this.io.to(socket.sessionId).emit("speak:revoke", payload);
+		});
+
 		// Session Events
 		socket.on("session-status", this.handleSessionStatus.bind(this, socket));
 
