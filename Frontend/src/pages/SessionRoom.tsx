@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { motion } from 'framer-motion';
 import { Mic, MicOff, Video, VideoOff, MonitorUp, PhoneOff, Users, Send, Maximize2, Minimize2 } from 'lucide-react';
+import { sessionsAPI } from '../lib/api';
 
 
 
@@ -23,6 +24,9 @@ const SessionRoom: React.FC = () => {
   const [status, setStatus] = useState<string>('Connecting…');
   const [participants, setParticipants] = useState<{ id: string; name: string }[]>([]);
   const [chat, setChat] = useState<{ from: string; text: string; t: number; clientId?: string }[]>([]);
+  // Request-to-speak state
+  const [incomingRequests, setIncomingRequests] = useState<{ from: string; name?: string }[]>([]);
+  const [speakStatus, setSpeakStatus] = useState<'idle' | 'requesting' | 'granted'>('idle');
   const [chatInput, setChatInput] = useState('');
   const [devices, setDevices] = useState<{ audioIn: MediaDeviceInfo[]; videoIn: MediaDeviceInfo[] }>({ audioIn: [], videoIn: [] });
   const [selectedAudio, setSelectedAudio] = useState<string | undefined>(undefined);
@@ -54,7 +58,7 @@ const SessionRoom: React.FC = () => {
   // Track optimistic messages to avoid duplicate display when server echoes them back
   const pendingClientIdsRef = useRef<Set<string>>(new Set());
   const lastLocalMsgRef = useRef<{ text: string; t: number } | null>(null);
-  const myIdRef = useRef<string | null>(null); // best-effort self id if server provides it later
+  // const myIdRef = useRef<string | null>(null); // best-effort self id if server provides it later
   const nameMapRef = useRef<Map<string, string>>(new Map());
 
   // Fullscreen toggle for remote container
@@ -254,23 +258,9 @@ const SessionRoom: React.FC = () => {
         }
         // store name if provided
         if (msg.from && msg.fromName) nameMapRef.current.set(msg.from, msg.fromName);
+        // append message to chat
         setChat((prev) => [...prev, { from: msg.from, text: msg.text, t, clientId: msg.clientId }]);
       });
-
-      // When the session ends (by either user or server), turn off camera/mic and leave
-      const onSessionEnded = () => {
-        setStatus('Session ended');
-        // Gracefully leave which stops local tracks and disconnects
-        try { socket.off('session:ended', onSessionEnded); } catch {}
-        try { socket.off('session:end', onSessionEnded); } catch {}
-        try { socket.off('session:closed', onSessionEnded); } catch {}
-        leaveRoom();
-      };
-      socket.on('session:ended', onSessionEnded);
-      // support a few name aliases just in case
-      socket.on('session:end', onSessionEnded);
-      socket.on('session:closed', onSessionEnded);
-
       socket.on('peer-left', () => {
         setStatus('Peer left');
         // Keep local preview; remote will go black
@@ -287,6 +277,45 @@ const SessionRoom: React.FC = () => {
       socket.on('connect_error', (err) => {
         console.error('Socket connect_error', err);
         setStatus(err?.message ? `Socket error: ${err.message}` : 'Socket connection error');
+      });
+
+      // Request-to-speak events
+      socket.on('speak:request', ({ from }: { from: string }) => {
+        // Deduplicate by sender
+        setIncomingRequests((prev) => {
+          if (prev.some((r) => r.from === from)) return prev;
+          const name = nameMapRef.current.get(from);
+          return [...prev, { from, name }];
+        });
+      });
+      socket.on('speak:grant', (_data: { from?: string; to?: string }) => {
+        // If we were requesting, enable mic and mark granted
+        if (speakStatusRef.current === 'requesting') {
+          const s = localStreamRef.current;
+          if (s) {
+            s.getAudioTracks().forEach((t) => (t.enabled = true));
+            setMicOn(true);
+          }
+          setSpeakStatus('granted');
+          setStatus('You may speak now');
+        }
+      });
+      socket.on('speak:deny', (_data: { from?: string; to?: string }) => {
+        if (speakStatusRef.current === 'requesting') {
+          setSpeakStatus('idle');
+          setStatus('Speak request denied');
+        }
+      });
+      socket.on('speak:revoke', (_data: { from?: string; to?: string }) => {
+        if (speakStatusRef.current === 'granted') {
+          const s = localStreamRef.current;
+          if (s) {
+            s.getAudioTracks().forEach((t) => (t.enabled = false));
+            setMicOn(false);
+          }
+          setSpeakStatus('idle');
+          setStatus('Speaking permission revoked');
+        }
       });
 
       socket.io.on('reconnect_attempt', () => setStatus('Reconnecting…'));
@@ -348,6 +377,10 @@ const SessionRoom: React.FC = () => {
     return name || from;
   };
 
+  // Track speakStatus in a ref for socket handlers
+  const speakStatusRef = useRef<'idle' | 'requesting' | 'granted'>('idle');
+  useEffect(() => { speakStatusRef.current = speakStatus; }, [speakStatus]);
+
   const toggleMic = () => {
     const stream = localStreamRef.current;
     if (!stream) return;
@@ -400,8 +433,21 @@ const SessionRoom: React.FC = () => {
   };
 
   // Leave room and return to Sessions
-  const leaveRoom = () => {
+  const leaveRoom = async () => {
+    // Avoid race conditions and inform user
+    setStatus('Ending session…');
+    const id = sessionId;
     try {
+      // Best-effort notify backend to mark session as ended BEFORE leaving
+      if (id) {
+        try {
+          await sessionsAPI.endSession(id);
+        } catch (e) {
+          // Non-fatal: we still proceed to cleanup/navigation
+          console.warn('Failed to end session via API', e);
+        }
+      }
+
       // Exit fullscreen if active
       if (document.fullscreenElement) {
         try { document.exitFullscreen?.(); } catch {}
@@ -425,9 +471,10 @@ const SessionRoom: React.FC = () => {
         try { pc.close(); } catch {}
         pcRef.current = null;
       }
-      // Disconnect socket
+      // Tell the room we are leaving, then disconnect socket
       const sock = socketRef.current;
       if (sock) {
+        try { sock.emit('leave', { sessionId: id }); } catch {}
         try { sock.removeAllListeners(); } catch {}
         try { sock.disconnect(); } catch {}
         socketRef.current = null;
@@ -448,6 +495,35 @@ const SessionRoom: React.FC = () => {
       try { sock?.connect(); } catch {}
     }
     try { pc?.restartIce(); } catch {}
+  };
+
+  // Request-to-speak actions
+  const requestToSpeak = () => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('speak:request', { sessionId });
+    setSpeakStatus('requesting');
+    setStatus('Requested to speak…');
+  };
+  const grantRequest = (to: string) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('speak:grant', { to, sessionId });
+    setIncomingRequests((prev) => prev.filter((r) => r.from !== to));
+  };
+  const denyRequest = (to: string) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('speak:deny', { to, sessionId });
+    setIncomingRequests((prev) => prev.filter((r) => r.from !== to));
+  };
+  const revokeSpeaking = () => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('speak:revoke', { sessionId });
+    // Locally also mute
+    const s = localStreamRef.current;
+    if (s) {
+      s.getAudioTracks().forEach((t) => (t.enabled = false));
+      setMicOn(false);
+    }
+    setSpeakStatus('idle');
   };
 
 // Push-to-talk: enable audio while holding
@@ -509,7 +585,7 @@ const applyDevices = async () => {
 
 return (
   <div className="min-h-screen bg-black pt-16 pb-6">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-none w-full mx-auto px-4 sm:px-6 lg:px-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-4">
         <h1 className="text-white text-2xl font-semibold">Session Room</h1>
         <p className="text-gray-400 text-sm">Session ID: {sessionId} • {status} {stats.bitrateKbps ? `• ${stats.bitrateKbps} kbps` : ''} {typeof stats.rttMs === 'number' ? `• RTT ${stats.rttMs} ms` : ''}</p>
@@ -540,6 +616,15 @@ return (
                   <MonitorUp className="w-4 h-4" />
                   <span className="hidden sm:inline">{sharing ? 'Stop Share' : 'Share Screen'}</span>
                 </button>
+                {/* Request to speak button */}
+                {!micOn && speakStatus !== 'requesting' && (
+                  <button onClick={requestToSpeak} className="px-3 py-2 rounded-md flex items-center gap-2 bg-[#25282c] hover:bg-[#2e3237] text-white">
+                    Request to Speak
+                  </button>
+                )}
+                {speakStatus === 'requesting' && (
+                  <span className="px-3 py-2 rounded-md bg-[#25282c] text-gray-300 text-sm">Requested…</span>
+                )}
                 <button
                   onMouseDown={pttDown}
                   onMouseUp={pttUp}
@@ -587,6 +672,23 @@ return (
               {participants.length === 0 && <li className="text-gray-500">No one else connected yet</li>}
               {participants.map((p) => (<li key={p.id} className="truncate">{p.name}</li>))}
             </ul>
+            {/* Incoming speak requests */}
+            {incomingRequests.length > 0 && (
+              <div className="mt-3 border-t border-gray-800 pt-2">
+                <div className="text-white text-sm font-semibold mb-2">Speak Requests</div>
+                <ul className="space-y-2">
+                  {incomingRequests.map((r) => (
+                    <li key={r.from} className="flex items-center justify-between text-sm text-gray-200">
+                      <span className="truncate mr-2">{r.name || r.from}</span>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => grantRequest(r.from)} className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs">Allow</button>
+                        <button onClick={() => denyRequest(r.from)} className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-xs">Deny</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           <div className="bg-gray-900 rounded-xl border border-gray-800 p-3 flex flex-col min-h-32">
             <div className="text-white text-sm font-semibold mb-2">Chat</div>
