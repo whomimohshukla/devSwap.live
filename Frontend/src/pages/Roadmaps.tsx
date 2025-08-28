@@ -20,7 +20,23 @@ const Roadmaps: React.FC = () => {
     <div className="min-h-screen bg-[#0b0c0d] text-gray-200">
       <div className="max-w-6xl mx-auto px-4 py-10">
         <h1 className="text-3xl font-bold mb-2">Roadmaps</h1>
-        <p className="text-gray-400 mb-6">Curated paths across Web, Data, AI/ML, Mobile, DevOps, Cloud, and Languages.</p>
+        <p className="text-gray-400">Curated paths across Web, Data, AI/ML, Mobile, DevOps, Cloud, and Languages.</p>
+
+        <div className="mt-4 mb-6 rounded-xl border border-[#25282c] bg-gradient-to-b from-[#0f1113] to-[#0b0c0d] p-4 shadow-[0_0_0_1px_rgba(37,40,44,1)]">
+          <div className="text-sm text-gray-300">
+            <div className="font-medium mb-1 text-gray-200">About this page</div>
+            <p className="text-gray-400">
+              I’m your developer buddy. These roadmaps guide you step-by-step through skills and technologies. Use the search and level
+              filters to quickly find a track, then open it to explore a visual graph or a structured checklist with curated resources.
+            </p>
+            <ul className="mt-2 list-disc pl-5 space-y-1 text-gray-400">
+              <li><span className="text-gray-300">Graph/List views:</span> switch between a visual node map and an ordered checklist.</li>
+              <li><span className="text-gray-300">Resources:</span> hand-picked links for docs, guides, and tutorials.</li>
+              <li><span className="text-gray-300">Levels:</span> beginner, intermediate, and advanced tracks where available.</li>
+              <li><span className="text-gray-300">Tips:</span> start with fundamentals, then move to advanced topics at your pace.</li>
+            </ul>
+          </div>
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <input
