@@ -145,9 +145,11 @@ export const aiAPI = {
     return api.post(`/ai/lesson-plan/${sessionId}`, { skill, level, duration });
   },
   
-  // Backend uses POST /ai/summary/:sessionId
-  getSessionSummary: (sessionId: string) => 
-    api.post(`/ai/summary/${sessionId}`),
+  // Backend uses POST /ai/summary/:sessionId with optional body { sessionNotes?: string; duration?: number }
+  getSessionSummary: (
+    sessionId: string,
+    data?: { sessionNotes?: string; duration?: number }
+  ) => api.post(`/ai/summary/${sessionId}`, data || {}),
 
   // Cached lesson plans
   getCachedPlans: () => api.get('/ai/cached-plans'),
