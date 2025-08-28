@@ -53,21 +53,21 @@ const Sessions: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [meRes, actRes, endRes] = await Promise.all([
+      const [meRes, allRes] = await Promise.all([
         usersAPI.getMe(),
-        sessionsAPI.getSessions({ status: 'active', page: 1, limit: 20 }),
-        sessionsAPI.getSessions({ status: 'ended', page: 1, limit: 20 }),
+        sessionsAPI.getSessions({ status: 'all', page: 1, limit: 50 }),
       ]);
       const me = meRes.data?.data ?? meRes.data ?? {};
       setMeId(me?._id || me?.id || null);
-      const act = (actRes.data?.sessions ?? actRes.data?.data ?? actRes.data ?? []).map((s: any) => s);
-      const ended = (endRes.data?.sessions ?? endRes.data?.data ?? endRes.data ?? []).map((s: any) => s);
-      setActiveSessions(Array.isArray(act) ? act : []);
-      setCompletedSessions(Array.isArray(ended) ? ended : []);
+      const list = (allRes.data?.sessions ?? allRes.data?.data ?? allRes.data ?? []) as any[];
+      const safeList = Array.isArray(list) ? list : [];
+      const act = safeList.filter((s) => s?.isActive === true || (!s?.endedAt && s?.isActive !== false));
+      const ended = safeList.filter((s) => s?.isActive === false || !!s?.endedAt);
+      setActiveSessions(act);
+      setCompletedSessions(ended);
       // Precompute expanded state as collapsed
-      const all = [...(Array.isArray(act) ? act : []), ...(Array.isArray(ended) ? ended : [])];
       const exp: Record<string, boolean> = {};
-      all.forEach((s: any) => {
+      safeList.forEach((s: any) => {
         const id = String(s._id ?? s.id);
         if (id) exp[id] = false;
       });
@@ -136,7 +136,14 @@ const Sessions: React.FC = () => {
     setSummaryLoading((p) => ({ ...p, [sessionId]: true }));
     setSummaryError((p) => ({ ...p, [sessionId]: null }));
     try {
-      const res = await aiAPI.getSessionSummary(String(sessionId));
+      // Find session to compute duration
+      const s = [...activeSessions, ...completedSessions].find((x) => String(x._id ?? x.id) === String(sessionId));
+      const started = s?.startedAt ? new Date(String(s.startedAt)).getTime() : undefined;
+      const ended = s?.endedAt ? new Date(String(s.endedAt)).getTime() : Date.now();
+      const durationSec = started ? Math.max(0, Math.round((ended - started) / 1000)) : undefined;
+      const sessionNotes = notes[String(sessionId)] || '';
+
+      const res = await aiAPI.getSessionSummary(String(sessionId), { sessionNotes, duration: durationSec });
       const text = res.data?.summary ?? res.data?.data?.summary ?? res.data ?? '';
       setSummaries((p) => ({ ...p, [sessionId]: typeof text === 'string' ? text : JSON.stringify(text, null, 2) }));
       setToast({ type: 'success', msg: 'AI summary generated' });
@@ -174,7 +181,7 @@ const Sessions: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-none w-full mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -251,6 +258,27 @@ const Sessions: React.FC = () => {
               <h3 className="text-white font-semibold mb-2">Privacy & consent</h3>
               <p className="text-sm text-gray-300">Ask before recording or sharing content. Use respectful communication and protect sensitive information. You’re in control of your mic/camera and what you share.</p>
             </div>
+            <div className="bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5 lg:col-span-3">
+              <h3 className="text-white font-semibold mb-2">Using AI on your sessions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div className="bg-black/40 border border-[#25282c] rounded-lg p-3">
+                  <div className="text-gray-200 font-medium mb-1">1) Take quick notes</div>
+                  <p className="text-gray-400">Jot down bullets during or after the call in "My Notes". Notes stay local to your browser.</p>
+                </div>
+                <div className="bg-black/40 border border-[#25282c] rounded-lg p-3">
+                  <div className="text-gray-200 font-medium mb-1">2) Generate a summary</div>
+                  <p className="text-gray-400">Click Generate in the AI Summary panel. We send your notes and session duration to the AI and show a concise recap.</p>
+                </div>
+                <div className="bg-black/40 border border-[#25282c] rounded-lg p-3">
+                  <div className="text-gray-200 font-medium mb-1">Tips & troubleshooting</div>
+                  <ul className="list-disc list-inside text-gray-400 space-y-1">
+                    <li>Be specific in notes: goals, blockers, next steps.</li>
+                    <li>If you see an OpenAI auth error, remove OPENAI_ORG/PROJECT from your .env.</li>
+                    <li>Summaries are not auto-saved; copy important points.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -280,17 +308,17 @@ const Sessions: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+                  className={`${expanded[String(session._id || session.id)] ? 'lg:col-span-2' : ''} bg-[#0b0c0d] rounded-2xl p-6 border border-[#25282c] hover:border-[#2f343a] transition-colors`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4 flex-1">
-                      <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-white font-semibold">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold bg-gradient-to-br from-emerald-500/30 to-indigo-500/30 border border-[#25282c]">
                         {(partnerOf(session)?.name?.[0] || 'U').toUpperCase()}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           <h3 className="text-lg font-semibold text-white">{partnerOf(session)?.name || 'Partner'}</h3>
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                             Active
                           </span>
                         </div>
@@ -302,13 +330,13 @@ const Sessions: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button onClick={() => handleJoinSession(String(session._id || session.id))} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center">
+                      <button onClick={() => handleJoinSession(String(session._id || session.id))} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center shadow-sm">
                         <Play className="w-4 h-4 mr-1" /> Join
                       </button>
-                      <button onClick={() => handleEndSession(String(session._id || session.id))} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center">
+                      <button onClick={() => handleEndSession(String(session._id || session.id))} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center shadow-sm">
                         <Square className="w-4 h-4 mr-1" /> End
                       </button>
-                      <button onClick={() => handleToggleExpand(String(session._id || session.id))} className="px-3 py-1.5 border border-gray-700 hover:border-gray-600 text-gray-300 rounded-md">
+                      <button onClick={() => handleToggleExpand(String(session._id || session.id))} className="px-3 py-1.5 border border-[#2f343a] hover:border-[#3a4047] text-gray-300 rounded-md">
                         {expanded[String(session._id || session.id)] ? 'Hide' : 'Details'}
                       </button>
                     </div>
@@ -316,22 +344,23 @@ const Sessions: React.FC = () => {
                   {expanded[String(session._id || session.id)] && (
                     <div className="mt-4 space-y-4">
                       {/* AI Summary */}
-                      <div>
+                      <div className="bg-black/40 border border-[#25282c] rounded-xl p-3">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-sm font-semibold text-white">AI Summary</h4>
-                          <button onClick={() => handleGenerateSummary(String(session._id || session.id))} className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded">
+                          <button onClick={() => handleGenerateSummary(String(session._id || session.id))} className="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded">
                             {summaryLoading[String(session._id || session.id)] ? 'Generating…' : 'Generate'}
                           </button>
                         </div>
+                        <p className="text-xs text-gray-400 mb-2">Uses your notes and session duration to produce a concise recap. Your notes remain local.</p>
                         {summaryError[String(session._id || session.id)] && (
                           <div className="text-xs text-red-400 mb-2">{summaryError[String(session._id || session.id)]}</div>
                         )}
-                        <pre className="bg-black/40 text-gray-200 text-xs p-3 rounded border border-gray-800 whitespace-pre-wrap">
+                        <pre className="bg-black/50 text-gray-200 text-xs p-3 rounded border border-[#25282c] whitespace-pre-wrap">
 {summaries[String(session._id || session.id)] || 'No summary yet.'}
                         </pre>
                       </div>
                       {/* Lesson Plans */}
-                      <div>
+                      <div className="bg-black/40 border border-[#25282c] rounded-xl p-3">
                         <h4 className="text-sm font-semibold text-white mb-2">Lesson Plans</h4>
                         {Array.isArray(plansBySession[String(session._id || session.id)]) && plansBySession[String(session._id || session.id)].length > 0 ? (
                           <ul className="list-disc list-inside text-xs text-gray-300 space-y-1">
@@ -347,13 +376,13 @@ const Sessions: React.FC = () => {
                         )}
                       </div>
                       {/* Personal Notes */}
-                      <div>
+                      <div className="bg-black/40 border border-[#25282c] rounded-xl p-3">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-sm font-semibold text-white">My Notes</h4>
-                          <span className="text-[10px] text-gray-500">Saved locally</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 border border-[#2f343a]">Saved locally</span>
                         </div>
                         <textarea
-                          className="w-full bg-black/40 text-gray-200 text-sm p-3 rounded border border-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 min-h-[90px]"
+                          className="w-full bg-black/50 text-gray-200 text-sm p-3 rounded border border-[#25282c] focus:outline-none focus:ring-1 focus:ring-emerald-600 min-h-[90px]"
                           placeholder="Write notes about this session..."
                           value={notes[String(session._id || session.id)] || ''}
                           onChange={(e) => setNotes((prev) => ({ ...prev, [String(session._id || session.id)]: e.target.value }))}
@@ -370,7 +399,7 @@ const Sessions: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
             >
               {(loading && completedSessions.length === 0) && (
                 <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 animate-pulse">
@@ -389,17 +418,17 @@ const Sessions: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+                  className={`${expanded[String(session._id || session.id)] ? 'lg:col-span-2' : ''} bg-[#0b0c0d] rounded-2xl p-6 border border-[#25282c] hover:border-[#2f343a] transition-colors`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4 flex-1">
-                      <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-white font-semibold">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold bg-gradient-to-br from-emerald-500/30 to-indigo-500/30 border border-[#25282c]">
                         {(partnerOf(session)?.name?.[0] || 'U').toUpperCase()}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           <h3 className="text-lg font-semibold text-white">{partnerOf(session)?.name || 'Partner'}</h3>
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                             Completed
                           </span>
                           <CheckCircle className="w-4 h-4 text-green-500" />
@@ -411,7 +440,7 @@ const Sessions: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button onClick={() => handleToggleExpand(String(session._id || session.id))} className="px-3 py-1.5 border border-gray-700 hover:border-gray-600 text-gray-300 rounded-md">
+                      <button onClick={() => handleToggleExpand(String(session._id || session.id))} className="px-3 py-1.5 border border-[#2f343a] hover:border-[#3a4047] text-gray-300 rounded-md">
                         {expanded[String(session._id || session.id)] ? 'Hide' : 'Details'}
                       </button>
                     </div>
@@ -419,22 +448,23 @@ const Sessions: React.FC = () => {
                   {expanded[String(session._id || session.id)] && (
                     <div className="mt-4 space-y-4">
                       {/* AI Summary */}
-                      <div>
+                      <div className="bg-black/40 border border-[#25282c] rounded-xl p-3">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-sm font-semibold text-white">AI Summary</h4>
-                          <button onClick={() => handleGenerateSummary(String(session._id || session.id))} className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded">
+                          <button onClick={() => handleGenerateSummary(String(session._id || session.id))} className="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded">
                             {summaryLoading[String(session._id || session.id)] ? 'Generating…' : 'Generate'}
                           </button>
                         </div>
+                        <p className="text-xs text-gray-400 mb-2">Uses your notes and session duration to produce a concise recap. Your notes remain local.</p>
                         {summaryError[String(session._id || session.id)] && (
                           <div className="text-xs text-red-400 mb-2">{summaryError[String(session._id || session.id)]}</div>
                         )}
-                        <pre className="bg-black/40 text-gray-200 text-xs p-3 rounded border border-gray-800 whitespace-pre-wrap">
+                        <pre className="bg-black/50 text-gray-200 text-xs p-3 rounded border border-[#25282c] whitespace-pre-wrap">
 {summaries[String(session._id || session.id)] || 'No summary yet.'}
                         </pre>
                       </div>
                       {/* Lesson Plans */}
-                      <div>
+                      <div className="bg-black/40 border border-[#25282c] rounded-xl p-3">
                         <h4 className="text-sm font-semibold text-white mb-2">Lesson Plans</h4>
                         {Array.isArray(plansBySession[String(session._id || session.id)]) && plansBySession[String(session._id || session.id)].length > 0 ? (
                           <ul className="list-disc list-inside text-xs text-gray-300 space-y-1">
@@ -450,13 +480,13 @@ const Sessions: React.FC = () => {
                         )}
                       </div>
                       {/* Personal Notes */}
-                      <div>
+                      <div className="bg-black/40 border border-[#25282c] rounded-xl p-3">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-sm font-semibold text-white">My Notes</h4>
-                          <span className="text-[10px] text-gray-500">Saved locally</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 border border-[#2f343a]">Saved locally</span>
                         </div>
                         <textarea
-                          className="w-full bg-black/40 text-gray-200 text-sm p-3 rounded border border-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 min-h-[90px]"
+                          className="w-full bg-black/50 text-gray-200 text-sm p-3 rounded border border-[#25282c] focus:outline-none focus:ring-1 focus:ring-emerald-600 min-h-[90px]"
                           placeholder="Write notes about this session..."
                           value={notes[String(session._id || session.id)] || ''}
                           onChange={(e) => setNotes((prev) => ({ ...prev, [String(session._id || session.id)]: e.target.value }))}
