@@ -1,11 +1,22 @@
 // src/services/aiService.ts
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    organization: process.env.OPENAI_ORG || process.env.OPENAI_ORGANIZATION,
-    project: process.env.OPENAI_PROJECT,
-});
+// Build OpenAI client config safely. Some accounts don't use org/project headers.
+const rawOrg = process.env.OPENAI_ORG || process.env.OPENAI_ORGANIZATION;
+const rawProj = process.env.OPENAI_PROJECT;
+const cfg: any = { apiKey: process.env.OPENAI_API_KEY };
+if (rawOrg && /^org_[A-Za-z0-9]/.test(rawOrg)) {
+  cfg.organization = rawOrg;
+} else if (rawOrg) {
+  // Avoid breaking auth if a non-standard value is present
+  console.warn('[AI] Ignoring OPENAI_ORG/OPENAI_ORGANIZATION value that does not look like an org_ id');
+}
+if (rawProj && /^proj_[A-Za-z0-9]/.test(rawProj)) {
+  cfg.project = rawProj;
+} else if (rawProj) {
+  console.warn('[AI] Ignoring OPENAI_PROJECT value that does not look like a proj_ id');
+}
+const openai = new OpenAI(cfg);
 
 // Prefer env-configurable models with safe defaults
 const LESSON_MODEL = process.env.OPENAI_MODEL_LESSON || 'gpt-4o-mini';
