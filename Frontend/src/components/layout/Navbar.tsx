@@ -64,6 +64,7 @@ const Navbar: React.FC = () => {
     { name: 'Sessions', path: '/sessions', icon: BookOpen, protected: true },
     { name: 'Skills', path: '/skills', icon: Zap, protected: false },
     { name: 'Learn', path: '/learn', icon: BookOpen, protected: false },
+    { name: 'Roadmaps', path: '/roadmaps', icon: BookOpen, protected: false },
   ];
 
   const isActivePath = (path: string) => {

@@ -20,6 +20,7 @@
     "react-hook-form": "^7.53.2",
     "react-i18next": "^15.6.1",
     "react-router-dom": "^6.28.0",
+    "reactflow": "^11.11.4",
     "socket.io-client": "^4.8.1",
     "tailwindcss": "^4.1.12",
     "zustand": "^5.0.7"
