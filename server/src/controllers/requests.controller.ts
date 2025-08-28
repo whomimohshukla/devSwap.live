@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import RequestModel from "../models/request.model";
 import User from "../models/user.model";
+import Session from "../models/session.model";
 import { getIO } from "../lib/socket";
 
 // Helper to get userId from auth middleware
@@ -119,14 +120,33 @@ export const RequestsController = {
       const populated = await RequestModel.findById(doc._id)
         .populate("fromUser", "name avatar bio")
         .populate("toUser", "name avatar bio");
+      // Ensure there is an active session between these users
+      let session = await Session.findOne({
+        isActive: true,
+        $or: [
+          { userA: doc.fromUser, userB: doc.toUser },
+          { userA: doc.toUser, userB: doc.fromUser },
+        ],
+      });
+      if (!session) {
+        session = await Session.create({
+          userA: doc.fromUser as any,
+          userB: doc.toUser as any,
+          isActive: true,
+          startedAt: new Date(),
+        });
+      }
       try {
         // Notify both parties
         getIO().to(String(doc.fromUser)).emit("request:accepted", { request: populated });
         getIO().to(String(doc.toUser)).emit("request:accepted", { request: populated });
+        // Also inform about session creation/availability
+        getIO().to(String(doc.fromUser)).emit("session:created", { session });
+        getIO().to(String(doc.toUser)).emit("session:created", { session });
       } catch (e) {
-        console.warn("[socket] emit request:accepted failed", e);
+        console.warn("[socket] emit request:accepted/session:created failed", e);
       }
-      return res.json({ data: populated });
+      return res.json({ data: populated, session });
     } catch (err) {
       console.error("accept request error", err);
       return res.status(500).json({ message: "Failed to accept request" });

@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Matches from './pages/Matches';
 import Sessions from './pages/Sessions';
+import SessionRoom from './pages/SessionRoom';
 import Profile from './pages/Profile';
 import Skills from './pages/Skills';
 import { useAuthStore } from './lib/auth';
@@ -66,6 +67,11 @@ function App() {
           <Route path="sessions" element={
             <ProtectedRoute>
               <Sessions />
+            </ProtectedRoute>
+          } />
+          <Route path="sessions/:id/room" element={
+            <ProtectedRoute>
+              <SessionRoom />
             </ProtectedRoute>
           } />
           <Route path="profile" element={

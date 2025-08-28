@@ -56,11 +56,13 @@ export function useRequests() {
     try {
       const res = await requestsAPI.accept(id);
       const updated: RequestItem | undefined = res.data?.data ?? undefined;
+      const session = res.data?.session ?? undefined;
       if (updated) {
         setSentPending((prev) => prev.map((r) => (getId(r) === id ? { ...r, status: 'accepted' } : r)));
         setSentHistory((prev) => [{ ...updated, status: 'accepted' }, ...prev.filter((r) => getId(r) !== id)]);
       }
       markAcceptedNotif({ requestId: id });
+      return { request: updated, session } as any;
     } catch (e) {
       // revert by refetching
       await refreshAll();

@@ -36,6 +36,9 @@ const Matches: React.FC = () => {
   const [incomingView, setIncomingView] = useState<'pending' | 'history'>('pending');
   const [sentView, setSentView] = useState<'pending' | 'history'>('pending');
   const [sessions, setSessions] = useState<any[]>([]);
+  const [latestSessionId, setLatestSessionId] = useState<string | null>(null);
+  // simple local favorites (like) store
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const searching = useMatchStore((s) => s.searching);
   const setSearching = useMatchStore((s) => s.setSearching);
   const matchedPartner = useMatchStore((s) => s.matchedPartner);
@@ -80,13 +83,37 @@ const Matches: React.FC = () => {
     };
   }, []);
 
+  // Initialize favorites from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('devswap:favorites');
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) setFavorites(new Set(arr.map(String)));
+      }
+    } catch {}
+  }, []);
+
+  // Persist favorites to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('devswap:favorites', JSON.stringify(Array.from(favorites)));
+    } catch {}
+  }, [favorites]);
+
   // Requests actions backed by API
   const handleAcceptRequest = async (id: string | number) => {
     try {
-      await acceptRequest(String(id));
+      const result = await acceptRequest(String(id));
       setToast({ type: 'success', msg: 'Request accepted' });
-      // Auto-open Sessions page
-      navigate('/sessions');
+      // If backend returned a session, jump straight to the room
+      const sessionId = result?.session?._id || result?.session?.id;
+      if (sessionId) {
+        navigate(`/sessions/${sessionId}/room`);
+      } else {
+        // Fallback: Sessions page
+        navigate('/sessions');
+      }
     } catch (e: any) {
       setToast({ type: 'error', msg: e?.response?.data?.message || e?.message || 'Failed to accept request' });
     } finally {
@@ -109,6 +136,13 @@ const Matches: React.FC = () => {
     fetchSessions();
   }, []);
 
+  // Keep a quick reference to the most recent/active session id
+  useEffect(() => {
+    const active = (sessions || []).find((s: any) => s.isActive !== false);
+    const sid = active?._id || active?.id || null;
+    if (sid) setLatestSessionId(sid);
+  }, [sessions]);
+
   // Auto-start matching when coming from dashboard with ?search=1
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -130,6 +164,43 @@ const Matches: React.FC = () => {
     } finally {
       setTimeout(() => setToast(null), 2000);
     }
+  };
+
+  // Find active session with a given user id
+  const getActiveSessionIdWithUser = (userId: string) => {
+    const s = (sessions || []).find((sess: any) => {
+      const a = sess.userA?._id || sess.userA;
+      const b = sess.userB?._id || sess.userB;
+      return (a === userId || b === userId) && (sess.isActive !== false);
+    });
+    return s?._id || s?.id || null;
+  };
+
+  const handleVideoAction = async (userId: string) => {
+    const sid = getActiveSessionIdWithUser(userId);
+    if (sid) {
+      navigate(`/sessions/${sid}/room`);
+      return;
+    }
+    // no active session: send a request as a prompt to start
+    await handleConnect(userId);
+    setToast({ type: 'success', msg: "Request sent. They need to accept to start video." });
+    setTimeout(() => setToast(null), 2000);
+  };
+
+  const toggleFavorite = (id: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        setToast({ type: 'success', msg: 'Removed from favorites' });
+      } else {
+        next.add(id);
+        setToast({ type: 'success', msg: 'Added to favorites' });
+      }
+      setTimeout(() => setToast(null), 1500);
+      return next;
+    });
   };
 
   // Setup socket listeners (once)
@@ -165,12 +236,23 @@ const Matches: React.FC = () => {
     socket.on('match:found', onMatchFound);
     socket.on('match:queue:joined', onQueueJoined);
     socket.on('match:queue:left', onQueueLeft);
+    // If a session is created by server (on accept), navigate directly to room
+    const onSessionCreated = (payload: any) => {
+      const sid = payload?.session?._id || payload?.session?.id;
+      if (sid) {
+        setLatestSessionId(sid);
+        navigate(`/sessions/${sid}/room`);
+      }
+    };
+    socket.on('session:created', onSessionCreated);
+
     return () => {
       socket.off('match:found', onMatchFound);
       socket.off('match:queue:joined', onQueueJoined);
       socket.off('match:queue:left', onQueueLeft);
+      socket.off('session:created', onSessionCreated);
     };
-  }, [setMatchedPartner, setSearching]);
+  }, [setMatchedPartner, setSearching, navigate]);
 
   // Mark requests as read when Requests tab is active
   useEffect(() => {
@@ -250,6 +332,7 @@ const Matches: React.FC = () => {
       fromUserId: r.fromUser?._id || r.from?.id,
       createdAt: r.createdAt,
       message: r.message,
+      status: r.status,
     }));
   }, [incomingPending, incomingHistory, incomingView]);
 
@@ -391,6 +474,39 @@ const Matches: React.FC = () => {
                 )}
               </button>
             ))}
+          </div>
+        </motion.div>
+
+        {/* How it works & Tips */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-8"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5">
+              <h3 className="text-white font-semibold mb-2">How matching works</h3>
+              <ol className="list-decimal list-inside text-sm text-gray-300 space-y-1">
+                <li>Join the queue with your skills and goals</li>
+                <li>We pair you with a complementary partner</li>
+                <li>Send/accept a request to connect</li>
+                <li>Start a live session to swap skills</li>
+              </ol>
+            </div>
+            <div className="bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5">
+              <h3 className="text-white font-semibold mb-2">Tips for better matches</h3>
+              <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                <li>Keep your skills and levels up to date</li>
+                <li>Add a short bio about what you want to learn/teach</li>
+                <li>Be responsive to incoming requests</li>
+                <li>Use the Upcoming tab to plan ahead</li>
+              </ul>
+            </div>
+            <div className="bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5">
+              <h3 className="text-white font-semibold mb-2">Safety & respect</h3>
+              <p className="text-sm text-gray-300">Be kind and professional. Share only what you're comfortable with. Recording or sharing content outside a session requires explicit consent.</p>
+            </div>
           </div>
         </motion.div>
 
@@ -536,11 +652,19 @@ const Matches: React.FC = () => {
                           <MessageCircle className="w-4 h-4" />
                           <span>{hasPending ? 'Requested' : 'Connect'}</span>
                         </button>
-                        <button className="px-4 py-2 border border-gray-600 hover:border-emerald-500 text-gray-300 hover:text-white rounded-lg transition-colors">
+                        <button
+                          title={getActiveSessionIdWithUser(String(match.id)) ? 'Join active session' : 'Send request to start video'}
+                          onClick={() => handleVideoAction(String(match.id))}
+                          className="px-4 py-2 border border-gray-600 hover:border-emerald-500 text-gray-300 hover:text-white rounded-lg transition-colors"
+                        >
                           <Video className="w-4 h-4" />
                         </button>
-                        <button className="px-4 py-2 border border-gray-600 hover:border-red-500 text-gray-300 hover:text-red-400 rounded-lg transition-colors">
-                          <Heart className="w-4 h-4" />
+                        <button
+                          aria-label={favorites.has(String(match.id)) ? 'Unlike' : 'Like'}
+                          onClick={() => toggleFavorite(String(match.id))}
+                          className={`px-4 py-2 rounded-lg transition-colors border ${favorites.has(String(match.id)) ? 'border-red-500 bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'border-gray-600 text-gray-300 hover:text-red-400 hover:border-red-500'}`}
+                        >
+                          <Heart className={`w-4 h-4 ${favorites.has(String(match.id)) ? 'fill-current' : ''}`} />
                         </button>
                       </div>
                     );
@@ -595,6 +719,27 @@ const Matches: React.FC = () => {
                         <div className="flex gap-3 justify-end">
                           <button onClick={() => handleDeclineRequest(r.id)} className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200">Decline</button>
                           <button onClick={() => handleAcceptRequest(r.id)} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white">Accept</button>
+                        </div>
+                      )}
+                      {incomingView === 'history' && r.status === 'accepted' && (
+                        <div className="flex gap-3 justify-end mt-2">
+                          {(() => {
+                            // Try to find a matching active session with this requester
+                            const sid = (sessions || []).find((s: any) => {
+                              const a = s.userA?._id || s.userA;
+                              const b = s.userB?._id || s.userB;
+                              return (a === r.fromUserId || b === r.fromUserId) && (s.isActive !== false);
+                            })?._id || latestSessionId;
+                            return (
+                              <button
+                                onClick={() => sid && navigate(`/sessions/${sid}/room`)}
+                                disabled={!sid}
+                                className={`px-3 py-1.5 rounded-lg ${sid ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-gray-800 text-gray-400 cursor-not-allowed'}`}
+                              >
+                                Join Session
+                              </button>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>

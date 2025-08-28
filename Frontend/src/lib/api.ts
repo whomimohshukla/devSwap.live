@@ -113,7 +113,8 @@ export const sessionsAPI = {
     skillFromPartner: string;
   }) => Promise.reject(new Error('Session creation is not supported by the backend. Use matching flow instead.')),
   
-  getSessions: () => api.get('/sessions'),
+  getSessions: (params?: { status?: 'all' | 'active' | 'ended'; page?: number; limit?: number }) =>
+    api.get('/sessions', { params }),
   getSessionById: (id: string) => api.get(`/sessions/${id}`),
   joinSession: (id: string) => api.post(`/sessions/${id}/join`),
   endSession: (id: string) => api.post(`/sessions/${id}/end`),

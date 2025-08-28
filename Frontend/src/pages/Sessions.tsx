@@ -1,111 +1,176 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Video, 
-  Calendar, 
   Clock, 
   Play,
   Square,
-  MessageCircle,
-  Share2,
-  Settings,
-  Star,
-  BookOpen,
   CheckCircle
 } from 'lucide-react';
+import { sessionsAPI, usersAPI, aiAPI } from '../lib/api';
+
+type UserRef = { _id?: string; name?: string; avatar?: string };
+type SessionItem = {
+  _id?: string;
+  id?: string;
+  userA: UserRef;
+  userB: UserRef;
+  isActive: boolean;
+  startedAt?: string;
+  endedAt?: string;
+  skillFromA?: string;
+  skillFromB?: string;
+};
 
 const Sessions: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'active' | 'upcoming' | 'completed'>('active');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [activeSessions, setActiveSessions] = useState<SessionItem[]>([]);
+  const [completedSessions, setCompletedSessions] = useState<SessionItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [meId, setMeId] = useState<string | null>(null);
+  // Expanded details toggles per session
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  // AI summaries per session
+  const [summaries, setSummaries] = useState<Record<string, string | null>>({});
+  const [summaryLoading, setSummaryLoading] = useState<Record<string, boolean>>({});
+  const [summaryError, setSummaryError] = useState<Record<string, string | null>>({});
+  // Cached lesson plans (fetched once) keyed by sessionId
+  const [plansBySession, setPlansBySession] = useState<Record<string, any[]>>({});
+  // Personal notes per session (local only)
+  const [notes, setNotes] = useState<Record<string, string>>(() => {
+    try {
+      const raw = localStorage.getItem('sessionNotes');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
 
-  const activeSessions = [
-    {
-      id: 1,
-      partner: 'Sarah Chen',
-      avatar: 'SC',
-      skill: 'React Hooks',
-      type: 'learning',
-      startTime: '2:30 PM',
-      duration: '45 min',
-      status: 'live',
-    },
-  ];
-
-  const upcomingSessions = [
-    {
-      id: 1,
-      partner: 'Marcus Johnson',
-      avatar: 'MJ',
-      skill: 'Python FastAPI',
-      type: 'teaching',
-      date: 'Today',
-      time: '4:00 PM',
-      duration: '60 min',
-    },
-    {
-      id: 2,
-      partner: 'Elena Rodriguez',
-      avatar: 'ER',
-      skill: 'Vue.js Components',
-      type: 'learning',
-      date: 'Tomorrow',
-      time: '10:00 AM',
-      duration: '90 min',
-    },
-    {
-      id: 3,
-      partner: 'Alex Kim',
-      avatar: 'AK',
-      skill: 'Docker Containers',
-      type: 'learning',
-      date: 'Dec 20',
-      time: '3:00 PM',
-      duration: '60 min',
-    },
-  ];
-
-  const completedSessions = [
-    {
-      id: 1,
-      partner: 'David Park',
-      avatar: 'DP',
-      skill: 'TypeScript Generics',
-      type: 'taught',
-      date: 'Dec 15',
-      duration: '75 min',
-      rating: 5,
-      feedback: 'Excellent session! David explained complex concepts very clearly.',
-    },
-    {
-      id: 2,
-      partner: 'Lisa Wang',
-      avatar: 'LW',
-      skill: 'GraphQL Queries',
-      type: 'learned',
-      date: 'Dec 14',
-      duration: '60 min',
-      rating: 5,
-      feedback: 'Great learning experience. Lisa was very patient and knowledgeable.',
-    },
-    {
-      id: 3,
-      partner: 'James Wilson',
-      avatar: 'JW',
-      skill: 'AWS Lambda',
-      type: 'learned',
-      date: 'Dec 12',
-      duration: '90 min',
-      rating: 4,
-      feedback: 'Good session, learned a lot about serverless architecture.',
-    },
-  ];
-
-  const handleJoinSession = (sessionId: number) => {
-    console.log('Joining session:', sessionId);
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [meRes, actRes, endRes] = await Promise.all([
+        usersAPI.getMe(),
+        sessionsAPI.getSessions({ status: 'active', page: 1, limit: 20 }),
+        sessionsAPI.getSessions({ status: 'ended', page: 1, limit: 20 }),
+      ]);
+      const me = meRes.data?.data ?? meRes.data ?? {};
+      setMeId(me?._id || me?.id || null);
+      const act = (actRes.data?.sessions ?? actRes.data?.data ?? actRes.data ?? []).map((s: any) => s);
+      const ended = (endRes.data?.sessions ?? endRes.data?.data ?? endRes.data ?? []).map((s: any) => s);
+      setActiveSessions(Array.isArray(act) ? act : []);
+      setCompletedSessions(Array.isArray(ended) ? ended : []);
+      // Precompute expanded state as collapsed
+      const all = [...(Array.isArray(act) ? act : []), ...(Array.isArray(ended) ? ended : [])];
+      const exp: Record<string, boolean> = {};
+      all.forEach((s: any) => {
+        const id = String(s._id ?? s.id);
+        if (id) exp[id] = false;
+      });
+      setExpanded(exp);
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e?.message || 'Failed to load sessions');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleScheduleSession = () => {
-    console.log('Opening schedule modal');
+  useEffect(() => {
+    load();
+  }, []);
+
+  // Load cached lesson plans once and index by sessionId
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await aiAPI.getCachedPlans();
+        const list = res.data?.plans ?? res.data?.data ?? res.data ?? [];
+        const map: Record<string, any[]> = {};
+        (Array.isArray(list) ? list : []).forEach((p: any) => {
+          const sid = String(p.sessionId ?? p.sessionID ?? p.session_id ?? '');
+          if (!sid) return;
+          if (!map[sid]) map[sid] = [];
+          map[sid].push(p);
+        });
+        setPlansBySession(map);
+      } catch {
+        // ignore if unavailable
+      }
+    })();
+  }, []);
+
+  // Persist notes locally
+  useEffect(() => {
+    try { localStorage.setItem('sessionNotes', JSON.stringify(notes)); } catch {}
+  }, [notes]);
+
+  const partnerOf = (s: SessionItem): UserRef | undefined => {
+    const my = meId;
+    if (!my) return undefined;
+    const aId = s.userA?._id || (s as any).userA?.id;
+    return String(aId) === String(my) ? s.userB : s.userA;
   };
+
+  const handleJoinSession = async (sessionId: string) => {
+    try {
+      await sessionsAPI.joinSession(String(sessionId));
+      setToast({ type: 'success', msg: 'Joined session' });
+      // Navigate to real-time room
+      navigate(`/sessions/${sessionId}/room`);
+    } catch (e: any) {
+      setToast({ type: 'error', msg: e?.response?.data?.message || e?.message || 'Failed to join session' });
+    } finally {
+      setTimeout(() => setToast(null), 2000);
+    }
+  };
+
+  const handleToggleExpand = (sessionId: string) => {
+    setExpanded((prev) => ({ ...prev, [sessionId]: !prev[sessionId] }));
+  };
+
+  const handleGenerateSummary = async (sessionId: string) => {
+    setSummaryLoading((p) => ({ ...p, [sessionId]: true }));
+    setSummaryError((p) => ({ ...p, [sessionId]: null }));
+    try {
+      const res = await aiAPI.getSessionSummary(String(sessionId));
+      const text = res.data?.summary ?? res.data?.data?.summary ?? res.data ?? '';
+      setSummaries((p) => ({ ...p, [sessionId]: typeof text === 'string' ? text : JSON.stringify(text, null, 2) }));
+      setToast({ type: 'success', msg: 'AI summary generated' });
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || 'Failed to generate summary';
+      setSummaryError((p) => ({ ...p, [sessionId]: msg }));
+      setToast({ type: 'error', msg });
+    } finally {
+      setSummaryLoading((p) => ({ ...p, [sessionId]: false }));
+      setTimeout(() => setToast(null), 2000);
+    }
+  };
+
+  const handleEndSession = async (sessionId: string) => {
+    // optimistic: move from active to completed
+    const s = activeSessions.find((x) => String(x._id ?? x.id) === String(sessionId));
+    setActiveSessions((prev) => prev.filter((x) => String(x._id ?? x.id) !== String(sessionId)));
+    if (s) setCompletedSessions((prev) => [{ ...s, isActive: false, endedAt: new Date().toISOString() }, ...prev]);
+    try {
+      await sessionsAPI.endSession(String(sessionId));
+      setToast({ type: 'success', msg: 'Session ended' });
+    } catch (e: any) {
+      // revert
+      await load();
+      setToast({ type: 'error', msg: e?.response?.data?.message || e?.message || 'Failed to end session' });
+    } finally {
+      setTimeout(() => setToast(null), 2000);
+    }
+  };
+
+  const counts = useMemo(() => ({
+    active: activeSessions.length,
+    completed: completedSessions.length,
+  }), [activeSessions.length, completedSessions.length]);
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-8">
@@ -125,13 +190,7 @@ const Sessions: React.FC = () => {
               Manage your skill exchange sessions
             </p>
           </div>
-          <button
-            onClick={handleScheduleSession}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors flex items-center space-x-2"
-          >
-            <Calendar className="w-5 h-5" />
-            <span>Schedule Session</span>
-          </button>
+          {/* Scheduling UI not implemented in backend; hiding for now */}
         </motion.div>
 
         {/* Tabs */}
@@ -143,27 +202,55 @@ const Sessions: React.FC = () => {
         >
           <div className="flex space-x-1 bg-gray-900 p-1 rounded-lg w-fit">
             {[
-              { key: 'active', label: 'Active', count: activeSessions.length },
-              { key: 'upcoming', label: 'Upcoming', count: upcomingSessions.length },
-              { key: 'completed', label: 'Completed', count: completedSessions.length },
+              { key: 'active', label: 'Active', count: counts.active },
+              { key: 'completed', label: 'Completed', count: counts.completed },
             ].map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as any)}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === tab.key
+                  activeTab === (tab.key as any)
                     ? 'bg-emerald-600 text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
                 {tab.label}
-                {tab.count > 0 && (
-                  <span className="ml-2 px-2 py-0.5 bg-gray-700 rounded-full text-xs">
-                    {tab.count}
-                  </span>
-                )}
+                <span className="ml-2 px-2 py-0.5 text-xs rounded bg-gray-800 text-gray-300">{tab.count}</span>
               </button>
             ))}
+          </div>
+        </motion.div>
+
+        {/* How sessions work & Tips */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-8"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5">
+              <h3 className="text-white font-semibold mb-2">How sessions work</h3>
+              <ol className="list-decimal list-inside text-sm text-gray-300 space-y-1">
+                <li>Accept a match request or create one from Matches</li>
+                <li>Join the room for live voice/video and screen share</li>
+                <li>Collaborate, teach, and learn in real time</li>
+                <li>End the session — summaries and notes live here</li>
+              </ol>
+            </div>
+            <div className="bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5">
+              <h3 className="text-white font-semibold mb-2">What you can do</h3>
+              <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                <li>1:1 voice/video, mute/camera toggle, push‑to‑talk</li>
+                <li>Share your screen to demo or pair-program</li>
+                <li>Use in‑room chat and see participants</li>
+                <li>Save personal notes; generate AI summaries</li>
+              </ul>
+            </div>
+            <div className="bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5">
+              <h3 className="text-white font-semibold mb-2">Privacy & consent</h3>
+              <p className="text-sm text-gray-300">Ask before recording or sharing content. Use respectful communication and protect sensitive information. You’re in control of your mic/camera and what you share.</p>
+            </div>
           </div>
         </motion.div>
 
@@ -171,148 +258,25 @@ const Sessions: React.FC = () => {
         <div className="space-y-6">
           {activeTab === 'active' && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              {activeSessions.length > 0 ? (
-                <div className="space-y-4">
-                  {activeSessions.map((session, index) => (
-                    <motion.div
-                      key={session.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className="bg-gray-900 rounded-xl p-6 border border-emerald-500/50"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="relative">
-                            <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                              {session.avatar}
-                            </div>
-                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                            </div>
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-semibold text-white">{session.partner}</h3>
-                            <p className="text-gray-400">
-                              {session.type === 'learning' ? 'Learning' : 'Teaching'} {session.skill}
-                            </p>
-                            <div className="flex items-center space-x-4 mt-1">
-                              <div className="flex items-center space-x-1 text-emerald-400">
-                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                                <span className="text-sm font-medium">LIVE</span>
-                              </div>
-                              <span className="text-gray-400 text-sm">
-                                Started at {session.startTime} • {session.duration}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <button className="p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
-                            <Video className="w-5 h-5" />
-                          </button>
-                          <button className="p-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
-                            <MessageCircle className="w-5 h-5" />
-                          </button>
-                          <button className="p-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
-                            <Share2 className="w-5 h-5" />
-                          </button>
-                          <button className="p-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
-                            <Square className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Video className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-gray-400 mb-2">No active sessions</h3>
-                  <p className="text-gray-500">Your live sessions will appear here</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === 'upcoming' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
               className="grid grid-cols-1 lg:grid-cols-2 gap-6"
             >
-              {upcomingSessions.map((session, index) => (
+              {(loading && activeSessions.length === 0) && (
+                <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 animate-pulse">
+                  <div className="h-4 w-40 bg-gray-800 rounded mb-2" />
+                  <div className="h-3 w-28 bg-gray-800 rounded mb-4" />
+                  <div className="h-3 w-full bg-gray-800 rounded mb-2" />
+                  <div className="h-3 w-3/4 bg-gray-800 rounded" />
+                </div>
+              )}
+              {!loading && activeSessions.length === 0 && (
+                <div className="lg:col-span-2 text-center text-gray-400">No active sessions</div>
+              )}
+              {activeSessions.map((session, index) => (
                 <motion.div
-                  key={session.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="bg-gray-900 rounded-xl p-6 border border-gray-800 hover:border-gray-700 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                        {session.avatar}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">{session.partner}</h3>
-                        <p className="text-gray-400 text-sm">
-                          {session.type === 'learning' ? 'Learning' : 'Teaching'} {session.skill}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      session.type === 'learning' 
-                        ? 'bg-blue-500/20 text-blue-400' 
-                        : 'bg-emerald-500/20 text-emerald-400'
-                    }`}>
-                      {session.type === 'learning' ? 'Learning' : 'Teaching'}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center space-x-2 text-gray-300">
-                      <Calendar className="w-4 h-4" />
-                      <span>{session.date}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-gray-300">
-                      <Clock className="w-4 h-4" />
-                      <span>{session.time} • {session.duration}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => handleJoinSession(session.id)}
-                      className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
-                    >
-                      <Play className="w-4 h-4" />
-                      <span>Join Session</span>
-                    </button>
-                    <button className="px-4 py-2 border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white rounded-lg transition-colors">
-                      <Settings className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-
-          {activeTab === 'completed' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-4"
-            >
-              {completedSessions.map((session, index) => (
-                <motion.div
-                  key={session.id}
+                  key={session._id || session.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -321,79 +285,200 @@ const Sessions: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4 flex-1">
                       <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        {session.avatar}
+                        {(partnerOf(session)?.name?.[0] || 'U').toUpperCase()}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-white">{session.partner}</h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            session.type === 'learned' 
-                              ? 'bg-blue-500/20 text-blue-400' 
-                              : 'bg-emerald-500/20 text-emerald-400'
-                          }`}>
-                            {session.type === 'learned' ? 'Learned' : 'Taught'}
+                          <h3 className="text-lg font-semibold text-white">{partnerOf(session)?.name || 'Partner'}</h3>
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                            Active
+                          </span>
+                        </div>
+                        <p className="text-gray-400 mb-2">Skill swap session</p>
+                        <div className="flex items-center space-x-4 text-sm text-gray-400 mb-3">
+                          <Clock className="w-4 h-4" />
+                          <span>Started {new Date(session.startedAt || Date.now()).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button onClick={() => handleJoinSession(String(session._id || session.id))} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center">
+                        <Play className="w-4 h-4 mr-1" /> Join
+                      </button>
+                      <button onClick={() => handleEndSession(String(session._id || session.id))} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center">
+                        <Square className="w-4 h-4 mr-1" /> End
+                      </button>
+                      <button onClick={() => handleToggleExpand(String(session._id || session.id))} className="px-3 py-1.5 border border-gray-700 hover:border-gray-600 text-gray-300 rounded-md">
+                        {expanded[String(session._id || session.id)] ? 'Hide' : 'Details'}
+                      </button>
+                    </div>
+                  </div>
+                  {expanded[String(session._id || session.id)] && (
+                    <div className="mt-4 space-y-4">
+                      {/* AI Summary */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-white">AI Summary</h4>
+                          <button onClick={() => handleGenerateSummary(String(session._id || session.id))} className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded">
+                            {summaryLoading[String(session._id || session.id)] ? 'Generating…' : 'Generate'}
+                          </button>
+                        </div>
+                        {summaryError[String(session._id || session.id)] && (
+                          <div className="text-xs text-red-400 mb-2">{summaryError[String(session._id || session.id)]}</div>
+                        )}
+                        <pre className="bg-black/40 text-gray-200 text-xs p-3 rounded border border-gray-800 whitespace-pre-wrap">
+{summaries[String(session._id || session.id)] || 'No summary yet.'}
+                        </pre>
+                      </div>
+                      {/* Lesson Plans */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-white mb-2">Lesson Plans</h4>
+                        {Array.isArray(plansBySession[String(session._id || session.id)]) && plansBySession[String(session._id || session.id)].length > 0 ? (
+                          <ul className="list-disc list-inside text-xs text-gray-300 space-y-1">
+                            {plansBySession[String(session._id || session.id)].map((p: any, i: number) => (
+                              <li key={i}>
+                                <span className="font-medium">{p.skill || p.title || 'Plan'}</span>{' '}
+                                <span className="text-gray-500">({new Date(p.createdAt || p.date || Date.now()).toLocaleString()})</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="text-xs text-gray-400">No cached lesson plans found.</div>
+                        )}
+                      </div>
+                      {/* Personal Notes */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-white">My Notes</h4>
+                          <span className="text-[10px] text-gray-500">Saved locally</span>
+                        </div>
+                        <textarea
+                          className="w-full bg-black/40 text-gray-200 text-sm p-3 rounded border border-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 min-h-[90px]"
+                          placeholder="Write notes about this session..."
+                          value={notes[String(session._id || session.id)] || ''}
+                          onChange={(e) => setNotes((prev) => ({ ...prev, [String(session._id || session.id)]: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+          {activeTab === 'completed' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+            >
+              {(loading && completedSessions.length === 0) && (
+                <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 animate-pulse">
+                  <div className="h-4 w-40 bg-gray-800 rounded mb-2" />
+                  <div className="h-3 w-28 bg-gray-800 rounded mb-4" />
+                  <div className="h-3 w-full bg-gray-800 rounded mb-2" />
+                  <div className="h-3 w-3/4 bg-gray-800 rounded" />
+                </div>
+              )}
+              {!loading && completedSessions.length === 0 && (
+                <div className="lg:col-span-2 text-center text-gray-400">No completed sessions</div>
+              )}
+              {completedSessions.map((session, index) => (
+                <motion.div
+                  key={session._id || session.id || index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-4 flex-1">
+                      <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-white font-semibold">
+                        {(partnerOf(session)?.name?.[0] || 'U').toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="text-lg font-semibold text-white">{partnerOf(session)?.name || 'Partner'}</h3>
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                            Completed
                           </span>
                           <CheckCircle className="w-4 h-4 text-green-500" />
                         </div>
-                        <p className="text-gray-400 mb-2">{session.skill}</p>
+                        <p className="text-gray-400 mb-2">Skill swap session</p>
                         <div className="flex items-center space-x-4 text-sm text-gray-400 mb-3">
-                          <span>{session.date}</span>
-                          <span>•</span>
-                          <span>{session.duration}</span>
+                          <span>{new Date(session.endedAt || session.startedAt || Date.now()).toLocaleString()}</span>
                         </div>
-                        <div className="flex items-center space-x-2 mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < session.rating
-                                  ? 'text-yellow-400 fill-current'
-                                  : 'text-gray-600'
-                              }`}
-                            />
-                          ))}
-                          <span className="text-gray-400 text-sm ml-2">({session.rating}/5)</span>
-                        </div>
-                        <p className="text-gray-300 text-sm italic">"{session.feedback}"</p>
                       </div>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <button onClick={() => handleToggleExpand(String(session._id || session.id))} className="px-3 py-1.5 border border-gray-700 hover:border-gray-600 text-gray-300 rounded-md">
+                        {expanded[String(session._id || session.id)] ? 'Hide' : 'Details'}
+                      </button>
+                    </div>
                   </div>
+                  {expanded[String(session._id || session.id)] && (
+                    <div className="mt-4 space-y-4">
+                      {/* AI Summary */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-white">AI Summary</h4>
+                          <button onClick={() => handleGenerateSummary(String(session._id || session.id))} className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded">
+                            {summaryLoading[String(session._id || session.id)] ? 'Generating…' : 'Generate'}
+                          </button>
+                        </div>
+                        {summaryError[String(session._id || session.id)] && (
+                          <div className="text-xs text-red-400 mb-2">{summaryError[String(session._id || session.id)]}</div>
+                        )}
+                        <pre className="bg-black/40 text-gray-200 text-xs p-3 rounded border border-gray-800 whitespace-pre-wrap">
+{summaries[String(session._id || session.id)] || 'No summary yet.'}
+                        </pre>
+                      </div>
+                      {/* Lesson Plans */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-white mb-2">Lesson Plans</h4>
+                        {Array.isArray(plansBySession[String(session._id || session.id)]) && plansBySession[String(session._id || session.id)].length > 0 ? (
+                          <ul className="list-disc list-inside text-xs text-gray-300 space-y-1">
+                            {plansBySession[String(session._id || session.id)].map((p: any, i: number) => (
+                              <li key={i}>
+                                <span className="font-medium">{p.skill || p.title || 'Plan'}</span>{' '}
+                                <span className="text-gray-500">({new Date(p.createdAt || p.date || Date.now()).toLocaleString()})</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="text-xs text-gray-400">No cached lesson plans found.</div>
+                        )}
+                      </div>
+                      {/* Personal Notes */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-white">My Notes</h4>
+                          <span className="text-[10px] text-gray-500">Saved locally</span>
+                        </div>
+                        <textarea
+                          className="w-full bg-black/40 text-gray-200 text-sm p-3 rounded border border-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 min-h-[90px]"
+                          placeholder="Write notes about this session..."
+                          value={notes[String(session._id || session.id)] || ''}
+                          onChange={(e) => setNotes((prev) => ({ ...prev, [String(session._id || session.id)]: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </motion.div>
           )}
         </div>
 
-        {/* Empty States */}
-        {((activeTab === 'upcoming' && upcomingSessions.length === 0) ||
-          (activeTab === 'completed' && completedSessions.length === 0)) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="text-center py-12"
-          >
-            {activeTab === 'upcoming' && (
-              <>
-                <Calendar className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-gray-400 mb-2">No upcoming sessions</h3>
-                <p className="text-gray-500 mb-6">Schedule your first learning session</p>
-                <button
-                  onClick={handleScheduleSession}
-                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Schedule Session
-                </button>
-              </>
-            )}
-            {activeTab === 'completed' && (
-              <>
-                <BookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-gray-400 mb-2">No completed sessions</h3>
-                <p className="text-gray-500">Your session history will appear here</p>
-              </>
-            )}
+        {error && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="text-center py-4 text-red-400">
+            {error}
           </motion.div>
+        )}
+        {toast && (
+          <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-md text-white ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+            {toast.msg}
+          </div>
         )}
       </div>
     </div>
