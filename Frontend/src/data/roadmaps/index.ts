@@ -1,25 +1,4 @@
-export type RoadmapStep = {
-  id: string;
-  title: string;
-  description?: string;
-  resources?: { label: string; href: string }[];
-};
-
-export type RoadmapStage = {
-  id: string;
-  title: string;
-  summary?: string;
-  steps: RoadmapStep[];
-};
-
-export type Roadmap = {
-  id: string;
-  title: string;
-  level: 'beginner' | 'intermediate' | 'advanced';
-  description: string;
-  tags: string[];
-  stages: RoadmapStage[];
-};
+import type { Roadmap } from '../../lib/roadmaps';
 
 export const roadmaps: Roadmap[] = [
   {
@@ -349,7 +328,7 @@ export const roadmaps: Roadmap[] = [
     tags: ['Python'],
     stages: [
       { id: 'basics', title: 'Basics', steps: [ { id: 'syntax', title: 'Syntax', resources: [{ label: 'Python Tutorial', href: 'https://docs.python.org/3/tutorial/' }] } ] },
-      { id: 'packages', title: 'Packages', steps: [ { id: 'pip', title: 'Pip & Venv' } ] },
+      { id: 'packages', title: 'Packages', steps: [ { id: 'pip', title: 'Pip & Vennpm' } ] },
       { id: 'web', title: 'Web', steps: [ { id: 'fastapi', title: 'FastAPI/Django' } ] },
     ],
   },
