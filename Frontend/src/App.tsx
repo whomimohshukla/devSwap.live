@@ -14,6 +14,9 @@ import { useAuthStore } from './lib/auth';
 import AuthCallback from './pages/AuthCallback';
 import Privacy from './pages/Privacy';
 import Settings from './pages/Settings';
+import LearnIndex from './pages/LearnIndex';
+import LearnTopic from './pages/LearnTopic';
+import LearnLesson from './pages/LearnLesson';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -38,6 +41,12 @@ function App() {
           <Route index element={<Home />} />
           <Route path="skills" element={<Skills />} />
           <Route path="privacy" element={<Privacy />} />
+          {/* Learn Section */}
+          <Route path="learn" element={<LearnIndex />} />
+          <Route path="learn/:topic" element={<LearnTopic />} />
+          <Route path="learn/:topic/:slug" element={<LearnLesson />} />
+          {/* Documentation removed per request; Learn-only experience */}
+          <Route path="docs" element={<Navigate to="/learn" replace />} />
         </Route>
         
         {/* Auth Routes */}
