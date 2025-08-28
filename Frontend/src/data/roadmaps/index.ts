@@ -1,6 +1,9 @@
 import type { Roadmap } from '../../lib/roadmaps';
 
-export const roadmaps: Roadmap[] = [
+// Base built-in roadmaps. You can override or add new roadmaps by
+// dropping JSON files next to this file (e.g., data-analyst.json).
+// Shape must match the Roadmap type.
+const baseRoadmaps: Roadmap[] = [
   {
     id: 'frontend',
     title: 'Frontend Developer Roadmap',
@@ -433,3 +436,17 @@ export const roadmaps: Roadmap[] = [
     ],
   },
 ];
+
+// Load any JSON files placed alongside this file and merge/override by id.
+// Example: create data-analyst.json to override the built-in "data-analyst".
+const jsonModules = import.meta.glob('./*.json', { eager: true }) as Record<string, any>;
+
+const jsonRoadmaps: Roadmap[] = Object.values(jsonModules)
+  .map((mod: any) => (mod?.default ?? mod) as Roadmap)
+  .filter(Boolean);
+
+const byId = new Map<string, Roadmap>();
+for (const r of baseRoadmaps) byId.set(r.id, r);
+for (const r of jsonRoadmaps) byId.set(r.id, r);
+
+export const roadmaps: Roadmap[] = Array.from(byId.values());
