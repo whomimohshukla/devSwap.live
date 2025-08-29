@@ -18,7 +18,7 @@ import LearnIndex from './pages/LearnIndex';
 import LearnTopic from './pages/LearnTopic';
 import LearnLesson from './pages/LearnLesson';
 import Roadmaps from './pages/Roadmaps';
-import Roadmap from './pages/Roadmap';
+import RoadmapPage from './pages/Roadmap';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -49,7 +49,7 @@ function App() {
           <Route path="learn/:topic/:slug" element={<LearnLesson />} />
           {/* Roadmaps Section */}
           <Route path="roadmaps" element={<Roadmaps />} />
-          <Route path="roadmaps/:id" element={<Roadmap />} />
+          <Route path="roadmaps/:id" element={<RoadmapPage />} />
           {/* Documentation removed per request; Learn-only experience */}
           <Route path="docs" element={<Navigate to="/learn" replace />} />
         </Route>
