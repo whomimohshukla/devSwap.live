@@ -12,7 +12,7 @@ const Badge: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
   </span>
 );
 
-const Roadmap: React.FC = () => {
+const RoadmapPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const data = roadmaps.find((r) => r.id === id) as Roadmap | undefined;
   const [view, setView] = useState<'graph' | 'list'>('graph');
@@ -134,4 +134,4 @@ const Roadmap: React.FC = () => {
   );
 };
 
-export default Roadmap;
+export default RoadmapPage;

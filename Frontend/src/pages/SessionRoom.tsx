@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { motion } from 'framer-motion';
-import { Mic, MicOff, Video, VideoOff, MonitorUp, PhoneOff, Users, Send, Maximize2, Minimize2 } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, MonitorUp, PhoneOff, Users, Send, Maximize2, Minimize2, Settings } from 'lucide-react';
 import { sessionsAPI, aiAPI } from '../lib/api';
 
 
@@ -12,6 +12,7 @@ const ICE_SERVERS: RTCIceServer[] = [
 ];
 const LS_AUDIO = 'devswap.device.audioId';
 const LS_VIDEO = 'devswap.device.videoId';
+const LS_SETUP_SEEN = 'devswap.device.setupSeen';
 
 const SessionRoom: React.FC = () => {
   const { id: sessionId } = useParams<{ id: string }>();
@@ -33,7 +34,7 @@ const SessionRoom: React.FC = () => {
   const [selectedVideo, setSelectedVideo] = useState<string | undefined>(undefined);
   const [stats, setStats] = useState<{ bitrateKbps?: number; rttMs?: number }>({});
   // Layout and style controls
-  const [immersive, setImmersive] = useState<boolean>(false); // Hide side panels and fill with video
+  const immersive = false; // immersive mode disabled; kept for layout conditionals
   const [frameStyle, setFrameStyle] = useState<'rounded' | 'square' | 'glow'>('rounded');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   // AI assistant state
@@ -43,6 +44,12 @@ const SessionRoom: React.FC = () => {
   const [aiMeta, setAiMeta] = useState<{ fallback?: boolean; reason?: string; model?: string } | undefined>(undefined);
   const [aiOpen, setAiOpen] = useState<boolean>(false);
   const [aiCooldownMs, setAiCooldownMs] = useState<number>(0);
+  const [chatOpen, setChatOpen] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [devicesPanelOpen, setDevicesPanelOpen] = useState<boolean>(false);
+  const [applyingDevices, setApplyingDevices] = useState<boolean>(false);
+  // When true, users must request to speak; by default off so unmute toggles directly
+  const [moderatedSpeaking] = useState<boolean>(false);
   // tick cooldown each second
   useEffect(() => {
     if (aiCooldownMs <= 0) return;
@@ -60,6 +67,11 @@ const SessionRoom: React.FC = () => {
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const statsTimerRef = useRef<any>(null);
+  const chatListRef = useRef<HTMLDivElement | null>(null);
+  const prevChatLenRef = useRef<number>(0);
+  // Modal and trigger refs for Devices & Audio
+  const devicesModalRef = useRef<HTMLDivElement | null>(null);
+  const settingsBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const socketUrl = useMemo(() => {
     // Prefer explicit socket URL if provided
@@ -76,6 +88,100 @@ const SessionRoom: React.FC = () => {
   // const myIdRef = useRef<string | null>(null); // best-effort self id if server provides it later
   const nameMapRef = useRef<Map<string, string>>(new Map());
 
+  // Auto-scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    const el = chatListRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [chat]);
+
+  // Track unread messages when chat is closed
+  useEffect(() => {
+    const prev = prevChatLenRef.current;
+    const curr = chat.length;
+    if (curr > prev) {
+      const last = chat[curr - 1];
+      if (!chatOpen && last && last.from !== 'me') {
+        setUnreadCount((n) => n + 1);
+      }
+    }
+    prevChatLenRef.current = curr;
+  }, [chat, chatOpen]);
+
+  // When chat opens, reset unread and ensure scrolled to bottom
+  useEffect(() => {
+    if (chatOpen) {
+      setUnreadCount(0);
+      const el = chatListRef.current;
+      if (el) {
+        // timeout ensures the element is rendered before scroll
+        setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' }), 0);
+      }
+    }
+  }, [chatOpen]);
+
+  // Devices modal: Esc to close, focus trap, initial focus, and scroll lock
+  useEffect(() => {
+    if (!devicesPanelOpen) return;
+
+    const modal = devicesModalRef.current;
+
+    // Disable background scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Move focus to first focusable element in modal
+    const focusableSelectors = [
+      'a[href]', 'button:not([disabled])', 'select:not([disabled])', 'textarea:not([disabled])',
+      'input:not([disabled])', '[tabindex]:not([tabindex="-1"])'
+    ].join(',');
+    const focusables = modal ? Array.from(modal.querySelectorAll<HTMLElement>(focusableSelectors)) : [];
+    const first = focusables[0];
+    if (first) setTimeout(() => first.focus(), 0);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setDevicesPanelOpen(false);
+        // restore focus to Settings button
+        setTimeout(() => settingsBtnRef.current?.focus(), 0);
+        return;
+      }
+      if (e.key === 'Tab' && modal && focusables.length > 0) {
+        const active = document.activeElement as HTMLElement | null;
+        const idx = active ? focusables.indexOf(active) : -1;
+        if (e.shiftKey) {
+          // Shift+Tab: move backward
+          if (idx <= 0) {
+            e.preventDefault();
+            focusables[focusables.length - 1].focus();
+          }
+        } else {
+          // Tab: move forward
+          if (idx === -1 || idx >= focusables.length - 1) {
+            e.preventDefault();
+            focusables[0].focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [devicesPanelOpen]);
+
+  // Auto-open Devices panel on first join or when no prefs
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem(LS_SETUP_SEEN) === '1';
+      const hasPrefs = Boolean(localStorage.getItem(LS_AUDIO) || localStorage.getItem(LS_VIDEO));
+      if (!seen || !hasPrefs) setDevicesPanelOpen(true);
+    } catch {}
+  }, []);
+
   // Fullscreen toggle for remote container
   const toggleFullscreen = async () => {
     const el = remoteContainerRef.current;
@@ -88,7 +194,7 @@ const SessionRoom: React.FC = () => {
       }
     } catch {}
   };
-  const toggleImmersive = () => setImmersive((v) => !v);
+  // const toggleImmersive = () => setImmersive((v) => !v); // Removed immersive toggle button; keep function commented to avoid unused var
 
   // Track fullscreen changes to update UI state and icon
   useEffect(() => {
@@ -555,17 +661,17 @@ const SessionRoom: React.FC = () => {
     socketRef.current.emit('speak:deny', { to, sessionId });
     setIncomingRequests((prev) => prev.filter((r) => r.from !== to));
   };
-  const revokeSpeaking = () => {
-    if (!socketRef.current) return;
-    socketRef.current.emit('speak:revoke', { sessionId });
-    // Locally also mute
-    const s = localStreamRef.current;
-    if (s) {
-      s.getAudioTracks().forEach((t) => (t.enabled = false));
-      setMicOn(false);
-    }
-    setSpeakStatus('idle');
-  };
+  // const revokeSpeaking = () => {
+  //   if (!socketRef.current) return;
+  //   socketRef.current.emit('speak:revoke', { sessionId });
+  //   // Locally also mute
+  //   const s = localStreamRef.current;
+  //   if (s) {
+  //     s.getAudioTracks().forEach((t) => (t.enabled = false));
+  //     setMicOn(false);
+  //   }
+  //   setSpeakStatus('idle');
+  // };
 
 // Push-to-talk: enable audio while holding
 const pttDown = () => {
@@ -594,33 +700,38 @@ const sendChat = () => {
 
 // Change devices
 const applyDevices = async () => {
-  const constraints: MediaStreamConstraints = {
-    audio: selectedAudio ? { deviceId: { exact: selectedAudio } } : true,
-    video: selectedVideo ? { deviceId: { exact: selectedVideo } } : true,
-  };
+  if (applyingDevices) return;
+  setApplyingDevices(true);
   try {
-    const newStream = await navigator.mediaDevices.getUserMedia(constraints);
-    // replace tracks in PC
-    const pc = pcRef.current; if (!pc) return;
-    const old = localStreamRef.current;
-    if (old) old.getTracks().forEach((t) => t.stop());
-    localStreamRef.current = newStream;
-    if (localVideoRef.current) localVideoRef.current.srcObject = newStream;
-    for (const track of newStream.getTracks()) {
-      const sender = pc.getSenders().find((s) => s.track && s.track.kind === track.kind);
-      if (sender) await sender.replaceTrack(track);
-    }
-    setMicOn(newStream.getAudioTracks().every((t) => t.enabled));
-    setCamOn(newStream.getVideoTracks().every((t) => t.enabled));
-    // persist selections
+    const constraints: MediaStreamConstraints = {
+      audio: selectedAudio ? { deviceId: { exact: selectedAudio } } : true,
+      video: selectedVideo ? { deviceId: { exact: selectedVideo } } : true,
+    };
     try {
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      // replace tracks in PC
+      const pc = pcRef.current; if (!pc) return;
+      const old = localStreamRef.current;
+      if (old) old.getTracks().forEach((t) => t.stop());
+      localStreamRef.current = newStream;
+      if (localVideoRef.current) localVideoRef.current.srcObject = newStream;
+      for (const track of newStream.getTracks()) {
+        const sender = pc.getSenders().find((s) => s.track && s.track.kind === track.kind);
+        if (sender) await sender.replaceTrack(track);
+      }
+      setMicOn(newStream.getAudioTracks().every((t) => t.enabled));
+      setCamOn(newStream.getVideoTracks().every((t) => t.enabled));
+      // persist selection
       if (selectedAudio) localStorage.setItem(LS_AUDIO, selectedAudio);
-      else localStorage.removeItem(LS_AUDIO);
       if (selectedVideo) localStorage.setItem(LS_VIDEO, selectedVideo);
-      else localStorage.removeItem(LS_VIDEO);
+      try { localStorage.setItem(LS_SETUP_SEEN, '1'); } catch {}
+      setDevicesPanelOpen(false);
     } catch {}
   } catch (e) {
     console.warn('applyDevices failed', e);
+  }
+  finally {
+    setApplyingDevices(false);
   }
 };
 
@@ -636,6 +747,7 @@ return (
             <button onClick={manualReconnect} className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-white border border-gray-700">Reconnect</button>
           </div>
         )}
+        
       </motion.div>
 
       {/* AI Assistant Top Bar */}
@@ -656,8 +768,18 @@ return (
                   className="hidden md:block w-72 bg-black/40 border border-gray-800 rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 />
               )}
-              <button onClick={() => { if (!aiOpen) setAiOpen(true); askAI(); }} disabled={aiLoading || aiCooldownMs > 0} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded text-sm">
-                {aiCooldownMs > 0 ? `Cooldown ${Math.ceil(aiCooldownMs/1000)}s` : (aiLoading ? 'Asking…' : 'Ask')}
+              <button
+                onClick={() => { if (!aiOpen) setAiOpen(true); askAI(); }}
+                disabled={aiLoading || aiCooldownMs > 0}
+                className="px-3 py-1.5 h-9 min-w-[84px] bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded text-sm inline-flex items-center justify-center gap-2"
+              >
+                {aiLoading && (
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                )}
+                {aiCooldownMs > 0 ? `Cooldown ${Math.ceil(aiCooldownMs/1000)}s` : 'Ask'}
               </button>
             </div>
           </div>
@@ -671,8 +793,18 @@ return (
                   className="flex-1 bg-black/40 border border-gray-800 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                   placeholder="Describe your question clearly…"
                 />
-                <button onClick={askAI} disabled={aiLoading || aiCooldownMs > 0} className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded text-sm">
-                  {aiCooldownMs > 0 ? `Cooldown ${Math.ceil(aiCooldownMs/1000)}s` : (aiLoading ? 'Asking…' : 'Ask')}
+                <button
+                  onClick={askAI}
+                  disabled={aiLoading || aiCooldownMs > 0}
+                  className="px-3 py-2 h-10 min-w-[96px] bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded text-sm inline-flex items-center justify-center gap-2"
+                >
+                  {aiLoading && (
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                  )}
+                  {aiCooldownMs > 0 ? `Cooldown ${Math.ceil(aiCooldownMs/1000)}s` : 'Ask'}
                 </button>
               </div>
               {aiAnswer && (
@@ -697,71 +829,121 @@ return (
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-6 gap-4">
-        <div className={`${immersive ? 'xl:col-span-6' : 'xl:col-span-4'} bg-[#0b0c0d] rounded-xl border border-[#25282c] p-3`}>
+      <div className="grid grid-cols-1 xl:grid-cols-6 gap-4 min-h-0 items-start">
+        <div className={`${immersive ? 'xl:col-span-6' : 'xl:col-span-4'} self-start bg-[#0b0c0d] rounded-xl border border-[#25282c] p-3 min-h-0`}>
           <div ref={remoteContainerRef} className={`relative ${frameStyle === 'square' ? 'rounded-none' : 'rounded-xl'} ${frameStyle === 'glow' ? 'ring-2 ring-[#00ef68]/30 shadow-[0_0_30px_rgba(0,239,104,0.25)] border border-[#00ef68]/30' : 'border border-[#25282c]'} overflow-hidden`}>
             <video ref={remoteVideoRef} className={`w-full ${frameStyle === 'square' ? 'rounded-none' : 'rounded-lg'} bg-black aspect-video`} autoPlay playsInline />
-            {/* Controls overlay inside the frame */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-3 flex items-center justify-center">
-              <div className="pointer-events-auto inline-flex items-center gap-3 rounded-full bg-black/60 backdrop-blur border border-[#25282c] px-3 py-2 shadow-lg">
-                <button onClick={toggleMic} className={`px-3 py-2 rounded-md flex items-center gap-2 ${micOn ? 'bg-[#00ef68] text-[#0b0c0d] hover:brightness-95' : 'bg-[#25282c] text-white hover:bg-[#2e3237]'}`}> 
-                  {micOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                  <span className="hidden sm:inline">{micOn ? 'Mute' : 'Unmute'}</span>
+            {/* moved controls outside frame */}
+          </div>
+          {/* External Controls Bar - now directly below video */}
+          <div className="mt-3">
+            <div className="w-full flex items-center gap-2 rounded-lg bg-[#0b0c0d] border border-[#25282c] px-3 py-2 shadow-sm overflow-x-auto">
+              <button onClick={toggleMic} className={`px-2 py-1.5 h-9 rounded-md inline-flex items-center gap-2 whitespace-nowrap ${micOn ? 'bg-[#00ef68] text-[#0b0c0d] hover:brightness-95' : 'bg-[#25282c] text-white hover:bg-[#2e3237]'} sm:min-w-[96px]`}>
+                {micOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                <span className="hidden sm:inline">{micOn ? 'Mute' : 'Unmute'}</span>
+              </button>
+              <button onClick={toggleCam} className={`px-2 py-1.5 h-9 rounded-md inline-flex items-center gap-2 whitespace-nowrap ${camOn ? 'bg-[#00ef68] text-[#0b0c0d] hover:brightness-95' : 'bg-[#25282c] text-white hover:bg-[#2e3237]'} sm:min-w-[112px]`}>
+                {camOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+                <span className="hidden sm:inline">{camOn ? 'Camera Off' : 'Camera On'}</span>
+              </button>
+              <button onClick={startScreenShare} className={`px-2 py-1.5 h-9 rounded-md inline-flex items-center gap-2 whitespace-nowrap ${sharing ? 'bg-[#00ef68] text-[#0b0c0d] hover:brightness-95' : 'bg-[#25282c] text-white hover:bg-[#2e3237]'} sm:min-w-[120px]`}>
+                <MonitorUp className="w-4 h-4" />
+                <span className="hidden sm:inline">{sharing ? 'Stop Share' : 'Share Screen'}</span>
+              </button>
+              {!micOn && moderatedSpeaking && speakStatus !== 'requesting' && (
+                <button onClick={requestToSpeak} className="px-2 py-1.5 h-9 rounded-md inline-flex items-center gap-2 bg-[#25282c] hover:bg-[#2e3237] text-white sm:min-w-[136px]">
+                  Request to Speak
                 </button>
-                <button onClick={toggleCam} className={`px-3 py-2 rounded-md flex items-center gap-2 ${camOn ? 'bg-[#00ef68] text-[#0b0c0d] hover:brightness-95' : 'bg-[#25282c] text-white hover:bg-[#2e3237]'}`}>
-                  {camOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-                  <span className="hidden sm:inline">{camOn ? 'Camera Off' : 'Camera On'}</span>
+              )}
+              {moderatedSpeaking && speakStatus === 'requesting' && (
+                <span className="px-2 py-1.5 h-9 inline-flex items-center rounded-md bg-[#25282c] text-gray-300 text-sm">Requested…</span>
+              )}
+              <button
+                onMouseDown={pttDown}
+                onMouseUp={pttUp}
+                onMouseLeave={pttUp}
+                onTouchStart={pttDown}
+                onTouchEnd={pttUp}
+                onKeyDown={(e) => { if (e.code === 'Space') { e.preventDefault(); pttDown(); } }}
+                onKeyUp={(e) => { if (e.code === 'Space') { e.preventDefault(); pttUp(); } }}
+                aria-label="Push to talk"
+                className="px-2 py-1.5 h-9 rounded-md inline-flex items-center gap-2 bg-[#25282c] hover:bg-[#2e3237] text-white sm:min-w-[80px]"
+                title="Hold to talk"
+              >
+                PTT
+              </button>
+              <button onClick={leaveRoom} className="px-2 py-1.5 h-9 rounded-md inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white sm:min-w-[96px]">
+                <PhoneOff className="w-4 h-4" /> <span className="hidden sm:inline">Leave</span>
+              </button>
+              <div className="hidden md:flex items-center gap-2 pl-2 ml-2 border-l border-[#25282c]">
+                <button onClick={toggleFullscreen} className="px-2 py-2 rounded-md bg-[#25282c] hover:bg-[#2e3237] text-white" title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+                  {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </button>
-                <button onClick={startScreenShare} className={`px-3 py-2 rounded-md flex items-center gap-2 ${sharing ? 'bg-[#00ef68] text-[#0b0c0d] hover:brightness-95' : 'bg-[#25282c] text-white hover:bg-[#2e3237]'}`}>
-                  <MonitorUp className="w-4 h-4" />
-                  <span className="hidden sm:inline">{sharing ? 'Stop Share' : 'Share Screen'}</span>
+                <button ref={settingsBtnRef} onClick={() => setDevicesPanelOpen(v => !v)} className="px-2 py-2 rounded-md bg-[#25282c] hover:bg-[#2e3237] text-white" title="Devices & Audio">
+                  <Settings className="w-4 h-4" />
                 </button>
-                {/* Request to speak button */}
-                {!micOn && speakStatus !== 'requesting' && (
-                  <button onClick={requestToSpeak} className="px-3 py-2 rounded-md flex items-center gap-2 bg-[#25282c] hover:bg-[#2e3237] text-white">
-                    Request to Speak
-                  </button>
-                )}
-                {speakStatus === 'requesting' && (
-                  <span className="px-3 py-2 rounded-md bg-[#25282c] text-gray-300 text-sm">Requested…</span>
-                )}
-                <button
-                  onMouseDown={pttDown}
-                  onMouseUp={pttUp}
-                  onMouseLeave={pttUp}
-                  onTouchStart={pttDown}
-                  onTouchEnd={pttUp}
-                  onKeyDown={(e) => { if (e.code === 'Space') { e.preventDefault(); pttDown(); } }}
-                  onKeyUp={(e) => { if (e.code === 'Space') { e.preventDefault(); pttUp(); } }}
-                  aria-label="Push to talk"
-                  className="px-3 py-2 rounded-md flex items-center gap-2 bg-[#25282c] hover:bg-[#2e3237] text-white"
-                  title="Hold to talk"
-                >
-                  PTT
-                </button>
-                <button onClick={leaveRoom} className="px-3 py-2 rounded-md flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white">
-                  <PhoneOff className="w-4 h-4" /> <span className="hidden sm:inline">Leave</span>
-                </button>
-                {/* Right side quick actions */}
-                <div className="hidden md:flex items-center gap-2 pl-2 ml-2 border-l border-[#25282c]">
-                  <button onClick={toggleFullscreen} className="px-2 py-2 rounded-md bg-[#25282c] hover:bg-[#2e3237] text-white" title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
-                    {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                  </button>
-                  <button onClick={toggleImmersive} className={`px-2 py-2 rounded-md ${immersive ? 'bg-[#00ef68] text-[#0b0c0d]' : 'bg-[#25282c] text-white hover:bg-[#2e3237]'}`} title="Fill Screen Layout">
-                    {immersive ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                  </button>
-                  <select value={frameStyle} onChange={(e) => setFrameStyle(e.target.value as any)} className="px-2 py-1 rounded-md bg-[#0b0c0d] border border-[#25282c] text-sm text-white">
-                    <option value="rounded">Rounded</option>
-                    <option value="square">Square</option>
-                    <option value="glow">Glow</option>
-                  </select>
-                </div>
               </div>
             </div>
           </div>
+          {devicesPanelOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+              {/* Backdrop with blur */}
+              <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={() => { setDevicesPanelOpen(false); setTimeout(() => settingsBtnRef.current?.focus(), 0); }}
+              />
+              {/* Modal */}
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="devices-audio-title"
+                className="relative w-full max-w-lg md:max-w-xl bg-[#0b0c0d] border border-[#25282c] rounded-2xl shadow-2xl p-4 md:p-5 max-h-[80vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+                ref={devicesModalRef}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div id="devices-audio-title" className="text-white text-base font-semibold">Devices & Audio</div>
+                  <button
+                    onClick={() => { setDevicesPanelOpen(false); setTimeout(() => settingsBtnRef.current?.focus(), 0); }}
+                    className="px-2 py-1 rounded-md bg-[#25282c] hover:bg-[#2e3237] text-white text-sm"
+                    aria-label="Close"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <select value={selectedAudio} onChange={(e) => setSelectedAudio(e.target.value)} className="bg-black/40 border border-gray-800 rounded px-2 py-2 text-sm text-gray-200">
+                    <option value="">Default Microphone</option>
+                    {devices.audioIn.map((d) => (<option key={d.deviceId} value={d.deviceId}>{d.label || d.deviceId}</option>))}
+                  </select>
+                  <select value={selectedVideo} onChange={(e) => setSelectedVideo(e.target.value)} className="bg-black/40 border border-gray-800 rounded px-2 py-2 text-sm text-gray-200">
+                    <option value="">Default Camera</option>
+                    {devices.videoIn.map((d) => (<option key={d.deviceId} value={d.deviceId}>{d.label || d.deviceId}</option>))}
+                  </select>
+                  <div className="md:col-span-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mt-2">
+                    <button
+                      onClick={applyDevices}
+                      disabled={applyingDevices}
+                      aria-busy={applyingDevices}
+                      className="px-3 py-2 h-10 min-w-[96px] bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded text-sm inline-flex items-center justify-center gap-2"
+                    >
+                      {applyingDevices && (
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                      )}
+                      Apply
+                    </button>
+                    <button onClick={() => { try { localStorage.setItem(LS_SETUP_SEEN, '1'); } catch {}; setDevicesPanelOpen(false); }} className="px-3 py-2 h-10 min-w-[96px] bg-gray-800 hover:bg-gray-700 text-white/80 rounded text-sm">Close</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         {!immersive && (
-        <div className="xl:col-span-2 grid grid-rows-[auto_auto_1fr_auto] gap-3">
+        <div className="xl:col-span-2 self-start grid grid-rows-[auto_auto_1fr_auto] gap-3 min-h-0">
           <div className="bg-gray-900 rounded-xl border border-gray-800 p-3">
             <video ref={localVideoRef} className="w-full rounded-lg bg-black aspect-video opacity-90" autoPlay playsInline muted />
             <div className="text-gray-400 text-xs mt-2">You</div>
@@ -790,38 +972,62 @@ return (
               </div>
             )}
           </div>
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-3 flex flex-col min-h-32">
-            <div className="text-white text-sm font-semibold mb-2">Chat</div>
-            <div className="flex-1 overflow-auto space-y-2 pr-1">
-              {chat.map((m, i) => (
-                <div key={i} className={`text-sm ${m.from === 'me' ? 'text-emerald-300' : 'text-gray-200'}`}>
-                  <span className="text-xs text-gray-500 mr-2">{formatTime(m.t)}</span>
-                  <span className="font-medium mr-1">{displayName(m.from)}:</span>
-                  <span>{m.text}</span>
-                </div>
-              ))}
-              {chat.length === 0 && <div className="text-gray-500 text-sm">No messages yet</div>}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-3 flex flex-col min-h-0">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-white text-sm font-semibold">Chat</div>
+              <button
+                onClick={() => setChatOpen((v) => !v)}
+                className={`relative px-2 py-1 rounded text-xs border ${chatOpen ? 'bg-gray-800 text-white border-gray-700 hover:bg-gray-700' : 'bg-[#00ef68] text-[#0b0c0d] border-transparent hover:brightness-95'}`}
+              >
+                {chatOpen ? 'Hide' : 'Chat'}
+                {!chatOpen && unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center shadow">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); }} className="flex-1 bg-black/40 border border-gray-800 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-emerald-600" placeholder="Type a message" />
-              <button onClick={sendChat} className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded flex items-center"><Send className="w-4 h-4" /></button>
+            {chatOpen && (
+            <div ref={chatListRef} className="h-64 md:h-80 overflow-y-auto space-y-3 pr-1">
+              {chat.map((m, i) => {
+                const mine = m.from === 'me';
+                return (
+                  <div key={i} className={`flex ${mine ? 'justify-end' : 'justify-start'} min-w-0`}>
+                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 border text-sm shadow-sm min-w-0 ${mine ? 'bg-[#0f1a13] border-[#00ef68]/30 text-emerald-200' : 'bg-[#111214] border-[#25282c] text-gray-200'}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs font-medium ${mine ? 'text-emerald-300' : 'text-gray-300'}`}>{displayName(m.from)}</span>
+                        <span className="text-[10px] text-gray-500">{formatTime(m.t)}</span>
+                      </div>
+                      <div className="whitespace-pre-wrap break-words break-all overflow-x-hidden">{m.text}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              {chat.length === 0 && (
+                <div className="text-gray-500 text-sm text-center">No messages yet</div>
+              )}
+            </div>
+            )}
+            <div className={`mt-2 flex items-center gap-2 min-w-0 ${!chatOpen ? 'hidden' : ''}`}>
+              <div className="flex-1 flex items-center gap-2 bg-black/40 border border-gray-800 rounded-md px-3 h-10 max-h-10 min-h-10 min-w-0">
+                <input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } }}
+                  className="flex-1 bg-transparent outline-none text-sm text-gray-200 placeholder:text-gray-500 min-w-0"
+                  placeholder="Message"
+                />
+              </div>
+              <button
+                onClick={sendChat}
+                className="h-10 px-3 rounded-md bg-[#00ef68] text-[#0b0c0d] hover:brightness-95 flex items-center justify-center shadow"
+                title="Send"
+              >
+                <Send className="w-4 h-4" />
+              </button>
             </div>
           </div>
-          {/* AI Assistant moved to top bar */}
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-3">
-            <div className="text-white text-sm font-semibold mb-2">Devices</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <select value={selectedAudio} onChange={(e) => setSelectedAudio(e.target.value)} className="bg-black/40 border border-gray-800 rounded px-2 py-2 text-sm text-gray-200">
-                <option value="">Default Microphone</option>
-                {devices.audioIn.map((d) => (<option key={d.deviceId} value={d.deviceId}>{d.label || d.deviceId}</option>))}
-              </select>
-              <select value={selectedVideo} onChange={(e) => setSelectedVideo(e.target.value)} className="bg-black/40 border border-gray-800 rounded px-2 py-2 text-sm text-gray-200">
-                <option value="">Default Camera</option>
-                {devices.videoIn.map((d) => (<option key={d.deviceId} value={d.deviceId}>{d.label || d.deviceId}</option>))}
-              </select>
-              <button onClick={applyDevices} className="md:col-span-2 mt-1 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm">Apply</button>
-            </div>
-          </div>
+          {/* Devices card moved into overlay below the control buttons */}
         </div>
         )}
       </div>
