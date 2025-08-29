@@ -317,6 +317,10 @@ const SessionRoom: React.FC = () => {
         setConnected(true);
         socket.emit('join', { sessionId });
         setStatus('Joined room');
+        // Announce our initial audio state
+        try {
+          socket.emit('audio:state', { sessionId, muted: !micOn });
+        } catch {}
       });
 
       socket.on('joined', async ({ shouldCreateOffer }: { shouldCreateOffer: boolean }) => {
@@ -364,6 +368,11 @@ const SessionRoom: React.FC = () => {
         // update name map
         const map = nameMapRef.current;
         for (const p of enriched) map.set(p.id, p.name);
+      });
+      // Remote audio state updates
+      socket.on('audio:state', (data: { from: string; muted: boolean }) => {
+        if (!data || !data.from) return;
+        setPeerAudio((prev) => ({ ...prev, [data.from]: data.muted }));
       });
       socket.on('chat:message', (msg: { from: string; fromName?: string; text: string; t?: number; clientId?: string }) => {
         const t = msg.t || Date.now();
@@ -416,6 +425,7 @@ const SessionRoom: React.FC = () => {
           if (s) {
             s.getAudioTracks().forEach((t) => (t.enabled = true));
             setMicOn(true);
+            try { socket.emit('audio:state', { sessionId, muted: false }); } catch {}
           }
           setSpeakStatus('granted');
           setStatus('You may speak now');
@@ -433,6 +443,7 @@ const SessionRoom: React.FC = () => {
           if (s) {
             s.getAudioTracks().forEach((t) => (t.enabled = false));
             setMicOn(false);
+            try { socket.emit('audio:state', { sessionId, muted: true }); } catch {}
           }
           setSpeakStatus('idle');
           setStatus('Speaking permission revoked');
@@ -498,6 +509,9 @@ const SessionRoom: React.FC = () => {
     return name || from;
   };
 
+  // Per-participant audio mute state (true = muted)
+  const [peerAudio, setPeerAudio] = useState<Record<string, boolean>>({});
+
   // Track speakStatus in a ref for socket handlers
   // Ask AI helper
   const askAI = async () => {
@@ -532,7 +546,9 @@ const SessionRoom: React.FC = () => {
     const stream = localStreamRef.current;
     if (!stream) return;
     stream.getAudioTracks().forEach((t) => (t.enabled = !t.enabled));
-    setMicOn(stream.getAudioTracks().every((t) => t.enabled));
+    const on = stream.getAudioTracks().every((t) => t.enabled);
+    setMicOn(on);
+    try { socketRef.current?.emit('audio:state', { sessionId, muted: !on }); } catch {}
   };
 
   const toggleCam = () => {
@@ -678,11 +694,13 @@ const pttDown = () => {
   const s = localStreamRef.current; if (!s) return;
   s.getAudioTracks().forEach((t) => (t.enabled = true));
   setMicOn(true);
+  try { socketRef.current?.emit('audio:state', { sessionId, muted: false }); } catch {}
 };
 const pttUp = () => {
   const s = localStreamRef.current; if (!s) return;
   s.getAudioTracks().forEach((t) => (t.enabled = false));
   setMicOn(false);
+  try { socketRef.current?.emit('audio:state', { sessionId, muted: true }); } catch {}
 };
 
 // Send chat message
@@ -719,7 +737,9 @@ const applyDevices = async () => {
         const sender = pc.getSenders().find((s) => s.track && s.track.kind === track.kind);
         if (sender) await sender.replaceTrack(track);
       }
-      setMicOn(newStream.getAudioTracks().every((t) => t.enabled));
+      const micNow = newStream.getAudioTracks().every((t) => t.enabled);
+      setMicOn(micNow);
+      try { socketRef.current?.emit('audio:state', { sessionId, muted: !micNow }); } catch {}
       setCamOn(newStream.getVideoTracks().every((t) => t.enabled));
       // persist selection
       if (selectedAudio) localStorage.setItem(LS_AUDIO, selectedAudio);
@@ -834,6 +854,18 @@ return (
           <div ref={remoteContainerRef} className={`relative ${frameStyle === 'square' ? 'rounded-none' : 'rounded-xl'} ${frameStyle === 'glow' ? 'ring-2 ring-[#00ef68]/30 shadow-[0_0_30px_rgba(0,239,104,0.25)] border border-[#00ef68]/30' : 'border border-[#25282c]'} overflow-hidden`}>
             <video ref={remoteVideoRef} className={`w-full ${frameStyle === 'square' ? 'rounded-none' : 'rounded-lg'} bg-black aspect-video`} autoPlay playsInline />
             {/* moved controls outside frame */}
+            {/* Remote mic status indicator */}
+            {(() => {
+              const primaryPeerId = participants[0]?.id;
+              const remoteMuted = primaryPeerId ? peerAudio[primaryPeerId] : undefined;
+              if (remoteMuted === undefined) return null;
+              return (
+                <div className="absolute top-2 left-2 px-2 py-1 rounded-md bg-black/60 border border-black/40 backdrop-blur text-xs text-white flex items-center gap-1">
+                  {remoteMuted ? <MicOff className="w-3.5 h-3.5 text-red-400" /> : <Mic className="w-3.5 h-3.5 text-emerald-400" />}
+                  <span className="hidden sm:inline">{remoteMuted ? 'Muted' : 'Unmuted'}</span>
+                </div>
+              );
+            })()}
           </div>
           {/* External Controls Bar - now directly below video */}
           <div className="mt-3">
@@ -946,13 +978,26 @@ return (
         <div className="xl:col-span-2 self-start grid grid-rows-[auto_auto_1fr_auto] gap-3 min-h-0">
           <div className="bg-gray-900 rounded-xl border border-gray-800 p-3">
             <video ref={localVideoRef} className="w-full rounded-lg bg-black aspect-video opacity-90" autoPlay playsInline muted />
-            <div className="text-gray-400 text-xs mt-2">You</div>
+            <div className="text-gray-400 text-xs mt-2 flex items-center gap-1">
+              You {micOn ? <Mic className="w-3.5 h-3.5 text-emerald-400" /> : <MicOff className="w-3.5 h-3.5 text-red-400" />}
+            </div>
           </div>
           <div className="bg-gray-900 rounded-xl border border-gray-800 p-3">
             <div className="flex items-center gap-2 text-white text-sm font-semibold mb-2"><Users className="w-4 h-4" /> Participants</div>
             <ul className="text-sm text-gray-300 space-y-1 max-h-24 overflow-auto">
               {participants.length === 0 && <li className="text-gray-500">No one else connected yet</li>}
-              {participants.map((p) => (<li key={p.id} className="truncate">{p.name}</li>))}
+              {participants.map((p) => (
+                <li key={p.id} className="truncate flex items-center gap-1">
+                  <span className="truncate">{p.name}</span>
+                  {peerAudio[p.id] !== undefined && (
+                    peerAudio[p.id] ? (
+                      <MicOff className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                    ) : (
+                      <Mic className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    )
+                  )}
+                </li>
+              ))}
             </ul>
             {/* Incoming speak requests */}
             {incomingRequests.length > 0 && (
