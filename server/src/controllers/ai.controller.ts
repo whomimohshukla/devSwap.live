@@ -98,8 +98,7 @@ export async function assist(req: Request, res: Response) {
     if (includeContext && sessionId) {
       try {
         const session = await Session.findById(sessionId);
-        // If you later store transcripts/notes, include a compact slice here
-        // @ts-ignore optional notes field may exist in schema
+       
         const notes = (session as any)?.notes;
         if (notes && typeof notes === 'string') {
           context = notes.slice(-2000); // last ~2k chars
