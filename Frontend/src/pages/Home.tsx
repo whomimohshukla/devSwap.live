@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
 	ArrowRight,
 	Star,
@@ -14,6 +14,100 @@ import {
 } from "lucide-react";
 
 const Home: React.FC = () => {
+    const [isVideoOpen, setIsVideoOpen] = useState(false);
+    const demoVideoMp4 =
+        (import.meta as any).env?.VITE_DEMO_VIDEO_MP4 ||
+        "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    const demoEmbed =
+        (import.meta as any).env?.VITE_DEMO_VIDEO_EMBED ||
+        "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0&modestbranding=1";
+    const demoMode = ((import.meta as any).env?.VITE_DEMO_MODE || "false") === "true";
+
+    // Inline animated demo overlay for the frame
+    const DemoOverlay: React.FC = () => {
+        return (
+            <div className='absolute inset-0 overflow-hidden'>
+                {/* Mock Navbar */}
+                <motion.div
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.6 }}
+                    className='absolute top-10 left-8 right-8 h-10 rounded-lg bg-white/5 border border-white/10 backdrop-blur flex items-center px-4 gap-3'
+                >
+                    <div className='w-24 h-3 rounded bg-white/20' />
+                    <div className='w-16 h-3 rounded bg-white/10' />
+                    <div className='w-16 h-3 rounded bg-white/10' />
+                    <div className='ml-auto w-8 h-8 rounded-full bg-[#00ef68]/30 border border-[#00ef68]/30' />
+                </motion.div>
+
+                {/* Mock Cards grid animating in */}
+                <div className='absolute top-28 left-8 right-8 grid grid-cols-1 md:grid-cols-3 gap-4'>
+                    {[0, 1, 2].map((i) => (
+                        <motion.div
+                            key={i}
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 0.5, delay: 0.15 * i }}
+                            className='h-28 rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur p-4'
+                        >
+                            <div className='h-4 w-24 rounded bg-white/30 mb-2' />
+                            <div className='h-3 w-40 rounded bg-white/20' />
+                            <div className='mt-4 h-2 w-3/4 rounded bg-[#00ef68]/40' />
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Mock Session/Chat panel */}
+                <motion.div
+                    initial={{ x: 40, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
+                    className='absolute bottom-16 right-8 w-80 hidden md:block rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur'
+                >
+                    <div className='p-3 border-b border-white/10 flex items-center gap-2'>
+                        <div className='w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse' />
+                        <span className='text-xs text-white/80'>Realtime session connected</span>
+                    </div>
+                    <div className='p-3 space-y-2'>
+                        <div className='w-3/4 h-3 rounded bg-white/20' />
+                        <div className='w-1/2 h-3 rounded bg-white/10' />
+                        <div className='w-5/6 h-3 rounded bg-white/20' />
+                    </div>
+                </motion.div>
+
+                {/* Animated cursor path */}
+                <motion.div
+                    className='absolute w-5 h-5 rounded-full bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.5)]'
+                    initial={{ x: 40, y: 160, scale: 0.9 }}
+                    animate={{
+                        x: [40, 320, 320, 720, 720, 120, 120],
+                        y: [160, 160, 260, 260, 420, 420, 200],
+                        scale: [0.9, 0.9, 0.9, 1, 1, 0.9, 0.9],
+                    }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                />
+
+                {/* Click ripples */}
+                <motion.div
+                    className='absolute w-8 h-8 rounded-full border-2 border-white/70'
+                    initial={{ opacity: 0, x: 312, y: 152, scale: 0.5 }}
+                    animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 1.8] }}
+                    transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 6.4 }}
+                />
+
+                {/* Caption badge */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className='absolute bottom-6 left-8 inline-flex items-center gap-2 rounded-full bg-black/40 border border-white/10 text-white/90 px-3 py-1 backdrop-blur'
+                >
+                    <span className='w-2 h-2 rounded-full bg-[#00ef68]' />
+                    <span className='text-xs'>Live Matching • Skill Progress • Sessions</span>
+                </motion.div>
+            </div>
+        );
+    };
 	const features = [
 		{
 			icon: Brain,
@@ -194,13 +288,99 @@ const Home: React.FC = () => {
 								<div className='absolute inset-0 bg-[#00ef68] rounded-lg blur opacity-0 group-hover:opacity-20 transition-opacity -z-10'></div>
 							</Link>
 
-							<button className='group flex items-center px-8 py-4 text-white font-semibold border border-[#25282c] hover:bg-[#25282c] rounded-lg transition-all duration-300'>
-								<Play className='mr-2 w-5 h-5' />
-								Watch Demo
-							</button>
+							<button
+                                onClick={() => setIsVideoOpen(true)}
+                                className='group flex items-center px-8 py-4 text-white font-semibold border border-[#25282c] hover:bg-[#25282c] rounded-lg transition-all duration-300'
+                            >
+                                <Play className='mr-2 w-5 h-5' />
+                                Watch Demo
+                            </button>
 						</motion.div>
 
-						{/* No vanity stats — focus on capabilities */}
+						{/* Demo Video Frame */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8, delay: 0.35 }}
+                            className='relative mx-auto max-w-6xl w-full'
+                        >
+                            {/* Glow accents */}
+                            <div className='pointer-events-none absolute -inset-1 rounded-3xl bg-gradient-to-r from-[#00ef68]/0 via-[#00ef68]/20 to-[#00ef68]/0 blur-2xl' />
+                            {/* Frame */}
+                            <div
+                                className='relative aspect-video overflow-hidden rounded-2xl border border-[#25282c] bg-gradient-to-b from-[#0f1113] to-[#0b0c0d] shadow-2xl shadow-black/40 cursor-pointer'
+                                onClick={() => setIsVideoOpen(true)}
+                            >
+                                {/* Top bar */}
+                                <div className='absolute inset-x-0 top-0 h-10 bg-[#0b0c0d]/80 backdrop-blur border-b border-[#25282c] flex items-center px-4 gap-2'>
+                                    <span className='w-3 h-3 rounded-full bg-red-500/80' />
+                                    <span className='w-3 h-3 rounded-full bg-yellow-500/80' />
+                                    <span className='w-3 h-3 rounded-full bg-green-500/80' />
+                                    <span className='ml-3 text-xs text-white/60'>DevSwap Demo</span>
+                                </div>
+                                {/* Video */}
+                                {demoMode ? (
+                                    <DemoOverlay />
+                                ) : (
+                                    <video
+                                        src={demoVideoMp4}
+                                        muted
+                                        loop
+                                        playsInline
+                                        autoPlay
+                                        className='absolute inset-0 h-full w-full object-cover'
+                                    />
+                                )}
+                                {/* Overlay */}
+                                <div className='absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10 pointer-events-none' />
+                                {/* CTA Play */}
+                                <div className='absolute inset-0 flex items-center justify-center'>
+                                    <div className='group inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white/90 backdrop-blur border border-white/20 hover:bg-white/15 transition'>
+                                        <Play className='w-4 h-4' />
+                                        <span className='text-sm'>Click to expand</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Video Modal */}
+                        <AnimatePresence>
+                            {isVideoOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className='fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4'
+                                    onClick={() => setIsVideoOpen(false)}
+                                >
+                                    <motion.div
+                                        initial={{ scale: 0.96, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0.96, opacity: 0 }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                                        className='relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden border border-[#25282c] bg-[#0b0c0d]'
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <iframe
+                                            className='w-full h-full'
+                                            src={demoEmbed}
+                                            title='DevSwap Demo'
+                                            allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+                                            referrerPolicy='strict-origin-when-cross-origin'
+                                            allowFullScreen
+                                        />
+                                        <button
+                                            className='absolute top-3 right-3 text-white/70 hover:text-white text-sm bg-white/10 hover:bg-white/15 border border-white/20 rounded px-2 py-1'
+                                            onClick={() => setIsVideoOpen(false)}
+                                        >
+                                            Close
+                                        </button>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* No vanity stats — focus on capabilities */}
 					</div>
 				</div>
 			</section>

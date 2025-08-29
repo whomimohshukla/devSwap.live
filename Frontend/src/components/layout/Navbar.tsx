@@ -13,6 +13,7 @@ import {
 	Zap,
 	Loader2,
 	Bell,
+	ChevronDown,
 } from "lucide-react";
 import { useAuthStore } from "../../lib/auth";
 import { useMatchStore } from "../../lib/matchStore";
@@ -23,6 +24,8 @@ const Navbar: React.FC = () => {
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 	const [isScrolled, setIsScrolled] = useState(false);
 	const [hoverReveal, setHoverReveal] = useState(false);
+	const [isLearnOpen, setIsLearnOpen] = useState(false);
+	const [isLearnMobileOpen, setIsLearnMobileOpen] = useState(false);
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { user, isAuthenticated, logout } = useAuthStore();
@@ -67,9 +70,6 @@ const Navbar: React.FC = () => {
 		},
 		{ name: "Find Matches", path: "/matches", icon: Users, protected: true },
 		{ name: "Sessions", path: "/sessions", icon: BookOpen, protected: true },
-		{ name: "Skills", path: "/skills", icon: Zap, protected: false },
-		{ name: "Learn", path: "/learn", icon: BookOpen, protected: false },
-		{ name: "Roadmaps", path: "/roadmaps", icon: BookOpen, protected: false },
 	];
 
 	const isActivePath = (path: string) => {
@@ -160,6 +160,72 @@ const Navbar: React.FC = () => {
 									</Link>
 								);
 							})}
+
+							{/* Learn Dropdown (Skills, Learn, Roadmaps) */}
+							<div
+								className='relative'
+								onMouseEnter={() => setIsLearnOpen(true)}
+								onMouseLeave={() => setIsLearnOpen(false)}
+							>
+								<button
+									className={`group inline-flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors duration-200 hover:text-white focus:outline-none ${
+										isActivePath("/skills") || isActivePath("/learn") || isActivePath("/roadmaps")
+											? "text-[#00ef68]"
+											: "text-white/80"
+									}`}
+								>
+									<BookOpen className='h-4 w-4' />
+									<span>Learn</span>
+									<ChevronDown className={`h-4 w-4 transition-transform ${isLearnOpen ? "rotate-180" : "rotate-0"}`} />
+								</button>
+								<AnimatePresence>
+									{isLearnOpen && (
+										<motion.div
+											initial={{ opacity: 0, y: 6 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: 6 }}
+											className='absolute left-0 mt-2 w-48 bg-[#0b0c0d] border border-[#25282c] rounded-xl shadow-xl overflow-hidden'
+										>
+											<Link
+												to='/skills'
+												className={`relative flex items-center gap-2 px-4 py-2 text-sm hover:text-white hover:bg-white/5 ${
+													isActivePath('/skills') ? 'text-[#00ef68]' : 'text-white/80'
+												}`}
+											>
+												{isActivePath('/skills') && (
+													<span className='absolute left-0 top-0 h-full w-0.5 bg-[#00ef68]' />
+												)}
+												<Zap className='h-4 w-4' />
+												<span>Skills</span>
+											</Link>
+											<Link
+												to='/learn'
+												className={`relative flex items-center gap-2 px-4 py-2 text-sm hover:text-white hover:bg-white/5 ${
+													isActivePath('/learn') ? 'text-[#00ef68]' : 'text-white/80'
+												}`}
+											>
+												{isActivePath('/learn') && (
+													<span className='absolute left-0 top-0 h-full w-0.5 bg-[#00ef68]' />
+												)}
+												<BookOpen className='h-4 w-4' />
+												<span>Learn</span>
+											</Link>
+											<Link
+												to='/roadmaps'
+												className={`relative flex items-center gap-2 px-4 py-2 text-sm hover:text-white hover:bg-white/5 ${
+													isActivePath('/roadmaps') ? 'text-[#00ef68]' : 'text-white/80'
+												}`}
+											>
+												{isActivePath('/roadmaps') && (
+													<span className='absolute left-0 top-0 h-full w-0.5 bg-[#00ef68]' />
+												)}
+												<BookOpen className='h-4 w-4' />
+												<span>Roadmaps</span>
+											</Link>
+										</motion.div>
+									)}
+								</AnimatePresence>
+							</div>
 						</div>
 
 						{/* Desktop Auth Section */}
@@ -357,6 +423,67 @@ const Navbar: React.FC = () => {
 										</Link>
 									);
 								})}
+
+								{/* Mobile Learn Group */}
+								<div className='pt-2'>
+									<button
+										onClick={() => setIsLearnMobileOpen((v) => !v)}
+										className='w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/5 focus:outline-none focus-visible:outline-none'
+									>
+										<span className='flex items-center gap-2'>
+											<BookOpen className='h-4 w-4' />
+											<span>Learn</span>
+										</span>
+										<ChevronDown className={`h-4 w-4 transition-transform ${isLearnMobileOpen ? 'rotate-180' : 'rotate-0'}`} />
+									</button>
+									<AnimatePresence initial={false}>
+										{isLearnMobileOpen && (
+											<motion.div
+												initial={{ opacity: 0, height: 0 }}
+												animate={{ opacity: 1, height: 'auto' }}
+												exit={{ opacity: 0, height: 0 }}
+												className='mt-1'
+											>
+												<Link
+													to='/skills'
+													onClick={() => setIsMobileMenuOpen(false)}
+													className={`relative block px-3 py-2 rounded-lg text-sm ${
+														isActivePath('/skills') ? 'text-[#00ef68]' : 'text-white/80 hover:text-white hover:bg-white/5'
+													}`}
+												>
+													{isActivePath('/skills') && (
+														<span className='absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 bg-[#00ef68]' />
+													)}
+													Skills
+												</Link>
+												<Link
+													to='/learn'
+													onClick={() => setIsMobileMenuOpen(false)}
+													className={`relative block px-3 py-2 rounded-lg text-sm ${
+														isActivePath('/learn') ? 'text-[#00ef68]' : 'text-white/80 hover:text-white hover:bg-white/5'
+													}`}
+												>
+													{isActivePath('/learn') && (
+														<span className='absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 bg-[#00ef68]' />
+													)}
+													Learn
+												</Link>
+												<Link
+													to='/roadmaps'
+													onClick={() => setIsMobileMenuOpen(false)}
+													className={`relative block px-3 py-2 rounded-lg text-sm ${
+														isActivePath('/roadmaps') ? 'text-[#00ef68]' : 'text-white/80 hover:text-white hover:bg-white/5'
+													}`}
+												>
+													{isActivePath('/roadmaps') && (
+														<span className='absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 bg-[#00ef68]' />
+													)}
+													Roadmaps
+												</Link>
+											</motion.div>
+										)}
+									</AnimatePresence>
+								</div>
 
 								{/* Notification Bell */}
 								{isAuthenticated && (
