@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { useAuthStore } from '../../lib/auth';
+import AssistantBar from '../assistant/AssistantBar';
 
 interface AppLayoutProps {
   children?: React.ReactNode;
@@ -11,6 +12,13 @@ interface AppLayoutProps {
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { checkAuth, isAuthenticated } = useAuthStore();
   const [showCookieBanner, setShowCookieBanner] = useState(false);
+  const location = useLocation();
+  const pathname = location.pathname;
+  const showAssistant =
+    pathname.startsWith('/sessions/') ||
+    pathname.startsWith('/roadmap') ||
+    pathname.startsWith('/roadmaps') ||
+    pathname.startsWith('/learn');
 
   useEffect(() => {
     checkAuth();
@@ -51,6 +59,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-[#0b0c0d] flex flex-col">
       <Navbar />
+      {/* Global AI Assistant Bar (only on roadmap and session pages) */}
+      {showAssistant && <AssistantBar />}
       {/* Add top padding to offset fixed navbar (h-16 = 64px), bottom padding above footer, and responsive horizontal padding */}
       <main className="flex-1 pt-16 pb-12 px-4 sm:px-6 lg:px-8">
         {children || <Outlet />}

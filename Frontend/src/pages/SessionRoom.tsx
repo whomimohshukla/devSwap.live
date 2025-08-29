@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { motion } from 'framer-motion';
 import { Mic, MicOff, Video, VideoOff, MonitorUp, PhoneOff, Users, Send, Maximize2, Minimize2 } from 'lucide-react';
-import { sessionsAPI } from '../lib/api';
+import { sessionsAPI, aiAPI } from '../lib/api';
 
 
 
@@ -36,6 +36,21 @@ const SessionRoom: React.FC = () => {
   const [immersive, setImmersive] = useState<boolean>(false); // Hide side panels and fill with video
   const [frameStyle, setFrameStyle] = useState<'rounded' | 'square' | 'glow'>('rounded');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  // AI assistant state
+  const [aiQuestion, setAiQuestion] = useState<string>('');
+  const [aiAnswer, setAiAnswer] = useState<string>('');
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [aiMeta, setAiMeta] = useState<{ fallback?: boolean; reason?: string; model?: string } | undefined>(undefined);
+  const [aiOpen, setAiOpen] = useState<boolean>(false);
+  const [aiCooldownMs, setAiCooldownMs] = useState<number>(0);
+  // tick cooldown each second
+  useEffect(() => {
+    if (aiCooldownMs <= 0) return;
+    const id = setInterval(() => {
+      setAiCooldownMs((v) => Math.max(0, v - 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [aiCooldownMs]);
 
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -378,6 +393,32 @@ const SessionRoom: React.FC = () => {
   };
 
   // Track speakStatus in a ref for socket handlers
+  // Ask AI helper
+  const askAI = async () => {
+    if (!aiQuestion.trim()) return;
+    try {
+      setAiLoading(true);
+      setAiAnswer('');
+      setAiMeta(undefined);
+      const { data } = await aiAPI.assist({
+        question: aiQuestion,
+        mode: 'qa',
+        depth: 'medium',
+        sessionId: sessionId,
+        includeContext: true,
+      });
+      setAiAnswer(data?.answer || '');
+      if (data?.meta) setAiMeta(data.meta);
+      const ms = Number(data?.meta?.cooldownMs || 0);
+      if (!Number.isNaN(ms) && ms > 0) setAiCooldownMs(ms);
+    } catch (e: any) {
+      setAiAnswer(e?.response?.data?.message || 'Failed to get answer');
+      setAiMeta({ fallback: true, reason: 'error' });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const speakStatusRef = useRef<'idle' | 'requesting' | 'granted'>('idle');
   useEffect(() => { speakStatusRef.current = speakStatus; }, [speakStatus]);
 
@@ -597,6 +638,65 @@ return (
         )}
       </motion.div>
 
+      {/* AI Assistant Top Bar */}
+      <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 mb-4">
+        <div className="rounded-xl border border-gray-800 bg-[#0b0c0d]">
+          <div className="flex items-center justify-between px-3 py-2">
+            <button onClick={() => setAiOpen((v) => !v)} className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.7)]" />
+              AI Assistant
+            </button>
+            <div className="flex items-center gap-2">
+              {!aiOpen && (
+                <input
+                  value={aiQuestion}
+                  onChange={(e) => setAiQuestion(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { setAiOpen(true); askAI(); } }}
+                  placeholder="Ask about JS, React, etc."
+                  className="hidden md:block w-72 bg-black/40 border border-gray-800 rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                />
+              )}
+              <button onClick={() => { if (!aiOpen) setAiOpen(true); askAI(); }} disabled={aiLoading || aiCooldownMs > 0} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded text-sm">
+                {aiCooldownMs > 0 ? `Cooldown ${Math.ceil(aiCooldownMs/1000)}s` : (aiLoading ? 'Asking…' : 'Ask')}
+              </button>
+            </div>
+          </div>
+          {aiOpen && (
+            <div className="px-3 pb-3 border-t border-gray-800">
+              <div className="flex items-center gap-2 mt-3">
+                <input
+                  value={aiQuestion}
+                  onChange={(e) => setAiQuestion(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') askAI(); }}
+                  className="flex-1 bg-black/40 border border-gray-800 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  placeholder="Describe your question clearly…"
+                />
+                <button onClick={askAI} disabled={aiLoading || aiCooldownMs > 0} className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded text-sm">
+                  {aiCooldownMs > 0 ? `Cooldown ${Math.ceil(aiCooldownMs/1000)}s` : (aiLoading ? 'Asking…' : 'Ask')}
+                </button>
+              </div>
+              {aiAnswer && (
+                <div className="mt-3 text-sm text-gray-200 whitespace-pre-wrap max-h-60 overflow-auto border border-gray-800 rounded p-3 bg-black/30">
+                  {aiAnswer}
+                  {aiMeta?.fallback && (
+                    <div className="mt-2 text-xs text-amber-400">AI is in limited mode (reason: {aiMeta.reason || 'unknown'}). Try again later.</div>
+                  )}
+                  {aiMeta?.model && (
+                    <div className="mt-1 text-xs text-gray-500">Model: {aiMeta.model}</div>
+                  )}
+                  {aiCooldownMs > 0 && (
+                    <div className="mt-1 text-xs text-gray-500">Cooldown active — please wait {Math.ceil(aiCooldownMs/1000)}s</div>
+                  )}
+                </div>
+              )}
+              {!aiAnswer && !aiLoading && (
+                <div className="mt-2 text-xs text-gray-500">Tip: Ask specific, concise questions for best results.</div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-6 gap-4">
         <div className={`${immersive ? 'xl:col-span-6' : 'xl:col-span-4'} bg-[#0b0c0d] rounded-xl border border-[#25282c] p-3`}>
           <div ref={remoteContainerRef} className={`relative ${frameStyle === 'square' ? 'rounded-none' : 'rounded-xl'} ${frameStyle === 'glow' ? 'ring-2 ring-[#00ef68]/30 shadow-[0_0_30px_rgba(0,239,104,0.25)] border border-[#00ef68]/30' : 'border border-[#25282c]'} overflow-hidden`}>
@@ -707,6 +807,7 @@ return (
               <button onClick={sendChat} className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded flex items-center"><Send className="w-4 h-4" /></button>
             </div>
           </div>
+          {/* AI Assistant moved to top bar */}
           <div className="bg-gray-900 rounded-xl border border-gray-800 p-3">
             <div className="text-white text-sm font-semibold mb-2">Devices</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

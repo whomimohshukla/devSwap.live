@@ -6,6 +6,7 @@ import User from "../models/user.model";
 import {
   generateLessonPlan,
   generateSessionSummary,
+  generateAssistantAnswer,
 } from "../services/aiService";
 
 //sessions controllers
@@ -22,7 +23,6 @@ export async function createLessonPlan(req: Request, res: Response) {
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
     }
-
     // Check if lesson plan already exists
     const existingPlan = await LessonPlan.findOne({ sessionId });
     if (existingPlan) {
@@ -86,6 +86,34 @@ export async function createLessonPlan(req: Request, res: Response) {
   } catch (error) {
     console.error("Error creating lesson plan:", error);
     res.status(500).json({ message: "Failed to create lesson plan" });
+  }
+}
+
+// General in-session AI assistant (Q&A or topic outline)
+export async function assist(req: Request, res: Response) {
+  try {
+    const { question, mode, topic, depth, sessionId, includeContext } = req.body || {};
+
+    let context: string | undefined;
+    if (includeContext && sessionId) {
+      try {
+        const session = await Session.findById(sessionId);
+        // If you later store transcripts/notes, include a compact slice here
+        // @ts-ignore optional notes field may exist in schema
+        const notes = (session as any)?.notes;
+        if (notes && typeof notes === 'string') {
+          context = notes.slice(-2000); // last ~2k chars
+        }
+      } catch (_) {
+        // ignore context errors
+      }
+    }
+
+    const { answer, meta } = await generateAssistantAnswer({ question, mode, topic, depth, context });
+    return res.json({ answer, meta });
+  } catch (error) {
+    console.error('Error in AI assist:', error);
+    return res.status(500).json({ message: 'Failed to generate answer' });
   }
 }
 

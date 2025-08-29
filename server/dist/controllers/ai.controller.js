@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createLessonPlan = createLessonPlan;
+exports.assist = assist;
 exports.generateSummary = generateSummary;
 exports.getCachedPlans = getCachedPlans;
 const lessonPlan_model_1 = __importDefault(require("../models/lessonPlan.model"));
@@ -72,6 +73,33 @@ async function createLessonPlan(req, res) {
     catch (error) {
         console.error("Error creating lesson plan:", error);
         res.status(500).json({ message: "Failed to create lesson plan" });
+    }
+}
+// General in-session AI assistant (Q&A or topic outline)
+async function assist(req, res) {
+    try {
+        const { question, mode, topic, depth, sessionId, includeContext } = req.body || {};
+        let context;
+        if (includeContext && sessionId) {
+            try {
+                const session = await session_model_1.default.findById(sessionId);
+                // If you later store transcripts/notes, include a compact slice here
+                // @ts-ignore optional notes field may exist in schema
+                const notes = session?.notes;
+                if (notes && typeof notes === 'string') {
+                    context = notes.slice(-2000); // last ~2k chars
+                }
+            }
+            catch (_) {
+                // ignore context errors
+            }
+        }
+        const { answer, meta } = await (0, aiService_1.generateAssistantAnswer)({ question, mode, topic, depth, context });
+        return res.json({ answer, meta });
+    }
+    catch (error) {
+        console.error('Error in AI assist:', error);
+        return res.status(500).json({ message: 'Failed to generate answer' });
     }
 }
 //controller to genrate the summary

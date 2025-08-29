@@ -1,27 +1,110 @@
 // src/services/aiService.ts
-import OpenAI from 'openai';
+// AI service using Gemini as the primary provider. OpenAI removed per project configuration.
 
-// Build OpenAI client config safely. Some accounts don't use org/project headers.
-const rawOrg = process.env.OPENAI_ORG || process.env.OPENAI_ORGANIZATION;
-const rawProj = process.env.OPENAI_PROJECT;
-const cfg: any = { apiKey: process.env.OPENAI_API_KEY };
-if (rawOrg && /^org_[A-Za-z0-9]/.test(rawOrg)) {
-  cfg.organization = rawOrg;
-} else if (rawOrg) {
-  // Avoid breaking auth if a non-standard value is present
-  console.warn('[AI] Ignoring OPENAI_ORG/OPENAI_ORGANIZATION value that does not look like an org_ id');
+// Minimal Gemini chat helper using runtime require to avoid TS compile dependency
+async function callGeminiChat(systemText: string, userText: string, model = GEMINI_MODEL): Promise<string> {
+    if (!GEMINI_API_KEY) throw new Error('Gemini API key not configured');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // @ts-ignore
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const m = genAI.getGenerativeModel({ model });
+    const prompt = `${systemText}\n\nUser:\n${userText}`;
+    const result = await m.generateContent([{ text: prompt }]);
+    const text = result?.response?.text?.();
+    if (!text) throw new Error('Gemini returned no content');
+    return text as string;
 }
-if (rawProj && /^proj_[A-Za-z0-9]/.test(rawProj)) {
-  cfg.project = rawProj;
-} else if (rawProj) {
-  console.warn('[AI] Ignoring OPENAI_PROJECT value that does not look like a proj_ id');
-}
-const openai = new OpenAI(cfg);
 
-// Prefer env-configurable models with safe defaults
-const LESSON_MODEL = process.env.OPENAI_MODEL_LESSON || 'gpt-4o-mini';
-const SUMMARY_MODEL = process.env.OPENAI_MODEL_SUMMARY || 'gpt-4o-mini';
+// General-purpose assistant for in-session Q&A and topic outlines
+export async function generateAssistantAnswer(params: {
+    question?: string;
+    mode?: 'qa' | 'topic';
+    topic?: string;
+    depth?: 'short' | 'medium' | 'deep';
+    context?: string; // optional session context (transcript/notes)
+}): Promise<{ answer: string; meta?: { fallback?: boolean; reason?: string; model?: string; cooldownMs?: number; cooldownUntil?: number; provider?: string } }> {
+    const mode = params.mode || 'qa';
+    const depth = params.depth || 'medium';
+    const contextBlock = params.context ? `\nContext (may be partial):\n${params.context}\n` : '';
+
+    const userContent = mode === 'topic'
+        ? `Create a compact topic outline for ${params.topic || 'General CS Topic'} at ${depth} depth. Include bullets for: Overview, Core Concepts, Examples, Practice Tasks, Resources.`
+        : `${params.question}`;
+
+    const system = `You are a concise, friendly coding assistant inside a live pair-programming app. Provide step-by-step, practical help. If the user asks for debugging, propose minimal repro, logging, and docs links.${contextBlock}`;
+
+    if (AI_DISABLE) {
+        throw Object.assign(new Error('AI disabled by env'), { error: { code: 'ai_disabled' } });
+    }
+
+    // Primary provider routing: Gemini first if selected
+    if (AI_PROVIDER === 'gemini') {
+        try {
+            const content = await callGeminiChat(system, userContent, GEMINI_MODEL);
+            return { answer: content, meta: { model: GEMINI_MODEL, provider: 'gemini' } };
+        } catch (err: any) {
+            // Fall back to OpenRouter if configured
+            if (OPENROUTER_API_KEY) {
+                try {
+                    const content = await callOpenRouterChat([
+                        { role: 'system', content: system },
+                        { role: 'user', content: userContent },
+                    ]);
+                    return { answer: content, meta: { model: OPENROUTER_MODEL, provider: 'openrouter' } };
+                } catch (_) { /* continue to minimal fallback */ }
+            }
+        }
+    }
+
+    // If explicitly using OpenRouter as primary
+    if (AI_PROVIDER === 'openrouter' && OPENROUTER_API_KEY) {
+        try {
+            const content = await callOpenRouterChat([
+                { role: 'system', content: system },
+                { role: 'user', content: userContent },
+            ]);
+            return { answer: content, meta: { model: OPENROUTER_MODEL, provider: 'openrouter' } };
+        } catch (_) { /* continue to minimal fallback */ }
+    }
+
+    // Final minimal fallback if all providers fail or are unavailable
+    const minimal = mode === 'topic'
+        ? `Topic Outline: ${params.topic || 'General'}\n- Overview\n- Core Concepts\n- Examples\n- Practice Tasks\n- Resources`
+        : 'Try: isolate a minimal repro, add console logs/breakpoints, and verify API usage in docs.';
+    return { answer: minimal, meta: { fallback: true, reason: 'unavailable', provider: 'none' } };
+}
+// Provider/model configuration
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase(); // 'gemini' | 'openrouter'
 const AI_DISABLE = (process.env.AI_DISABLE || '').toLowerCase() === 'true';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct:free';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+
+async function callOpenRouterChat(messages: { role: 'system'|'user'|'assistant'; content: string }[], model = OPENROUTER_MODEL): Promise<string> {
+    if (!OPENROUTER_API_KEY) throw new Error('OpenRouter API key not configured');
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        },
+        body: JSON.stringify({
+            model,
+            messages,
+            temperature: 0.2,
+        }),
+    });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`OpenRouter error ${res.status}: ${text}`);
+    }
+    const data = await res.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content) throw new Error('OpenRouter returned no content');
+    return content as string;
+}
 
 // Respect rate limits: small retry helper honoring Retry-After and adding jitter
 async function callWithRetries<T>(fn: () => Promise<T>, attempts = 2): Promise<T> {
@@ -93,8 +176,7 @@ interface SessionSummaryRequest {
     participants: string[];
 }
 
-// Simple cooldown to avoid hammering OpenAI when quota is exceeded
-let OPENAI_COOLDOWN_UNTIL = 0;
+// (Optional) Cooldown could be reintroduced if provider rate-limits need special handling.
 
 export async function generateLessonPlan(request: LessonPlanRequest) {
     const prompt = `
@@ -133,40 +215,29 @@ Format as JSON with this structure:
         if (AI_DISABLE) {
             throw Object.assign(new Error('AI disabled by env'), { error: { code: 'ai_disabled' } });
         }
-        if (Date.now() < OPENAI_COOLDOWN_UNTIL) {
-            throw Object.assign(new Error('OpenAI cooldown active'), { error: { code: 'insufficient_quota' } });
+        // Gemini primary
+        try {
+            const system = 'You are an expert educational designer creating personalized lesson plans for peer-to-peer skill sharing sessions.';
+            const content = await callGeminiChat(system, prompt, GEMINI_MODEL);
+            const lessonPlan = tryParseJsonFromContent(content);
+            if (!lessonPlan) throw new Error('Failed to parse lesson plan JSON');
+            return lessonPlan;
+        } catch (e) {
+            // Optional OpenRouter fallback
+            if (OPENROUTER_API_KEY) {
+                try {
+                    const content = await callOpenRouterChat([
+                        { role: 'system', content: 'You are an expert educational designer creating personalized lesson plans for peer-to-peer skill sharing sessions.' },
+                        { role: 'user', content: prompt },
+                    ]);
+                    const lessonPlan = tryParseJsonFromContent(content);
+                    if (lessonPlan) return lessonPlan;
+                } catch (_) { /* ignore */ }
+            }
+            throw e;
         }
-        const response = await callWithRetries(() => openai.chat.completions.create({
-            model: LESSON_MODEL,
-            messages: [
-                {
-                    role: "system",
-                    content: "You are an expert educational designer creating personalized lesson plans for peer-to-peer skill sharing sessions."
-                },
-                {
-                    role: "user",
-                    content: prompt
-                }
-            ],
-            temperature: 0.7,
-            max_tokens: 900
-        }));
-
-        const content = response.choices[0]?.message?.content;
-        if (!content) {
-            throw new Error("No content received from OpenAI");
-        }
-
-        // Parse JSON response (robust)
-        const lessonPlan = tryParseJsonFromContent(content);
-        if (!lessonPlan) throw new Error('Failed to parse lesson plan JSON');
-        return lessonPlan;
     } catch (error) {
         console.error("Error generating lesson plan:", error);
-        if ((error as any)?.error?.code === 'insufficient_quota') {
-            // back off for 5 minutes
-            OPENAI_COOLDOWN_UNTIL = Date.now() + 5 * 60 * 1000;
-        }
         
         // Fallback lesson plan
         return {
@@ -235,38 +306,26 @@ Format as a structured summary that both participants can reference for their le
         if (AI_DISABLE) {
             throw Object.assign(new Error('AI disabled by env'), { error: { code: 'ai_disabled' } });
         }
-        if (Date.now() < OPENAI_COOLDOWN_UNTIL) {
-            throw Object.assign(new Error('OpenAI cooldown active'), { error: { code: 'insufficient_quota' } });
+        // Gemini primary
+        try {
+            const system = 'You are an educational analyst creating insightful summaries of peer learning sessions.';
+            const content = await callGeminiChat(system, prompt, GEMINI_MODEL);
+            return content || "Session completed successfully.";
+        } catch (e) {
+            // Optional OpenRouter fallback
+            if (OPENROUTER_API_KEY) {
+                try {
+                    const content = await callOpenRouterChat([
+                        { role: 'system', content: 'You are an educational analyst creating insightful summaries of peer learning sessions.' },
+                        { role: 'user', content: prompt },
+                    ]);
+                    return content || "Session completed successfully.";
+                } catch (_) { /* ignore */ }
+            }
+            throw e;
         }
-        const response = await callWithRetries(() => openai.chat.completions.create({
-            model: SUMMARY_MODEL,
-            messages: [
-                {
-                    role: "system",
-                    content: "You are an educational analyst creating insightful summaries of peer learning sessions."
-                },
-                {
-                    role: "user",
-                    content: prompt
-                }
-            ],
-            temperature: 0.5,
-            max_tokens: 500
-        }), 2); // reduce retries for faster responses
-
-        return response.choices[0]?.message?.content || "Session completed successfully.";
     } catch (error) {
         console.error("Error generating session summary:", error);
-        if ((error as any)?.error?.code === 'insufficient_quota') {
-            // back off for 1 minute
-            OPENAI_COOLDOWN_UNTIL = Date.now() + 1 * 60 * 1000;
-            // immediate fallback
-            return `Session Summary:
-- Participants: ${request.participants.join(', ')}
-- Skills exchanged: ${request.teacherSkill} and ${request.learnerSkill}
-- Duration: ${request.duration} minutes
-- Session completed successfully with knowledge exchange between participants.`;
-        }
         return `Session Summary:
 - Participants: ${request.participants.join(', ')}
 - Skills exchanged: ${request.teacherSkill} and ${request.learnerSkill}
@@ -290,23 +349,24 @@ Provide:
 `;
 
 	try {
-		const response = await openai.chat.completions.create({
-			model: "gpt-3.5-turbo",
-			messages: [
-				{
-					role: "system",
-					content: "You are a technical skill assessor providing constructive feedback."
-				},
-				{
-					role: "user",
-					content: prompt
-				}
-			],
-			temperature: 0.3,
-			max_tokens: 500
-		});
-
-		return response.choices[0]?.message?.content || "Assessment completed.";
+		// Gemini primary
+		try {
+			const system = 'You are a technical skill assessor providing constructive feedback.';
+			const content = await callGeminiChat(system, prompt, GEMINI_MODEL);
+			return content || "Assessment completed.";
+		} catch (e) {
+			// Optional OpenRouter fallback
+			if (OPENROUTER_API_KEY) {
+				try {
+					const content = await callOpenRouterChat([
+						{ role: 'system', content: 'You are a technical skill assessor providing constructive feedback.' },
+						{ role: 'user', content: prompt },
+					]);
+					return content || "Assessment completed.";
+				} catch (_) { /* ignore */ }
+			}
+			throw e;
+		}
 	} catch (error) {
 		console.error("Error generating skill assessment:", error);
 		return "Skill assessment completed. Continue practicing to improve your abilities.";

@@ -10,12 +10,27 @@ dotenv_1.default.config();
 const requiredEnvVars = [
     'JWT_SECRET',
     'MONGODB_URI',
-    'OPENAI_API_KEY'
 ];
 function validateEnv() {
-    const missing = requiredEnvVars.filter(key => !process.env[key]);
-    if (missing.length > 0) {
-        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    const missingBase = requiredEnvVars.filter(key => !process.env[key]);
+    if (missingBase.length > 0) {
+        throw new Error(`Missing required environment variables: ${missingBase.join(', ')}`);
+    }
+    const provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+    if (provider === 'gemini') {
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error('Missing required environment variables: GEMINI_API_KEY');
+        }
+    }
+    else if (provider === 'openrouter') {
+        if (!process.env.OPENROUTER_API_KEY) {
+            throw new Error('Missing required environment variables: OPENROUTER_API_KEY');
+        }
+    }
+    else if (provider === 'openai') {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('Missing required environment variables: OPENAI_API_KEY');
+        }
     }
 }
 function parseBoolean(value, defaultValue = false) {
@@ -53,9 +68,17 @@ exports.envConfig = {
     JWT_SECRET: process.env.JWT_SECRET,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
     JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
-    // OpenAI
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4',
+    // AI Provider
+    AI_PROVIDER: (process.env.AI_PROVIDER || 'gemini').toLowerCase(),
+    // Gemini
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+    GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+    // OpenRouter
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
+    OPENROUTER_MODEL: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct:free',
+    // OpenAI (legacy)
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+    OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4o-mini',
     OPENAI_MAX_TOKENS: parseNumber(process.env.OPENAI_MAX_TOKENS, 2000),
     OPENAI_TEMPERATURE: parseFloat(process.env.OPENAI_TEMPERATURE || '0.7'),
     // Rate Limiting

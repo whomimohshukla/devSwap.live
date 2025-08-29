@@ -153,6 +153,16 @@ export const aiAPI = {
 
   // Cached lesson plans
   getCachedPlans: () => api.get('/ai/cached-plans'),
+
+  // General assistant (in-session Q&A/topic outline)
+  assist: (data: {
+    question?: string;
+    mode?: 'qa' | 'topic';
+    topic?: string;
+    depth?: 'short' | 'medium' | 'deep';
+    sessionId?: string;
+    includeContext?: boolean;
+  }) => api.post('/ai/assist', data),
 };
 
 // Requests API

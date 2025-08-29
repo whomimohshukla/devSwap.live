@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RequestsController = void 0;
 const request_model_1 = __importDefault(require("../models/request.model"));
 const user_model_1 = __importDefault(require("../models/user.model"));
+const session_model_1 = __importDefault(require("../models/session.model"));
 const socket_1 = require("../lib/socket");
 // Helper to get userId from auth middleware
 function getUserId(req) {
@@ -120,15 +121,34 @@ exports.RequestsController = {
             const populated = await request_model_1.default.findById(doc._id)
                 .populate("fromUser", "name avatar bio")
                 .populate("toUser", "name avatar bio");
+            // Ensure there is an active session between these users
+            let session = await session_model_1.default.findOne({
+                isActive: true,
+                $or: [
+                    { userA: doc.fromUser, userB: doc.toUser },
+                    { userA: doc.toUser, userB: doc.fromUser },
+                ],
+            });
+            if (!session) {
+                session = await session_model_1.default.create({
+                    userA: doc.fromUser,
+                    userB: doc.toUser,
+                    isActive: true,
+                    startedAt: new Date(),
+                });
+            }
             try {
                 // Notify both parties
                 (0, socket_1.getIO)().to(String(doc.fromUser)).emit("request:accepted", { request: populated });
                 (0, socket_1.getIO)().to(String(doc.toUser)).emit("request:accepted", { request: populated });
+                // Also inform about session creation/availability
+                (0, socket_1.getIO)().to(String(doc.fromUser)).emit("session:created", { session });
+                (0, socket_1.getIO)().to(String(doc.toUser)).emit("session:created", { session });
             }
             catch (e) {
-                console.warn("[socket] emit request:accepted failed", e);
+                console.warn("[socket] emit request:accepted/session:created failed", e);
             }
-            return res.json({ data: populated });
+            return res.json({ data: populated, session });
         }
         catch (err) {
             console.error("accept request error", err);
