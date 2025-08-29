@@ -1,6 +1,6 @@
 // src/routes/health.routes.ts
-import express from 'express';
-import healthCheckService from '../services/healthCheck.service';
+import express from "express";
+import healthCheckService from "../services/healthCheck.service";
 
 const router = express.Router();
 
@@ -76,21 +76,25 @@ const router = express.Router();
  *       503:
  *         description: Service unavailable
  */
-router.get('/', async (req, res) => {
-  try {
-    const healthStatus = await healthCheckService.getHealthStatus();
-    
-    const statusCode = healthStatus.status === 'healthy' ? 200 : 
-                      healthStatus.status === 'degraded' ? 200 : 503;
-    
-    res.status(statusCode).json(healthStatus);
-  } catch (error) {
-    res.status(503).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Health check failed'
-    });
-  }
+router.get("/", async (req, res) => {
+	try {
+		const healthStatus = await healthCheckService.getHealthStatus();
+
+		const statusCode =
+			healthStatus.status === "healthy"
+				? 200
+				: healthStatus.status === "degraded"
+				? 200
+				: 503;
+
+		res.status(statusCode).json(healthStatus);
+	} catch (error) {
+		res.status(503).json({
+			status: "unhealthy",
+			timestamp: new Date().toISOString(),
+			error: error instanceof Error ? error.message : "Health check failed",
+		});
+	}
 });
 
 /**
@@ -104,15 +108,16 @@ router.get('/', async (req, res) => {
  *       200:
  *         description: Metrics retrieved successfully
  */
-router.get('/metrics', async (req, res) => {
-  try {
-    const metrics = await healthCheckService.getMetrics();
-    res.json(metrics);
-  } catch (error) {
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to get metrics'
-    });
-  }
+router.get("/metrics", async (req, res) => {
+	try {
+		const metrics = await healthCheckService.getMetrics();
+		res.json(metrics);
+	} catch (error) {
+		res.status(500).json({
+			error:
+				error instanceof Error ? error.message : "Failed to get metrics",
+		});
+	}
 });
 
 /**
@@ -128,21 +133,24 @@ router.get('/metrics', async (req, res) => {
  *       503:
  *         description: Application is not ready
  */
-router.get('/ready', async (req, res) => {
-  try {
-    const healthStatus = await healthCheckService.getHealthStatus();
-    
-    if (healthStatus.status === 'unhealthy') {
-      return res.status(503).json({ ready: false, status: healthStatus.status });
-    }
-    
-    res.json({ ready: true, status: healthStatus.status });
-  } catch (error) {
-    res.status(503).json({ 
-      ready: false, 
-      error: error instanceof Error ? error.message : 'Readiness check failed' 
-    });
-  }
+router.get("/ready", async (req, res) => {
+	try {
+		const healthStatus = await healthCheckService.getHealthStatus();
+
+		if (healthStatus.status === "unhealthy") {
+			return res
+				.status(503)
+				.json({ ready: false, status: healthStatus.status });
+		}
+
+		res.json({ ready: true, status: healthStatus.status });
+	} catch (error) {
+		res.status(503).json({
+			ready: false,
+			error:
+				error instanceof Error ? error.message : "Readiness check failed",
+		});
+	}
 });
 
 /**
@@ -156,12 +164,12 @@ router.get('/ready', async (req, res) => {
  *       200:
  *         description: Application is alive
  */
-router.get('/live', (req, res) => {
-  res.json({ 
-    alive: true, 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+router.get("/live", (req, res) => {
+	res.json({
+		alive: true,
+		timestamp: new Date().toISOString(),
+		uptime: process.uptime(),
+	});
 });
 
 export default router;

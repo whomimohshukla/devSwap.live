@@ -9,5 +9,3 @@ router.post("/join", requireAuth, strictLimiter, joinMatching);
 router.post("/leave", requireAuth, strictLimiter, leaveMatching);
 
 export default router;
-
-

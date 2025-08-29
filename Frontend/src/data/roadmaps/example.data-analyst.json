@@ -1,32 +1,38 @@
 {
-  "id": "data-analyst",
-  "title": "Data Analyst Roadmap",
-  "level": "beginner",
-  "description": "Customize this roadmap by editing this JSON.",
-  "tags": ["SQL", "Excel", "BI"],
-  "stages": [
-    {
-      "id": "fundamentals",
-      "title": "Fundamentals",
-      "summary": "Core tools and data literacy.",
-      "steps": [
-        {
-          "id": "excel",
-          "title": "Excel/Sheets Basics",
-          "description": "Cells, formulas, charts, pivot tables, and data cleaning.",
-          "resources": [
-            { "label": "Google Sheets", "href": "https://support.google.com/a/users/answer/9282959" }
-          ]
-        },
-        {
-          "id": "sql",
-          "title": "SQL Basics",
-          "description": "SELECT, WHERE, JOIN, GROUP BY, ORDER BY.",
-          "resources": [
-            { "label": "SQL Tutorial", "href": "https://www.w3schools.com/sql/" }
-          ]
-        }
-      ]
-    }
-  ]
+	"id": "data-analyst",
+	"title": "Data Analyst Roadmap",
+	"level": "beginner",
+	"description": "Customize this roadmap by editing this JSON.",
+	"tags": ["SQL", "Excel", "BI"],
+	"stages": [
+		{
+			"id": "fundamentals",
+			"title": "Fundamentals",
+			"summary": "Core tools and data literacy.",
+			"steps": [
+				{
+					"id": "excel",
+					"title": "Excel/Sheets Basics",
+					"description": "Cells, formulas, charts, pivot tables, and data cleaning.",
+					"resources": [
+						{
+							"label": "Google Sheets",
+							"href": "https://support.google.com/a/users/answer/9282959"
+						}
+					]
+				},
+				{
+					"id": "sql",
+					"title": "SQL Basics",
+					"description": "SELECT, WHERE, JOIN, GROUP BY, ORDER BY.",
+					"resources": [
+						{
+							"label": "SQL Tutorial",
+							"href": "https://www.w3schools.com/sql/"
+						}
+					]
+				}
+			]
+		}
+	]
 }

@@ -2,10 +2,10 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
 import {
-  createLessonPlan,
-  generateSummary,
-  getCachedPlans,
-  assist,
+	createLessonPlan,
+	generateSummary,
+	getCachedPlans,
+	assist,
 } from "../controllers/ai.controller";
 
 const router = Router();

@@ -1,7 +1,7 @@
 // src/controllers/userController.ts
 import { Request, Response } from "express";
 import { User } from "../models/user.model";
- // import jwt from "jsonwebtoken"; // removed: auth handlers moved to auth.controller
+// import jwt from "jsonwebtoken"; // removed: auth handlers moved to auth.controller
 import mongoose from "mongoose";
 import { SkillName, SkillLevel, SKILL_LEVELS } from "../models/skill.data";
 
@@ -15,14 +15,14 @@ interface AuthenticatedRequest extends Request {
 
 // Helper: normalize a free-form level string to a valid SkillLevel enum
 function normalizeLevel(level?: string): SkillLevel | null {
-  if (!level) return null;
-  const trimmed = String(level).trim().toLowerCase();
-  const mapping: Record<string, SkillLevel> = {
-    beginner: "Beginner",
-    intermediate: "Intermediate",
-    advanced: "Advanced",
-  };
-  return mapping[trimmed] ?? null;
+	if (!level) return null;
+	const trimmed = String(level).trim().toLowerCase();
+	const mapping: Record<string, SkillLevel> = {
+		beginner: "Beginner",
+		intermediate: "Intermediate",
+		advanced: "Advanced",
+	};
+	return mapping[trimmed] ?? null;
 }
 
 // ======================= AUTH CONTROLLERS MOVED =======================

@@ -2,21 +2,21 @@ import { Router } from "express";
 import { strictLimiter } from "../middleware/rateLimiter";
 import { requireAuth } from "../middleware/auth";
 import {
-  getCurrentUser,
-  getUserById,
-  updateProfile,
-  updatePassword,
-  deleteAccount,
-  searchUsers,
-  findMatches,
-  getOnlineUsers,
-  addSkill,
-  removeSkill,
-  updateSkillLevel,
-  updateOnlineStatus,
-  updateLastSeen,
-  getUserStats,
-  getUserActivity,
+	getCurrentUser,
+	getUserById,
+	updateProfile,
+	updatePassword,
+	deleteAccount,
+	searchUsers,
+	findMatches,
+	getOnlineUsers,
+	addSkill,
+	removeSkill,
+	updateSkillLevel,
+	updateOnlineStatus,
+	updateLastSeen,
+	getUserStats,
+	getUserActivity,
 } from "../controllers/user.controller";
 
 const router = Router();

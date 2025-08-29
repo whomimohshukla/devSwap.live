@@ -21,7 +21,9 @@ export async function joinMatching(req: Request, res: Response) {
 
 	// Notify this user that they joined the queue (Frontend listens for 'match:queue:joined')
 	try {
-		getIO().to(userId).emit("match:queue:joined", { userId, timestamp: Date.now() });
+		getIO()
+			.to(userId)
+			.emit("match:queue:joined", { userId, timestamp: Date.now() });
 	} catch (e) {
 		console.warn("socket emit match:queue:joined failed", e);
 	}
@@ -40,17 +42,23 @@ export async function joinMatching(req: Request, res: Response) {
 	// Emit match:found to both participants using their personal rooms
 	try {
 		const meSafe = user.safeProfile ? user.safeProfile() : user;
-		const youSafe = matchedUser.safeProfile ? matchedUser.safeProfile() : matchedUser;
-		getIO().to(userId).emit("match:found", {
-			sessionId: result.sessionId,
-			partner: youSafe,
-			from: matchedUser._id?.toString?.() || undefined,
-		});
-		getIO().to((matchedUser._id as any).toString()).emit("match:found", {
-			sessionId: result.sessionId,
-			partner: meSafe,
-			from: userId,
-		});
+		const youSafe = matchedUser.safeProfile
+			? matchedUser.safeProfile()
+			: matchedUser;
+		getIO()
+			.to(userId)
+			.emit("match:found", {
+				sessionId: result.sessionId,
+				partner: youSafe,
+				from: matchedUser._id?.toString?.() || undefined,
+			});
+		getIO()
+			.to((matchedUser._id as any).toString())
+			.emit("match:found", {
+				sessionId: result.sessionId,
+				partner: meSafe,
+				from: userId,
+			});
 	} catch (e) {
 		console.warn("socket emit match:found failed", e);
 	}
@@ -78,7 +86,9 @@ export async function leaveMatching(req: Request, res: Response) {
 
 	// Notify this user that they left the queue
 	try {
-		getIO().to(userId).emit("match:queue:left", { userId, timestamp: Date.now() });
+		getIO()
+			.to(userId)
+			.emit("match:queue:left", { userId, timestamp: Date.now() });
 	} catch (e) {
 		console.warn("socket emit match:queue:left failed", e);
 	}

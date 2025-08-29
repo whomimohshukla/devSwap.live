@@ -37,8 +37,8 @@ export interface IUserDocument extends IUser, Document {
 }
 
 export interface IUserModel extends Model<IUserDocument> {
-    paginate: (query?: any, options?: any, callback?: any) => Promise<any>;
-    findMatchFor(userId: string): Promise<IUserDocument | null>;
+	paginate: (query?: any, options?: any, callback?: any) => Promise<any>;
+	findMatchFor(userId: string): Promise<IUserDocument | null>;
 }
 
 const SkillSchema = new Schema(
@@ -85,24 +85,24 @@ UserSchema.plugin(mongoosePaginate);
 
 // Text index for search
 UserSchema.index({
-    name: "text",
-    bio: "text",
+	name: "text",
+	bio: "text",
 });
 
 // Pre-save hook: hash password if modified
 UserSchema.pre<IUserDocument>("save", async function (next) {
-    // Only hash if password exists and was modified
-    if (!this.isModified("password") || !this.password) return next();
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
+	// Only hash if password exists and was modified
+	if (!this.isModified("password") || !this.password) return next();
+	const salt = await bcrypt.genSalt(10);
+	this.password = await bcrypt.hash(this.password, salt);
+	next();
 });
 
 // Instance method: compare password
 UserSchema.methods.comparePassword = function (candidate: string) {
-    // If no password is set (OAuth user), comparison fails
-    if (!this.password) return Promise.resolve(false);
-    return bcrypt.compare(candidate, this.password);
+	// If no password is set (OAuth user), comparison fails
+	if (!this.password) return Promise.resolve(false);
+	return bcrypt.compare(candidate, this.password);
 };
 
 // Instance method: safe profile

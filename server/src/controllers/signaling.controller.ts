@@ -29,12 +29,17 @@ export class SignalingController {
 	private async authenticateSocket(socket: AuthenticatedSocket, next: any) {
 		try {
 			// Prefer explicit auth token from handshake
-			const rawAuthToken = (socket.handshake.auth?.token as string | undefined) || undefined;
-			let token = rawAuthToken ? rawAuthToken.replace(/^Bearer\s+/i, "") : "";
+			const rawAuthToken =
+				(socket.handshake.auth?.token as string | undefined) || undefined;
+			let token = rawAuthToken
+				? rawAuthToken.replace(/^Bearer\s+/i, "")
+				: "";
 
 			// Fallback to cookie named 'token' when no auth token provided
 			if (!token) {
-				const cookieHeader = socket.handshake.headers?.cookie as string | undefined;
+				const cookieHeader = socket.handshake.headers?.cookie as
+					| string
+					| undefined;
 				if (cookieHeader) {
 					const cookies: Record<string, string> = {};
 					cookieHeader.split(/;\s*/).forEach((pair) => {
@@ -68,16 +73,16 @@ export class SignalingController {
 
 	private handleConnection(socket: AuthenticatedSocket) {
 		console.log(`User ${socket.userId} connected`);
-		
+
 		if (socket.userId) {
 			this.connectedUsers.set(socket.userId, socket.id);
 			// Join personal room for targeted user events
 			socket.join(socket.userId);
-			
+
 			// Update user online status
 			User.findByIdAndUpdate(socket.userId, {
 				isOnline: true,
-				lastSeen: new Date()
+				lastSeen: new Date(),
 			}).exec();
 		}
 
@@ -86,37 +91,62 @@ export class SignalingController {
 		socket.on("leave-session", this.handleLeaveSession.bind(this, socket));
 		socket.on("webrtc-offer", this.handleWebRTCOffer.bind(this, socket));
 		socket.on("webrtc-answer", this.handleWebRTCAnswer.bind(this, socket));
-		socket.on("webrtc-ice-candidate", this.handleICECandidate.bind(this, socket));
+		socket.on(
+			"webrtc-ice-candidate",
+			this.handleICECandidate.bind(this, socket)
+		);
 		// Aliases to support frontend event names
 		socket.on("join", this.handleJoinSession.bind(this, socket));
 		socket.on("leave", this.handleLeaveSession.bind(this, socket));
 		socket.on("offer", (data) => {
 			if (!socket.sessionId) return;
-			this.io.to(socket.sessionId).emit("offer", { sdp: data.sdp, from: socket.userId });
+			this.io
+				.to(socket.sessionId)
+				.emit("offer", { sdp: data.sdp, from: socket.userId });
 			// also emit legacy
-			this.io.to(socket.sessionId).emit("webrtc-offer", { offer: data.sdp, from: socket.userId });
+			this.io
+				.to(socket.sessionId)
+				.emit("webrtc-offer", { offer: data.sdp, from: socket.userId });
 		});
 		socket.on("answer", (data) => {
 			if (!socket.sessionId) return;
-			this.io.to(socket.sessionId).emit("answer", { sdp: data.sdp, from: socket.userId });
+			this.io
+				.to(socket.sessionId)
+				.emit("answer", { sdp: data.sdp, from: socket.userId });
 			// legacy
-			this.io.to(socket.sessionId).emit("webrtc-answer", { answer: data.sdp, from: socket.userId });
+			this.io
+				.to(socket.sessionId)
+				.emit("webrtc-answer", { answer: data.sdp, from: socket.userId });
 		});
 		socket.on("ice-candidate", (data) => {
 			if (!socket.sessionId) return;
-			this.io.to(socket.sessionId).emit("ice-candidate", { candidate: data.candidate, from: socket.userId });
+			this.io.to(socket.sessionId).emit("ice-candidate", {
+				candidate: data.candidate,
+				from: socket.userId,
+			});
 			// legacy
-			this.io.to(socket.sessionId).emit("webrtc-ice-candidate", { candidate: data.candidate, from: socket.userId });
+			this.io.to(socket.sessionId).emit("webrtc-ice-candidate", {
+				candidate: data.candidate,
+				from: socket.userId,
+			});
 		});
-		
+
 		// Code Editor Events
 		socket.on("code-change", this.handleCodeChange.bind(this, socket));
-		socket.on("cursor-position", this.handleCursorPosition.bind(this, socket));
-		
+		socket.on(
+			"cursor-position",
+			this.handleCursorPosition.bind(this, socket)
+		);
+
 		// Chat Events
 		socket.on("chat-message", this.handleChatMessage.bind(this, socket));
-		socket.on("chat:send", (data) => this.handleChatMessage(socket, { text: data.text, clientId: data?.clientId }));
-		
+		socket.on("chat:send", (data) =>
+			this.handleChatMessage(socket, {
+				text: data.text,
+				clientId: data?.clientId,
+			})
+		);
+
 		// Request-to-speak workflow (lightweight moderation for who has the mic)
 		// speak:request -> broadcast to session so peer(s) can approve/deny
 		socket.on("speak:request", (data: { to?: string } = {}) => {
@@ -154,33 +184,43 @@ export class SignalingController {
 	}
 
 	private async broadcastParticipants(sessionId: string) {
-    // derive userId list from sockets in room
-    const room = this.io.sockets.adapter.rooms.get(sessionId);
-    const ids: string[] = [];
-    if (room) {
-        for (const sid of room) {
-            const s = this.io.sockets.sockets.get(sid) as AuthenticatedSocket | undefined;
-            if (s?.userId) ids.push(s.userId);
-        }
-    }
-    // fetch names
-    const uniqueIds = Array.from(new Set(ids));
-    let enriched: { id: string; name: string }[] = [];
-    if (uniqueIds.length) {
-        try {
-            const users = await User.find({ _id: { $in: uniqueIds } }).select('displayName username email');
-            const nameOf = (u: any) => u.displayName || u.username || (u.email ? String(u.email).split('@')[0] : String(u._id));
-            const map = new Map<string, string>();
-            for (const u of users) map.set(String((u as any)._id), nameOf(u));
-            enriched = uniqueIds.map((id) => ({ id, name: map.get(id) || id }));
-        } catch {
-            enriched = uniqueIds.map((id) => ({ id, name: id }));
-        }
-    }
-    this.io.to(sessionId).emit("participants", enriched);
-}
+		// derive userId list from sockets in room
+		const room = this.io.sockets.adapter.rooms.get(sessionId);
+		const ids: string[] = [];
+		if (room) {
+			for (const sid of room) {
+				const s = this.io.sockets.sockets.get(sid) as
+					| AuthenticatedSocket
+					| undefined;
+				if (s?.userId) ids.push(s.userId);
+			}
+		}
+		// fetch names
+		const uniqueIds = Array.from(new Set(ids));
+		let enriched: { id: string; name: string }[] = [];
+		if (uniqueIds.length) {
+			try {
+				const users = await User.find({ _id: { $in: uniqueIds } }).select(
+					"displayName username email"
+				);
+				const nameOf = (u: any) =>
+					u.displayName ||
+					u.username ||
+					(u.email ? String(u.email).split("@")[0] : String(u._id));
+				const map = new Map<string, string>();
+				for (const u of users) map.set(String((u as any)._id), nameOf(u));
+				enriched = uniqueIds.map((id) => ({ id, name: map.get(id) || id }));
+			} catch {
+				enriched = uniqueIds.map((id) => ({ id, name: id }));
+			}
+		}
+		this.io.to(sessionId).emit("participants", enriched);
+	}
 
-	private async handleJoinSession(socket: AuthenticatedSocket, data: { sessionId: string }) {
+	private async handleJoinSession(
+		socket: AuthenticatedSocket,
+		data: { sessionId: string }
+	) {
 		try {
 			const { sessionId } = data;
 			const userId = socket.userId!;
@@ -192,8 +232,9 @@ export class SignalingController {
 				return;
 			}
 
-			const isParticipant = session.userA.toString() === userId || 
-								 session.userB.toString() === userId;
+			const isParticipant =
+				session.userA.toString() === userId ||
+				session.userB.toString() === userId;
 
 			if (!isParticipant) {
 				socket.emit("error", { message: "Access denied" });
@@ -213,32 +254,35 @@ export class SignalingController {
 			// Notify other participants
 			socket.to(sessionId).emit("user-joined", {
 				userId,
-				timestamp: new Date()
+				timestamp: new Date(),
 			});
 
 			// Determine if new joiner should create offer (simple rule: second+ peer creates offer)
-			const roomSize = this.io.sockets.adapter.rooms.get(sessionId)?.size || 1;
+			const roomSize =
+				this.io.sockets.adapter.rooms.get(sessionId)?.size || 1;
 			socket.emit("joined", { shouldCreateOffer: roomSize >= 2 });
 			socket.emit("session-joined", {
 				sessionId,
-				participants: Array.from(this.sessionRooms.get(sessionId)!).length
+				participants: Array.from(this.sessionRooms.get(sessionId)!).length,
 			});
 
 			// Broadcast participants list
 			await this.broadcastParticipants(sessionId);
-
 		} catch (error) {
 			console.error("Join session error:", error);
 			socket.emit("error", { message: "Failed to join session" });
 		}
 	}
 
-	private handleLeaveSession(socket: AuthenticatedSocket, data: { sessionId: string }) {
+	private handleLeaveSession(
+		socket: AuthenticatedSocket,
+		data: { sessionId: string }
+	) {
 		const { sessionId } = data;
 		const userId = socket.userId!;
 
 		socket.leave(sessionId);
-		
+
 		if (this.sessionRooms.has(sessionId)) {
 			this.sessionRooms.get(sessionId)!.delete(socket.id);
 			if (this.sessionRooms.get(sessionId)!.size === 0) {
@@ -248,7 +292,7 @@ export class SignalingController {
 
 		socket.to(sessionId).emit("user-left", {
 			userId,
-			timestamp: new Date()
+			timestamp: new Date(),
 		});
 		// Frontend expects 'peer-left'
 		socket.to(sessionId).emit("peer-left");
@@ -258,116 +302,134 @@ export class SignalingController {
 
 	private handleWebRTCOffer(socket: AuthenticatedSocket, data: any) {
 		if (!socket.sessionId) return;
-		
+
 		socket.to(socket.sessionId).emit("webrtc-offer", {
 			offer: data.offer,
-			from: socket.userId
+			from: socket.userId,
 		});
 		// simplified alias for frontend expecting 'offer' with sdp
 		if (data?.offer) {
-			socket.to(socket.sessionId).emit("offer", { sdp: data.offer, from: socket.userId });
+			socket
+				.to(socket.sessionId)
+				.emit("offer", { sdp: data.offer, from: socket.userId });
 		}
 	}
 
 	private handleWebRTCAnswer(socket: AuthenticatedSocket, data: any) {
 		if (!socket.sessionId) return;
-		
+
 		socket.to(socket.sessionId).emit("webrtc-answer", {
 			answer: data.answer,
-			from: socket.userId
+			from: socket.userId,
 		});
 		// simplified alias for frontend expecting 'answer' with sdp
 		if (data?.answer) {
-			socket.to(socket.sessionId).emit("answer", { sdp: data.answer, from: socket.userId });
+			socket
+				.to(socket.sessionId)
+				.emit("answer", { sdp: data.answer, from: socket.userId });
 		}
 	}
 
 	private handleICECandidate(socket: AuthenticatedSocket, data: any) {
 		if (!socket.sessionId) return;
-		
+
 		socket.to(socket.sessionId).emit("webrtc-ice-candidate", {
 			candidate: data.candidate,
-			from: socket.userId
+			from: socket.userId,
 		});
 		// simplified alias for frontend expecting 'ice-candidate'
 		if (data?.candidate) {
-			socket.to(socket.sessionId).emit("ice-candidate", { candidate: data.candidate, from: socket.userId });
+			socket.to(socket.sessionId).emit("ice-candidate", {
+				candidate: data.candidate,
+				from: socket.userId,
+			});
 		}
 	}
 
 	private handleCodeChange(socket: AuthenticatedSocket, data: any) {
 		if (!socket.sessionId) return;
-		
+
 		socket.to(socket.sessionId).emit("code-change", {
 			code: data.code,
 			language: data.language,
 			from: socket.userId,
-			timestamp: new Date()
+			timestamp: new Date(),
 		});
 	}
 
 	private handleCursorPosition(socket: AuthenticatedSocket, data: any) {
 		if (!socket.sessionId) return;
-		
+
 		socket.to(socket.sessionId).emit("cursor-position", {
 			position: data.position,
-			from: socket.userId
+			from: socket.userId,
 		});
 	}
 
 	private async handleChatMessage(socket: AuthenticatedSocket, data: any) {
-    if (!socket.sessionId) return;
-    const t = Date.now();
-    let fromName: string | undefined;
-    try {
-        if (socket.userId) {
-            const user = await User.findById(socket.userId).select('displayName username email');
-            const base = (user as any) || {};
-            fromName = base.displayName || base.username || (base.email ? String(base.email).split('@')[0] : undefined);
-        }
-    } catch {}
-    const message = {
-        text: data.text,
-        from: socket.userId,
-        fromName,
-        t,
-        clientId: data?.clientId,
-    } as { text: string; from?: string; fromName?: string; t: number; clientId?: string };
+		if (!socket.sessionId) return;
+		const t = Date.now();
+		let fromName: string | undefined;
+		try {
+			if (socket.userId) {
+				const user = await User.findById(socket.userId).select(
+					"displayName username email"
+				);
+				const base = (user as any) || {};
+				fromName =
+					base.displayName ||
+					base.username ||
+					(base.email ? String(base.email).split("@")[0] : undefined);
+			}
+		} catch {}
+		const message = {
+			text: data.text,
+			from: socket.userId,
+			fromName,
+			t,
+			clientId: data?.clientId,
+		} as {
+			text: string;
+			from?: string;
+			fromName?: string;
+			t: number;
+			clientId?: string;
+		};
 
-    this.io.to(socket.sessionId).emit("chat-message", message);
-    this.io.to(socket.sessionId).emit("chat:message", message);
-}
+		this.io.to(socket.sessionId).emit("chat-message", message);
+		this.io.to(socket.sessionId).emit("chat:message", message);
+	}
 
 	private handleSessionStatus(socket: AuthenticatedSocket, data: any) {
 		if (!socket.sessionId) return;
-		
+
 		socket.to(socket.sessionId).emit("session-status", {
 			status: data.status,
 			from: socket.userId,
-			timestamp: new Date()
+			timestamp: new Date(),
 		});
 	}
 
 	private async handleDisconnect(socket: AuthenticatedSocket) {
 		console.log(`User ${socket.userId} disconnected`);
-		
+
 		if (socket.userId) {
 			this.connectedUsers.delete(socket.userId);
-			
+
 			// Update user offline status
 			await User.findByIdAndUpdate(socket.userId, {
 				isOnline: false,
-				lastSeen: new Date()
+				lastSeen: new Date(),
 			});
 
 			// Clean up session rooms
 			if (socket.sessionId && this.sessionRooms.has(socket.sessionId)) {
 				this.sessionRooms.get(socket.sessionId)!.delete(socket.id);
-				
+
 				// Notify other participants
 				socket.to(socket.sessionId).emit("user-left", {
 					userId: socket.userId,
-					timestamp: new Date()
+					timestamp: new Date(),
 				});
 				socket.to(socket.sessionId).emit("peer-left");
 				this.broadcastParticipants(socket.sessionId);

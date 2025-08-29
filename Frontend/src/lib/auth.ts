@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authAPI } from './api';
+import { usersAPI } from './api';
+import { getSocket } from './socket';
 
 export interface User {
   _id: string;
@@ -35,6 +37,10 @@ interface AuthState {
   logout: () => void;
   updateUser: (user: User) => void;
   checkAuth: () => Promise<void>;
+  // Skill helpers
+  addSkillToProfile: (skillName: string, skillType: 'teach' | 'learn', level?: string) => Promise<void>;
+  removeSkillFromProfile: (skillName: string, skillType: 'teach' | 'learn') => Promise<void>;
+  changeSkillLevel: (skillName: string, level: string) => Promise<void>;
 }
 
 // Consent-aware storage wrapper for Zustand persist
@@ -202,6 +208,99 @@ export const useAuthStore = create<AuthState>()(
           });
         }
       },
+
+      // --- Skill mutation helpers (optimistic) ---
+      addSkillToProfile: async (skillName: string, skillType: 'teach' | 'learn', level?: string) => {
+        const current = (useAuthStore.getState().user || null) as User | null;
+        try {
+          // Optimistic update
+          if (current) {
+            const next: User = { ...current } as User;
+            if (skillType === 'teach') {
+              next.teachSkills = Array.from(new Set([...(current.teachSkills || []), skillName]));
+            } else {
+              next.learnSkills = Array.from(new Set([...(current.learnSkills || []), skillName]));
+            }
+            if (level) {
+              const sl = Array.isArray(current.skillLevels) ? [...current.skillLevels] : [];
+              const idx = sl.findIndex((x) => x.skillName === skillName);
+              if (idx >= 0) sl[idx] = { ...sl[idx], level };
+              else sl.push({ skillName, level });
+              (next as any).skillLevels = sl as any;
+            }
+            set({ user: next });
+          }
+          await usersAPI.addSkill({ skillName, skillType, level });
+          // After server ack, refresh profile to be certain
+          const profileRes = await authAPI.getProfile();
+          const user = (profileRes.data as any)?.user ?? (profileRes.data as any)?.data ?? (profileRes.data as any)?.data?.user;
+          set({ user });
+        } catch (e) {
+          // On failure, refetch to rollback
+          try {
+            const profileRes = await authAPI.getProfile();
+            const user = (profileRes.data as any)?.user ?? (profileRes.data as any)?.data ?? (profileRes.data as any)?.data?.user;
+            set({ user });
+          } catch {
+            // ignore
+          }
+          throw e;
+        }
+      },
+
+      removeSkillFromProfile: async (skillName: string, skillType: 'teach' | 'learn') => {
+        const current = (useAuthStore.getState().user || null) as User | null;
+        try {
+          // Optimistic update
+          if (current) {
+            const next: User = { ...current } as User;
+            if (skillType === 'teach') {
+              next.teachSkills = (current.teachSkills || []).filter((s) => s !== skillName);
+            } else {
+              next.learnSkills = (current.learnSkills || []).filter((s) => s !== skillName);
+            }
+            set({ user: next });
+          }
+          await usersAPI.removeSkill({ skillName, skillType });
+          const profileRes = await authAPI.getProfile();
+          const user = (profileRes.data as any)?.user ?? (profileRes.data as any)?.data ?? (profileRes.data as any)?.data?.user;
+          set({ user });
+        } catch (e) {
+          try {
+            const profileRes = await authAPI.getProfile();
+            const user = (profileRes.data as any)?.user ?? (profileRes.data as any)?.data ?? (profileRes.data as any)?.data?.user;
+            set({ user });
+          } catch {}
+          throw e;
+        }
+      },
+
+      changeSkillLevel: async (skillName: string, level: string) => {
+        const current = (useAuthStore.getState().user || null) as User | null;
+        try {
+          // Optimistic update
+          if (current) {
+            const next: User = { ...current } as User;
+            const sl = Array.isArray(current.skillLevels) ? [...current.skillLevels] : [];
+            const idx = sl.findIndex((x) => x.skillName === skillName);
+            if (idx >= 0) sl[idx] = { ...sl[idx], level };
+            else sl.push({ skillName, level });
+            (next as any).skillLevels = sl as any;
+            set({ user: next });
+          }
+          await usersAPI.updateSkillLevel({ skillName, level });
+          const profileRes = await authAPI.getProfile();
+          const user = (profileRes.data as any)?.user ?? (profileRes.data as any)?.data ?? (profileRes.data as any)?.data?.user;
+          set({ user });
+        } catch (e) {
+          try {
+            const profileRes = await authAPI.getProfile();
+            const user = (profileRes.data as any)?.user ?? (profileRes.data as any)?.data ?? (profileRes.data as any)?.data?.user;
+            set({ user });
+          } catch {}
+          throw e;
+        }
+      },
     }),
     {
       name: 'auth-storage',
@@ -214,6 +313,38 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// Initialize real-time auth/user updates once per app lifecycle
+let __authRealtimeInited = false;
+export function initAuthRealtime() {
+  if (__authRealtimeInited) return;
+  __authRealtimeInited = true;
+  const socket = getSocket();
+
+  const onUserUpdate = (payload: any) => {
+    const current = (useAuthStore.getState().user || null) as User | null;
+    const updated = payload?.user ?? payload;
+    if (!current || !updated) return;
+    if (updated._id && current._id !== updated._id) return; // ignore other users
+    const next: User = { ...current, ...updated } as User;
+    useAuthStore.getState().updateUser(next);
+  };
+
+  const onSkillsUpdate = (payload: any) => {
+    const current = (useAuthStore.getState().user || null) as User | null;
+    if (!current) return;
+    const { teachSkills, learnSkills, skillLevels } = payload || {};
+    const next: User = { ...current } as User;
+    if (Array.isArray(teachSkills)) next.teachSkills = teachSkills as string[];
+    if (Array.isArray(learnSkills)) next.learnSkills = learnSkills as string[];
+    if (Array.isArray(skillLevels)) (next as any).skillLevels = skillLevels as any;
+    useAuthStore.getState().updateUser(next);
+  };
+
+  socket.on('user:update', onUserUpdate);
+  socket.on('profile:update', onUserUpdate);
+  socket.on('skills:update', onSkillsUpdate);
+}
 
 // Skills data matching server
 export const SKILLS = [

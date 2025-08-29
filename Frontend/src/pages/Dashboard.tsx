@@ -19,6 +19,7 @@ import {
 import { usersAPI, sessionsAPI, matchAPI } from '../lib/api';
 import { useAuthStore } from '../lib/auth';
 import { useNavigate } from 'react-router-dom';
+import { getSocket } from '../lib/socket';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuthStore();
@@ -59,6 +60,65 @@ const Dashboard: React.FC = () => {
       mounted = false;
     };
   }, []);
+
+  // Realtime updates via Socket.io
+  useEffect(() => {
+    const socket = getSocket();
+
+    // Stats updated (e.g., after session completes)
+    const onStatsUpdate = (data: any) => {
+      setStatsData((prev: any) => ({ ...(prev || {}), ...(data || {}) }));
+    };
+
+    // Session lifecycle updates
+    const onSessionCreated = (s: any) => {
+      setSessions((prev) => [s, ...prev]);
+    };
+    const onSessionUpdated = (s: any) => {
+      setSessions((prev) => prev.map((it: any) => (it._id === s._id || it.id === s.id ? { ...it, ...s } : it)));
+    };
+    const onSessionDeleted = (s: any) => {
+      setSessions((prev) => prev.filter((it: any) => (it._id ?? it.id) !== (s._id ?? s.id)));
+    };
+
+    // Activity feed updates
+    const onActivity = (a: any) => {
+      setActivity((prev) => [a, ...prev].slice(0, 50));
+    };
+
+    // Matching flow updates
+    const onMatchFound = (payload: any) => {
+      // Stop spinner and redirect to matches (or room if provided)
+      setFindingMatch(false);
+      const roomSessionId = payload?.sessionId || payload?.session_id;
+      if (roomSessionId) {
+        navigate(`/sessions/${roomSessionId}/room`);
+      } else {
+        navigate('/matches?search=1');
+      }
+    };
+    const onMatchError = (_payload: any) => {
+      setFindingMatch(false);
+    };
+
+    socket.on('stats:update', onStatsUpdate);
+    socket.on('session:created', onSessionCreated);
+    socket.on('session:updated', onSessionUpdated);
+    socket.on('session:deleted', onSessionDeleted);
+    socket.on('activity:new', onActivity);
+    socket.on('match:found', onMatchFound);
+    socket.on('match:error', onMatchError);
+
+    return () => {
+      socket.off('stats:update', onStatsUpdate);
+      socket.off('session:created', onSessionCreated);
+      socket.off('session:updated', onSessionUpdated);
+      socket.off('session:deleted', onSessionDeleted);
+      socket.off('activity:new', onActivity);
+      socket.off('match:found', onMatchFound);
+      socket.off('match:error', onMatchError);
+    };
+  }, [navigate]);
 
   const stats = useMemo(() => {
     const completed = statsData?.sessionsCompleted ?? statsData?.sessions_completed ?? 0;

@@ -19,6 +19,7 @@ import LearnTopic from './pages/LearnTopic';
 import LearnLesson from './pages/LearnLesson';
 import Roadmaps from './pages/Roadmaps';
 import RoadmapPage from './pages/Roadmap';
+import { initAuthRealtime } from './lib/auth';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -33,6 +34,10 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 function App() {
+  // Initialize real-time user/profile updates once
+  React.useEffect(() => {
+    initAuthRealtime();
+  }, []);
   return (
     <Router>
       <Routes>

@@ -13,16 +13,19 @@ export async function getSession(req: Request, res: Response) {
 			return res.status(401).json({ message: "Authentication required" });
 		}
 
-		const session = await Session.findById(sessionId)
-			.populate('userA userB', 'name avatar teachSkills learnSkills isOnline');
+		const session = await Session.findById(sessionId).populate(
+			"userA userB",
+			"name avatar teachSkills learnSkills isOnline"
+		);
 
 		if (!session) {
 			return res.status(404).json({ message: "Session not found" });
 		}
 
 		// Check if user is part of this session
-		const isParticipant = session.userA._id.toString() === userId || 
-							 session.userB._id.toString() === userId;
+		const isParticipant =
+			session.userA._id.toString() === userId ||
+			session.userB._id.toString() === userId;
 
 		if (!isParticipant) {
 			return res.status(403).json({ message: "Access denied" });
@@ -34,7 +37,7 @@ export async function getSession(req: Request, res: Response) {
 		res.json({
 			session,
 			lessonPlan,
-			isActive: session.isActive
+			isActive: session.isActive,
 		});
 	} catch (error) {
 		console.error("Get session error:", error);
@@ -58,8 +61,9 @@ export async function endSession(req: Request, res: Response) {
 		}
 
 		// Check if user is part of this session
-		const isParticipant = session.userA.toString() === userId || 
-							 session.userB.toString() === userId;
+		const isParticipant =
+			session.userA.toString() === userId ||
+			session.userB.toString() === userId;
 
 		if (!isParticipant) {
 			return res.status(403).json({ message: "Access denied" });
@@ -72,15 +76,15 @@ export async function endSession(req: Request, res: Response) {
 
 		// Add session to users' past sessions
 		await User.findByIdAndUpdate(session.userA, {
-			$addToSet: { pastSessions: session._id }
+			$addToSet: { pastSessions: session._id },
 		});
 		await User.findByIdAndUpdate(session.userB, {
-			$addToSet: { pastSessions: session._id }
+			$addToSet: { pastSessions: session._id },
 		});
 
 		res.json({
 			message: "Session ended successfully",
-			session
+			session,
 		});
 	} catch (error) {
 		console.error("End session error:", error);
@@ -91,27 +95,24 @@ export async function endSession(req: Request, res: Response) {
 export async function getUserSessions(req: Request, res: Response) {
 	try {
 		const userId = req.user?.id;
-		const { status = 'all', page = 1, limit = 10 } = req.query;
+		const { status = "all", page = 1, limit = 10 } = req.query;
 
 		if (!userId) {
 			return res.status(401).json({ message: "Authentication required" });
 		}
 
 		let query: any = {
-			$or: [
-				{ userA: userId },
-				{ userB: userId }
-			]
+			$or: [{ userA: userId }, { userB: userId }],
 		};
 
-		if (status === 'active') {
+		if (status === "active") {
 			query.isActive = true;
-		} else if (status === 'ended') {
+		} else if (status === "ended") {
 			query.isActive = false;
 		}
 
 		const sessions = await Session.find(query)
-			.populate('userA userB', 'name avatar')
+			.populate("userA userB", "name avatar")
 			.sort({ startedAt: -1 })
 			.limit(Number(limit))
 			.skip((Number(page) - 1) * Number(limit));
@@ -124,8 +125,8 @@ export async function getUserSessions(req: Request, res: Response) {
 				page: Number(page),
 				limit: Number(limit),
 				total,
-				pages: Math.ceil(total / Number(limit))
-			}
+				pages: Math.ceil(total / Number(limit)),
+			},
 		});
 	} catch (error) {
 		console.error("Get user sessions error:", error);
@@ -142,16 +143,19 @@ export async function joinSession(req: Request, res: Response) {
 			return res.status(401).json({ message: "Authentication required" });
 		}
 
-		const session = await Session.findById(sessionId)
-			.populate('userA userB', 'name avatar isOnline');
+		const session = await Session.findById(sessionId).populate(
+			"userA userB",
+			"name avatar isOnline"
+		);
 
 		if (!session) {
 			return res.status(404).json({ message: "Session not found" });
 		}
 
 		// Check if user is part of this session
-		const isParticipant = session.userA._id.toString() === userId || 
-							 session.userB._id.toString() === userId;
+		const isParticipant =
+			session.userA._id.toString() === userId ||
+			session.userB._id.toString() === userId;
 
 		if (!isParticipant) {
 			return res.status(403).json({ message: "Access denied" });
@@ -164,12 +168,12 @@ export async function joinSession(req: Request, res: Response) {
 		// Update user online status
 		await User.findByIdAndUpdate(userId, {
 			isOnline: true,
-			lastSeen: new Date()
+			lastSeen: new Date(),
 		});
 
 		res.json({
 			message: "Joined session successfully",
-			session
+			session,
 		});
 	} catch (error) {
 		console.error("Join session error:", error);

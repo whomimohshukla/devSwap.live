@@ -2,10 +2,10 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
 import {
-  getSession,
-  endSession,
-  getUserSessions,
-  joinSession
+	getSession,
+	endSession,
+	getUserSessions,
+	joinSession,
 } from "../controllers/session.controller";
 
 const router = Router();

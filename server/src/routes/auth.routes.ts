@@ -1,18 +1,18 @@
 import { Router } from "express";
 import { strictLimiter } from "../middleware/rateLimiter";
 import {
-  register,
-  login,
-  logout,
-  refreshToken,
-  getProfile
+	register,
+	login,
+	logout,
+	refreshToken,
+	getProfile,
 } from "../controllers/auth.controller";
 import { requireAuth } from "../middleware/auth";
 import {
-  googleAuthStart,
-  googleAuthCallback,
-  githubAuthStart,
-  githubAuthCallback,
+	googleAuthStart,
+	googleAuthCallback,
+	githubAuthStart,
+	githubAuthCallback,
 } from "../controllers/auth.controller";
 
 const router = Router();
