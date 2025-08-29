@@ -80,9 +80,7 @@ const AssistantBar: React.FC = () => {
 
   return (
     <div className="sticky top-16 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 mb-4">
-      <div className="rounded-xl border border-gray-800 bg-[#0b0c0d]/95 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
-        {/* Gradient accent header */}
-        <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 rounded-t-xl" />
+      <div className="rounded-xl border border-gray-800 bg-[#0b0c0d]">
         <div className="flex items-center justify-between px-3 py-2">
           <button onClick={() => setOpen(!isOpen)} className="inline-flex items-center gap-2 text-sm font-semibold text-white">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.7)]" />
@@ -95,14 +93,14 @@ const AssistantBar: React.FC = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') onSend(); }}
-                placeholder="Ask about your roadmap or current session… e.g. ‘Break down this React hook’"
-                className="hidden md:block w-96 bg-[#0f1113] border border-gray-700 rounded-md px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/60"
+                placeholder="Ask about JS, React, etc."
+                className="hidden md:block w-72 bg-black/40 border border-gray-800 rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-emerald-600"
               />
             )}
             <button
               onClick={onSend}
               disabled={!canSend}
-              className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-60 text-white rounded-md text-sm inline-flex items-center gap-1"
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded text-sm inline-flex items-center gap-1"
             >
               <Send className="w-4 h-4" />
               {cooldownMs > 0 ? `Cooldown ${Math.ceil(cooldownMs/1000)}s` : (loading ? 'Asking…' : 'Ask')}
@@ -122,13 +120,13 @@ const AssistantBar: React.FC = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') onSend(); }}
-                  className="flex-1 bg-[#0f1113] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/60"
-                  placeholder="Describe your question. Tip: reference what you’re learning or what’s on screen."
+                  className="flex-1 bg-black/40 border border-gray-800 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  placeholder="Describe your question clearly…"
                 />
                 <button
                   onClick={onSend}
                   disabled={!canSend}
-                  className="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-60 text-white rounded-md text-sm inline-flex items-center gap-1"
+                  className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded text-sm inline-flex items-center gap-1"
                 >
                   <Send className="w-4 h-4" />
                   {cooldownMs > 0 ? `Cooldown ${Math.ceil(cooldownMs/1000)}s` : (loading ? 'Asking…' : 'Ask')}
@@ -136,7 +134,7 @@ const AssistantBar: React.FC = () => {
                 <button
                   onClick={copyLast}
                   disabled={!messages.length}
-                  className="px-3 py-2 bg-gray-800/80 hover:bg-gray-700 disabled:opacity-60 text-white rounded-md text-sm inline-flex items-center gap-1"
+                  className="px-3 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-60 text-white rounded text-sm inline-flex items-center gap-1"
                   title="Copy last response"
                 >
                   <Copy className="w-4 h-4" /> Copy
@@ -144,33 +142,27 @@ const AssistantBar: React.FC = () => {
                 <button
                   onClick={clear}
                   disabled={!messages.length}
-                  className="px-3 py-2 bg-gray-800/80 hover:bg-gray-700 disabled:opacity-60 text-white rounded-md text-sm inline-flex items-center gap-1"
+                  className="px-3 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-60 text-white rounded text-sm inline-flex items-center gap-1"
                   title="Clear history"
                 >
                   <Trash2 className="w-4 h-4" /> Clear
                 </button>
               </div>
               {/* History */}
-              <div className="mt-3 max-h-60 overflow-auto space-y-3 rounded-lg border border-gray-800 bg-black/20 p-3">
+              <div className="mt-3 max-h-60 overflow-auto space-y-2">
                 {messages.length === 0 && !loading && (
-                  <div className="text-xs text-gray-400">Tip: Ask specific, concise questions for best results.</div>
+                  <div className="text-xs text-gray-500">Tip: Ask specific, concise questions for best results.</div>
                 )}
-                {messages.map((m) => {
-                  const mine = m.role === 'user';
-                  return (
-                    <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap shadow-sm border ${mine ? 'bg-emerald-900/30 border-emerald-800/50 text-emerald-50' : 'bg-gray-800/60 border-gray-700 text-gray-100'}`}>
-                        <div className="text-[10px] uppercase tracking-wide opacity-70 mb-1">
-                          {mine ? 'You' : 'Assistant'} · {new Date(m.t).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                        {m.text}
-                      </div>
-                    </div>
-                  );
-                })}
+                {messages.map((m) => (
+                  <div key={m.id} className="text-sm text-gray-200">
+                    <span className="text-xs text-gray-500 mr-2">{new Date(m.t).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className={`font-semibold mr-2 ${m.role === 'user' ? 'text-emerald-300' : 'text-teal-300'}`}>{m.role === 'user' ? 'You' : 'Assistant'}:</span>
+                    <span className="whitespace-pre-wrap">{m.text}</span>
+                  </div>
+                ))}
               </div>
               {/* Footer meta */}
-              <div className="mt-2 text-xs text-gray-400 flex items-center justify-between">
+              <div className="mt-2 text-xs text-gray-500 flex items-center justify-between">
                 <div>
                   {model && <span>Model: {model}</span>}
                 </div>
