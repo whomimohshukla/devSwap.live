@@ -4,6 +4,7 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 import { useAuthStore } from "../../lib/auth";
 import AssistantBar from "../assistant/AssistantBar";
+import DemoRecorder from "../dev/DemoRecorder";
 
 interface AppLayoutProps {
 	children?: React.ReactNode;
@@ -16,6 +17,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 	const isHome = location.pathname === "/";
 	const isDashboard = location.pathname.startsWith("/dashboard");
 	const isMatches = location.pathname.startsWith("/matches");
+	const showDemoRecorder = ((import.meta as any).env?.VITE_DEMO_RECORD || "false") === "true";
 
 	useEffect(() => {
 		checkAuth();
@@ -59,8 +61,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 			{/* Global AI Assistant Bar (hidden on home page and any dashboard path) */}
 			{!isHome && !isDashboard && !isMatches && <AssistantBar />}
 
-		
-
 			{/* Add top padding to offset fixed navbar (h-16 = 64px), bottom padding above footer, and responsive horizontal padding */}
 			<main className='flex-1 pt-16 pb-12 px-4 sm:px-6 lg:px-8'>
 				{children || <Outlet />}
@@ -102,6 +102,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 					</div>
 				</div>
 			)}
+			{/* Dev-only Demo Recorder overlay */}
+			{showDemoRecorder && <DemoRecorder />}
 			<Footer />
 		</div>
 	);
