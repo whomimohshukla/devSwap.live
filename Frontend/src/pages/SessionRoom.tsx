@@ -60,9 +60,7 @@ const SessionRoom: React.FC = () => {
 	);
 	// Layout and style controls
 	const immersive = false; // immersive mode disabled; kept for layout conditionals
-	const [frameStyle, setFrameStyle] = useState<"rounded" | "square" | "glow">(
-		"rounded"
-	);
+	const [frameStyle] = useState<"rounded" | "square" | "glow">("rounded");
 	const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 	// AI assistant state
 	const [aiQuestion, setAiQuestion] = useState<string>("");

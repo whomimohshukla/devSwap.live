@@ -83,13 +83,13 @@ const DemoRecorder: React.FC = () => {
       }
       setCountdown(null);
 
-      const displayMediaOptions: DisplayMediaStreamOptions = {
+      const displayMediaOptions = {
         video: { frameRate: 60 },
         audio: false,
       } as any;
-      const stream = await (navigator.mediaDevices as any).getDisplayMedia(
+      const stream = (await (navigator.mediaDevices as any).getDisplayMedia(
         displayMediaOptions
-      );
+      )) as MediaStream;
       streamRef.current = stream;
 
       const mediaRecorder = new MediaRecorder(stream, {
@@ -219,7 +219,7 @@ const DemoRecorder: React.FC = () => {
               exit={{ opacity: 0, y: -6 }}
               className="mt-3 text-xs text-white/70"
             >
-              Navigating: {steps[currentStep].label}
+              Navigating: {stepsRef.current[currentStep].label}
             </motion.div>
           )}
         </AnimatePresence>
