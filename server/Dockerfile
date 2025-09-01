@@ -32,7 +32,7 @@ RUN adduser --system --uid 1001 devswap
 
 # Copy the built application
 COPY --from=builder --chown=devswap:nodejs /app/dist ./dist
-COPY --from=builder --chown=devswap:nodejs /app/node_modules ./node_modules
+COPY --from=deps --chown=devswap:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=devswap:nodejs /app/package.json ./package.json
 
 # Create logs directory

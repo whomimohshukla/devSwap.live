@@ -1,0 +1,23 @@
+# Frontend Docker ignore
+node_modules
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# Vite build output
+.dist
+/dist
+
+# Git & IDE
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# Env files
+.env*
+
+# Tests and misc
+coverage
+*.log
