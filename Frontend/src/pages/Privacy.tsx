@@ -37,6 +37,70 @@ const Privacy: React.FC = () => {
                             <span className='text-emerald-400'> support@devswap.live</span>
                         </p>
                     </div>
+
+                    {/* Overview */}
+                    <div className='mt-8 p-6 rounded-xl bg-[#15181b] border border-[#25282c] text-white/80'>
+                        <h2 className='text-white text-2xl font-bold mb-2'>Overview</h2>
+                        <p className='text-sm'>We collect the minimum data needed to operate DevSwap.live, improve the product, and keep your account secure. You control cookie preferences and can request access or deletion at any time.</p>
+                    </div>
+
+                    {/* Data We Collect */}
+                    <div className='mt-8 grid md:grid-cols-3 gap-6'>
+                        {[
+                            { t: 'Account', d: 'Email, password (hashed), name/handle, avatar, time zone.' },
+                            { t: 'Profile', d: 'Skills you can teach/learn, bio, availability, roadmaps saved.' },
+                            { t: 'Usage', d: 'Session metadata, device/browser info, and aggregated analytics.' },
+                        ].map((x) => (
+                            <div key={x.t} className='p-6 rounded-xl bg-[#25282c] border border-[#25282c]'>
+                                <div className='text-white font-semibold'>{x.t}</div>
+                                <div className='text-white/70 text-sm mt-1'>{x.d}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* How We Use Data */}
+                    <div className='mt-8 p-6 rounded-xl bg-[#15181b] border border-[#25282c]'>
+                        <h2 className='text-white text-2xl font-bold mb-3'>How We Use Data</h2>
+                        <ul className='grid md:grid-cols-2 gap-4 text-white/80 text-sm'>
+                            <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Provide core functionality (auth, matching, sessions)</li>
+                            <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Improve performance and reliability of the platform</li>
+                            <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Detect, prevent, and respond to security incidents</li>
+                            <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Communicate important updates related to your account</li>
+                        </ul>
+                    </div>
+
+                    {/* Storage & Retention */}
+                    <div className='mt-8 grid md:grid-cols-2 gap-6'>
+                        <div className='p-6 rounded-xl bg-[#25282c] border border-[#25282c]'>
+                            <h3 className='text-white font-semibold'>Storage & Retention</h3>
+                            <p className='text-white/70 text-sm mt-1'>We store data in secure cloud regions and retain it only as long as necessary for the purposes described or as required by law. You can request deletion of your account and associated personal data.</p>
+                        </div>
+                        <div className='p-6 rounded-xl bg-[#25282c] border border-[#25282c]'>
+                            <h3 className='text-white font-semibold'>Third Parties</h3>
+                            <p className='text-white/70 text-sm mt-1'>We use vetted subprocessors (e.g., hosting, analytics) under data protection agreements. We do not sell your personal data.</p>
+                        </div>
+                    </div>
+
+                    {/* Your Rights */}
+                    <div className='mt-8 p-6 rounded-xl bg-[#15181b] border border-[#25282c]'>
+                        <h2 className='text-white text-2xl font-bold mb-3'>Your Rights</h2>
+                        <ul className='grid md:grid-cols-2 gap-4 text-white/80 text-sm'>
+                            <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Access and receive a copy of your data</li>
+                            <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Correct inaccurate or incomplete data</li>
+                            <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Delete your data (subject to legal exceptions)</li>
+                            <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Object to or restrict certain processing</li>
+                        </ul>
+                        <p className='text-white/60 text-xs mt-3'>Contact: <span className='text-emerald-400'>privacy@devswap.live</span></p>
+                    </div>
+
+                    {/* CTA */}
+                    <div className='mt-8 p-6 rounded-xl bg-[#0f1113] border border-[#25282c] flex flex-col md:flex-row items-start md:items-center justify-between gap-4'>
+                        <div>
+                            <div className='text-white text-xl font-semibold'>Manage your preferences</div>
+                            <div className='text-white/70 text-sm'>Update cookie choices or request data access/deletion.</div>
+                        </div>
+                        <a href='/contact' className='px-5 py-3 rounded-lg bg-[#00ef68] text-[#0b0c0d] font-semibold hover:opacity-90 transition'>Contact Privacy</a>
+                    </div>
                 </div>
             </div>
         </section>

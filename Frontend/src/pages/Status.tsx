@@ -29,6 +29,52 @@ const Status: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Uptime Summary */}
+          <div className='mt-10 p-6 rounded-xl bg-[#15181b] border border-[#25282c]'>
+            <h2 className='text-white text-2xl font-bold mb-3'>Uptime (last 90 days)</h2>
+            <div className='grid md:grid-cols-4 gap-4'>
+              {[
+                { k: 'API', v: '99.97%' },
+                { k: 'Realtime', v: '99.95%' },
+                { k: 'Media/RTC', v: '99.90%' },
+                { k: 'Website', v: '99.99%' },
+              ].map((u) => (
+                <div key={u.k} className='p-5 rounded-lg bg-[#25282c] border border-[#25282c] flex items-center justify-between'>
+                  <div className='text-white'>{u.k}</div>
+                  <div className='text-emerald-400 text-sm font-semibold'>{u.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Incident History */}
+          <div className='mt-8'>
+            <h2 className='text-white text-2xl font-bold mb-3'>Recent Incidents</h2>
+            <div className='space-y-3'>
+              {[
+                { date: '2025-08-20', title: 'Realtime latency spike', status: 'Resolved' },
+                { date: '2025-07-02', title: 'API degraded performance', status: 'Resolved' },
+              ].map((i) => (
+                <div key={i.title} className='p-5 rounded-xl bg-[#25282c] border border-[#25282c] flex items-center justify-between'>
+                  <div>
+                    <div className='text-white font-medium'>{i.title}</div>
+                    <div className='text-white/60 text-xs'>{i.date}</div>
+                  </div>
+                  <div className='text-emerald-400 text-sm'>{i.status}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Subscribe CTA */}
+          <div className='mt-10 p-6 rounded-xl bg-[#0f1113] border border-[#25282c] flex flex-col md:flex-row items-start md:items-center justify-between gap-4'>
+            <div>
+              <div className='text-white text-xl font-semibold'>Subscribe to updates</div>
+              <div className='text-white/70 text-sm'>Get email notifications about incidents and maintenance.</div>
+            </div>
+            <a href='/contact' className='px-5 py-3 rounded-lg bg-[#00ef68] text-[#0b0c0d] font-semibold hover:opacity-90 transition'>Subscribe</a>
+          </div>
         </div>
       </div>
     </section>

@@ -21,6 +21,39 @@ const Community: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Guidelines */}
+          <div className='mt-10 p-6 rounded-xl bg-[#15181b] border border-[#25282c]'>
+            <h2 className='text-white text-2xl font-bold mb-3'>Community Guidelines</h2>
+            <ul className='grid md:grid-cols-3 gap-4 text-white/80 text-sm'>
+              <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Be respectful and constructive.</li>
+              <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>Share resources with clear context.</li>
+              <li className='p-4 rounded-lg bg-[#25282c] border border-[#25282c]'>No harassment or spam. Report issues.</li>
+            </ul>
+          </div>
+
+          {/* Channels */}
+          <div className='mt-8 grid md:grid-cols-3 gap-6'>
+            {[
+              { t: 'Announcements', d: 'Product updates and release notes' },
+              { t: 'Learning Groups', d: 'Weekly study sessions by topic' },
+              { t: 'Events', d: 'Workshops, AMAs, and community meetups' },
+            ].map((x) => (
+              <div key={x.t} className='p-6 rounded-xl bg-[#25282c] border border-[#25282c]'>
+                <h3 className='text-white font-semibold'>{x.t}</h3>
+                <p className='text-white/70 text-sm mt-1'>{x.d}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div className='mt-10 p-6 rounded-xl bg-[#0f1113] border border-[#25282c] flex flex-col md:flex-row items-start md:items-center justify-between gap-4'>
+            <div>
+              <div className='text-white text-xl font-semibold'>Join the conversation</div>
+              <div className='text-white/70 text-sm'>Introduce yourself and find your first partner.</div>
+            </div>
+            <a href='/register' className='px-5 py-3 rounded-lg bg-[#00ef68] text-[#0b0c0d] font-semibold hover:opacity-90 transition'>Get Started</a>
+          </div>
         </div>
       </div>
     </section>
