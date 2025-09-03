@@ -1,4 +1,5 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { Rocket } from 'lucide-react';
 
 const HowItWorks: React.FC = () => {
@@ -10,6 +11,11 @@ const HowItWorks: React.FC = () => {
   ];
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='How It Works | DevSwap'
+        description='See how DevSwap works: create a profile, get matched, book real-time sessions, and track progress with guided learning.'
+        canonical='/how-it-works'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-5xl'>
           <div className='flex items-center gap-3 mb-6'>

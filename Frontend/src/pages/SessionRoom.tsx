@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { motion } from "framer-motion";
+import Seo from "../components/common/Seo";
 import {
 	Mic,
 	MicOff,
@@ -944,6 +945,12 @@ const SessionRoom: React.FC = () => {
 
 	return (
 		<div className='min-h-screen bg-black pt-16 pb-6'>
+			<Seo
+				title="Live Session | DevSwap"
+				description="Real-time peer-to-peer session room for collaborative learning on DevSwap."
+				canonical={`/sessions/${sessionId}`}
+				noindex
+			/>
 			<div className='max-w-none w-full mx-auto px-4 sm:px-6 lg:px-8'>
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}

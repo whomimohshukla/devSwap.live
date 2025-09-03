@@ -1,4 +1,5 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { Sparkles } from 'lucide-react';
 
 const Features: React.FC = () => {
@@ -10,6 +11,11 @@ const Features: React.FC = () => {
   ];
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='Features | DevSwap'
+        description='Explore DevSwap features: AI-assisted matching, live sessions, curated roadmaps, and real-time collaboration tools.'
+        canonical='/features'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-5xl'>
           <div className='flex items-center gap-3 mb-6'>

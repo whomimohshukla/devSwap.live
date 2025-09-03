@@ -1,9 +1,15 @@
 import React from "react";
+import Seo from "../components/common/Seo";
 import { Shield } from "lucide-react";
 
 const Privacy: React.FC = () => {
     return (
         <section className='py-16 bg-[#0b0c0d]'>
+            <Seo
+                title='Privacy Policy | DevSwap'
+                description='Learn how DevSwap collects, uses, and protects your data. Read about cookies, storage, third parties, and your privacy rights.'
+                canonical='/privacy'
+            />
             <div className='w-full px-4 sm:px-6 lg:px-8'>
                 <div className='mx-auto max-w-3xl'>
                     <div className='flex items-center gap-3 mb-6'>

@@ -1,9 +1,15 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { Mail, Phone, Clock, MapPin, Send } from 'lucide-react';
 
 const Contact: React.FC = () => {
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='Contact | DevSwap'
+        description="Get in touch with the DevSwap team. We're here to help with support, partnerships, and feedback."
+        canonical='/contact'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-3xl'>
           <div className='flex items-center gap-3 mb-6'>

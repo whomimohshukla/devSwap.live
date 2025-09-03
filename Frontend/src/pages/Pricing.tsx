@@ -1,4 +1,5 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { Tag } from 'lucide-react';
 
 const Pricing: React.FC = () => {
@@ -9,6 +10,11 @@ const Pricing: React.FC = () => {
   ];
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='Pricing | DevSwap'
+        description='Choose a plan that fits your learning journey: Free, Pro, and Team plans for peer-to-peer developer learning on DevSwap.'
+        canonical='/pricing'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-6xl'>
           <div className='flex items-center gap-3 mb-6'>

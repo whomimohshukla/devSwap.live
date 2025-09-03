@@ -1,9 +1,15 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { Code2 } from 'lucide-react';
 
 const About: React.FC = () => {
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='About DevSwap | Peer-to-Peer Learning for Developers'
+        description='Learn what DevSwap is about: our mission, values, and milestones building a peer-to-peer learning platform for developers.'
+        canonical='/about'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-5xl'>
           <div className='flex items-center gap-3 mb-6'>

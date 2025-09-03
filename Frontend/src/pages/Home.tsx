@@ -12,6 +12,7 @@ import {
 	Network,
 	Video,
 } from "lucide-react";
+import Seo from "../components/common/Seo";
 
 const Home: React.FC = () => {
     const [isVideoOpen, setIsVideoOpen] = useState(false);
@@ -178,6 +179,11 @@ const Home: React.FC = () => {
 
 	return (
 		<div>
+			<Seo
+				title="DevSwap.live | Peer-to-Peer Learning for Developers"
+				description="Learn faster together on DevSwap. Match with peers, join real-time sessions, follow curated roadmaps, and get AI-assisted lesson plans."
+				canonical="/"
+			/>
 			{/* Hero Section */}
 			<section className='relative overflow-hidden bg-[#0b0c0d]'>
 				{/* Background Effects */}
