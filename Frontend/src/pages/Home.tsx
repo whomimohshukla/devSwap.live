@@ -385,6 +385,83 @@ const Home: React.FC = () => {
 				</div>
 			</section>
 
+			{/* Quick Links Section */}
+			<section className='py-12 md:py-16 bg-[#0b0c0d]'>
+				<div className='w-full px-4 sm:px-6 lg:px-8'>
+					<div className='mx-auto max-w-6xl'>
+						<div className='flex items-center justify-between mb-6'>
+							<h2 className='text-2xl md:text-3xl font-bold text-white'>Quick Links</h2>
+							<p className='text-sm text-white/70'>Jump right into the most popular areas</p>
+						</div>
+						<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+							<Link
+								to='/roadmaps'
+								className='group p-5 rounded-xl bg-[#25282c] border border-[#25282c] hover:border-[#00ef68]/50 ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all hover:-translate-y-0.5'
+							>
+								<div className='w-10 h-10 rounded-lg bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-3'>
+									<Brain className='w-5 h-5 text-[#00ef68]' />
+								</div>
+								<div className='flex items-center justify-between'>
+									<div>
+										<h3 className='text-white font-semibold'>Roadmaps</h3>
+										<p className='text-white/70 text-sm'>Step-by-step learning paths</p>
+									</div>
+									<ArrowRight className='w-4 h-4 text-[#00ef68] opacity-0 group-hover:opacity-100 transition-opacity' />
+								</div>
+							</Link>
+
+							<Link
+								to='/matches'
+								className='group p-5 rounded-xl bg-[#25282c] border border-[#25282c] hover:border-[#00ef68]/50 ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all hover:-translate-y-0.5'
+							>
+								<div className='w-10 h-10 rounded-lg bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-3'>
+									<Network className='w-5 h-5 text-[#00ef68]' />
+								</div>
+								<div className='flex items-center justify-between'>
+									<div>
+										<h3 className='text-white font-semibold'>Find Matches</h3>
+										<p className='text-white/70 text-sm'>Pair with complementary skills</p>
+									</div>
+									<ArrowRight className='w-4 h-4 text-[#00ef68] opacity-0 group-hover:opacity-100 transition-opacity' />
+								</div>
+							</Link>
+
+							<Link
+								to='/sessions'
+								className='group p-5 rounded-xl bg-[#25282c] border border-[#25282c] hover:border-[#00ef68]/50 ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all hover:-translate-y-0.5'
+							>
+								<div className='w-10 h-10 rounded-lg bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-3'>
+									<Video className='w-5 h-5 text-[#00ef68]' />
+								</div>
+								<div className='flex items-center justify-between'>
+									<div>
+										<h3 className='text-white font-semibold'>Sessions</h3>
+										<p className='text-white/70 text-sm'>Join or manage your swaps</p>
+									</div>
+									<ArrowRight className='w-4 h-4 text-[#00ef68] opacity-0 group-hover:opacity-100 transition-opacity' />
+								</div>
+							</Link>
+
+							<Link
+								to='/learn'
+								className='group p-5 rounded-xl bg-[#25282c] border border-[#25282c] hover:border-[#00ef68]/50 ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all hover:-translate-y-0.5'
+							>
+								<div className='w-10 h-10 rounded-lg bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-3'>
+									<Code2 className='w-5 h-5 text-[#00ef68]' />
+								</div>
+								<div className='flex items-center justify-between'>
+									<div>
+										<h3 className='text-white font-semibold'>Learn</h3>
+										<p className='text-white/70 text-sm'>Practice topics and skills</p>
+									</div>
+									<ArrowRight className='w-4 h-4 text-[#00ef68] opacity-0 group-hover:opacity-100 transition-opacity' />
+								</div>
+							</Link>
+						</div>
+					</div>
+				</div>
+			</section>
+
 			{/* Platform Engine (Backend-Driven) */}
 			<section className='py-20 bg-[#0b0c0d]'>
 				<div className='w-full px-4 sm:px-6 lg:px-8'>
