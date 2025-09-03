@@ -34,6 +34,7 @@ import Cookies from './pages/Cookies';
 import GDPR from './pages/GDPR';
 import Terms from './pages/Terms';
 import { initAuthRealtime } from './lib/auth';
+import ScrollToTop from './components/common/ScrollToTop';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -54,6 +55,7 @@ function App() {
   }, []);
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* OAuth callback route */}
         <Route path="/auth/callback" element={<AuthCallback />} />
