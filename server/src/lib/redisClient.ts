@@ -1,4 +1,6 @@
 
+
+//this is the redis client used by the server
 import Redis from "ioredis";
 
 const DISABLE_REDIS = String(process.env.DISABLE_REDIS || "").toLowerCase() === "true";
