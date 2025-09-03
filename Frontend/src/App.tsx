@@ -19,6 +19,20 @@ import LearnTopic from './pages/LearnTopic';
 import LearnLesson from './pages/LearnLesson';
 import Roadmaps from './pages/Roadmaps';
 import RoadmapPage from './pages/Roadmap';
+// Footer pages
+import About from './pages/About';
+import Features from './pages/Features';
+import HowItWorks from './pages/HowItWorks';
+import Pricing from './pages/Pricing';
+import Contact from './pages/Contact';
+import Help from './pages/Help';
+import Community from './pages/Community';
+import Status from './pages/Status';
+import Blog from './pages/Blog';
+import Careers from './pages/Careers';
+import Cookies from './pages/Cookies';
+import GDPR from './pages/GDPR';
+import Terms from './pages/Terms';
 import { initAuthRealtime } from './lib/auth';
 
 // Protected Route Component
@@ -48,6 +62,20 @@ function App() {
           <Route index element={<Home />} />
           <Route path="skills" element={<Skills />} />
           <Route path="privacy" element={<Privacy />} />
+          <Route path="terms" element={<Terms />} />
+          {/* Footer linked pages */}
+          <Route path="about" element={<About />} />
+          <Route path="features" element={<Features />} />
+          <Route path="how-it-works" element={<HowItWorks />} />
+          <Route path="pricing" element={<Pricing />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="help" element={<Help />} />
+          <Route path="community" element={<Community />} />
+          <Route path="status" element={<Status />} />
+          <Route path="blog" element={<Blog />} />
+          <Route path="careers" element={<Careers />} />
+          <Route path="cookies" element={<Cookies />} />
+          <Route path="gdpr" element={<GDPR />} />
           {/* Learn Section */}
           <Route path="learn" element={<LearnIndex />} />
           <Route path="learn/:topic" element={<LearnTopic />} />
