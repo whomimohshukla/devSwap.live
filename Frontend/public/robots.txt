@@ -1,0 +1,20 @@
+# robots.txt for DevSwap.live
+# Allow crawling of public pages; disallow app-private areas
+
+User-agent: *
+Allow: /
+
+# Disallow private/session-specific routes
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /sessions
+Disallow: /sessions/
+Disallow: /session
+Disallow: /session/
+Disallow: /matches
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+
+# Sitemap
+Sitemap: https://devswap.live/sitemap.xml
