@@ -1,4 +1,5 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { Briefcase } from 'lucide-react';
 
 const Careers: React.FC = () => {
@@ -8,6 +9,11 @@ const Careers: React.FC = () => {
   ];
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='Careers | DevSwap'
+        description='Join DevSwap and help build the future of peer-to-peer learning. See open roles and our hiring process.'
+        canonical='/careers'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-5xl'>
           <div className='flex items-center gap-3 mb-6'>

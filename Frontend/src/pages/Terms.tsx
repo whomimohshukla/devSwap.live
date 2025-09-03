@@ -1,9 +1,15 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { Scale } from 'lucide-react';
 
 const Terms: React.FC = () => {
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='Terms of Service | DevSwap'
+        description='Read DevSwap’s Terms of Service covering acceptable use, eligibility, subscriptions, and user responsibilities.'
+        canonical='/terms'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-3xl'>
           <div className='flex items-center gap-3 mb-6'>

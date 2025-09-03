@@ -1,9 +1,15 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { Cookie } from 'lucide-react';
 
 const Cookies: React.FC = () => {
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='Cookie Policy | DevSwap'
+        description='Understand how DevSwap uses cookies for authentication, preferences, and analytics, and how to manage your cookie settings.'
+        canonical='/cookies'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-3xl'>
           <div className='flex items-center gap-3 mb-6'>

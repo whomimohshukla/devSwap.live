@@ -1,4 +1,5 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { Activity } from 'lucide-react';
 
 const Status: React.FC = () => {
@@ -10,6 +11,11 @@ const Status: React.FC = () => {
   ];
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='Status | DevSwap'
+        description='Real-time status and uptime for DevSwap services, including API, realtime, media/RTC, and website.'
+        canonical='/status'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-5xl'>
           <div className='flex items-center gap-3 mb-6'>

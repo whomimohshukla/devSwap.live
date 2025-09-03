@@ -1,9 +1,15 @@
 import React from 'react';
+import Seo from '../components/common/Seo';
 import { LifeBuoy } from 'lucide-react';
 
 const Help: React.FC = () => {
   return (
     <section className='py-16 bg-[#0b0c0d]'>
+      <Seo
+        title='Help Center | DevSwap'
+        description='Find answers to common questions about matching, sessions, billing, and more in the DevSwap Help Center.'
+        canonical='/help'
+      />
       <div className='w-full px-4 sm:px-6 lg:px-8'>
         <div className='mx-auto max-w-4xl'>
           <div className='flex items-center gap-3 mb-6'>
