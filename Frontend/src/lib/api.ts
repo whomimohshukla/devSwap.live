@@ -11,7 +11,7 @@ function ensureApiPrefix(url: string) {
 
 export const API_BASE_URL = RAW_BASE_URL
 	? ensureApiPrefix(RAW_BASE_URL)
-	: "http://localhost:5000/api";
+	: "https://localhost:5000/api";
 
 // Create axios instance with default config
 export const api = axios.create({
