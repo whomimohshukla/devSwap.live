@@ -148,7 +148,7 @@ validateEnv();
 export const envConfig: EnvConfig = {
   // Server
   NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: parseNumber(process.env.PORT, 5000),
+  PORT: parseNumber(process.env.PORT, 3000),
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
 
   // Database

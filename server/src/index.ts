@@ -157,7 +157,8 @@ if (envConfig.NODE_ENV === "production") {
     app.use("/api/auth", authLimiter);
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
+// console.log(PORT)
 
 setupSwagger(app);
 
