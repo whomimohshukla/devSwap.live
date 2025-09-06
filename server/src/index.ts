@@ -24,6 +24,8 @@ import { SignalingController } from "./controllers/signaling.controller";
 import { setIO } from "./lib/socket";
 
 const app = express();
+// Trust the reverse proxy (e.g., Caddy/NGINX/ALB) so secure cookies and protocol are detected correctly
+app.set("trust proxy", 1);
 const server = createServer(app);
 
 const ioAllowedOrigins = Array.from(

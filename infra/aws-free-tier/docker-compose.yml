@@ -1,0 +1,42 @@
+version: "3.9"
+
+# AWS Free Tier-friendly stack: Caddy (HTTPS + reverse proxy) + Node API
+# - Build the backend image via compose using the root Dockerfile.prod
+# - Caddy terminates TLS and proxies /api and /socket.io to the API container
+# - WebSockets supported out-of-the-box
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.prod
+    env_file:
+      - ./server.env
+    expose:
+      - "5000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  proxy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Set your API domain here, e.g. api.devswap.live
+      - API_DOMAIN=api.devswap.live
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:

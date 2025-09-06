@@ -1,0 +1,20 @@
+{$API_DOMAIN} {
+  encode zstd gzip
+
+  @api path /api/* /socket.io/*
+
+  reverse_proxy @api api:5000 {
+    header_up X-Forwarded-Proto {scheme}
+    header_up X-Forwarded-For {remote}
+    header_up Host {host}
+  }
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+
+  respond /health "OK" 200
+}
