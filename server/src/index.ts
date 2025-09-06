@@ -34,6 +34,18 @@ const ioAllowedOrigins = Array.from(
     )
 );
 
+// In development, automatically include common localhost origins (e.g., Vite on 5173)
+if (envConfig.NODE_ENV !== "production") {
+    [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ].forEach((o) => {
+        if (!ioAllowedOrigins.includes(o)) ioAllowedOrigins.push(o);
+    });
+}
+
 const io = new Server(server, {
     cors: {
         origin: ioAllowedOrigins,
@@ -80,10 +92,28 @@ const allowedOrigins = new Set(
         .flatMap((v) => v.split(",").map((s) => s.trim()))
 );
 
+// In development, allow common localhost origins by default
+if (envConfig.NODE_ENV !== "production") {
+    [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ].forEach((o) => allowedOrigins.add(o));
+}
+
 app.use(
     cors({
         origin: (origin, callback) => {
+            // Allow non-browser requests (no Origin) and requests from explicitly allowed origins
             if (!origin || allowedOrigins.has(origin)) {
+                return callback(null, true);
+            }
+            // During development, allow any http(s) localhost origin/port to simplify DX
+            if (
+                envConfig.NODE_ENV !== "production" &&
+                /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+            ) {
                 return callback(null, true);
             }
             return callback(new Error(`Not allowed by CORS: ${origin}`));

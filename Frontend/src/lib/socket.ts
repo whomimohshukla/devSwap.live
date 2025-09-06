@@ -13,9 +13,16 @@ export function getSocket(): Socket {
 	if (socket) return socket;
 	const token = localStorage.getItem("authToken");
 	socket = io(getBaseUrl(), {
-		transports: ["websocket"],
+		// Allow polling fallback to avoid intermittent upgrade failures in dev/proxy setups
+		transports: ["websocket", "polling"],
 		withCredentials: true,
 		auth: token ? { token: `Bearer ${token}` } : undefined,
+		// Reconnection strategy
+		reconnection: true,
+		reconnectionAttempts: Infinity,
+		reconnectionDelay: 500,
+		reconnectionDelayMax: 5000,
+		timeout: 10000,
 	});
 	// Debug listeners to surface CORS/auth issues
 	socket.on("connect", () => {
@@ -25,6 +32,22 @@ export function getSocket(): Socket {
 	socket.on("connect_error", (err) => {
 		// eslint-disable-next-line no-console
 		console.error("[socket] connect_error", err?.message || err);
+	});
+	socket.io.on("reconnect_attempt", (attempt) => {
+		// eslint-disable-next-line no-console
+		console.warn("[socket] reconnect_attempt", { attempt });
+	});
+	socket.io.on("reconnect", (attempt) => {
+		// eslint-disable-next-line no-console
+		console.log("[socket] reconnected", { attempt });
+	});
+	socket.io.on("reconnect_error", (err) => {
+		// eslint-disable-next-line no-console
+		console.error("[socket] reconnect_error", err?.message || err);
+	});
+	socket.on("disconnect", (reason) => {
+		// eslint-disable-next-line no-console
+		console.warn("[socket] disconnected", { reason });
 	});
 	return socket;
 }
