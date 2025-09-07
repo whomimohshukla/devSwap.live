@@ -4,6 +4,7 @@ import crypto from "crypto";
 import jwt, { SignOptions } from "jsonwebtoken";
 import User from "../models/user.model";
 import { envConfig } from "../config/env.config";
+import { emailService } from "../services/emailService";
 
 const JWT_SECRET = envConfig.JWT_SECRET;
 const JWT_EXPIRES_IN = envConfig.JWT_EXPIRES_IN || "7d";
@@ -360,6 +361,20 @@ export async function register(req: Request, res: Response) {
 
 		await user.save();
 
+		// Send welcome email (non-blocking)
+		setImmediate(async () => {
+			try {
+				await emailService.sendWelcomeEmail({
+					name: user.name,
+					email: user.email,
+					_id: user._id?.toString(),
+				});
+				console.log(`Welcome email sent to ${user.email}`);
+			} catch (error) {
+				console.error(`Failed to send welcome email to ${user.email}:`, error);
+			}
+		});
+
 		const token = jwt.sign(
 			{ id: (user._id as any).toString(), email: user.email },
 			JWT_SECRET as string,
@@ -414,6 +429,26 @@ export async function login(req: Request, res: Response) {
 		user.isOnline = true;
 		user.lastSeen = new Date();
 		await user.save();
+
+		// Send login notification email (non-blocking)
+		setImmediate(async () => {
+			try {
+				const loginInfo = {
+					ip: req.ip || req.connection?.remoteAddress || 'Unknown',
+					userAgent: req.get('User-Agent') || 'Unknown',
+					timestamp: new Date(),
+				};
+				
+				await emailService.sendLoginNotification({
+					name: user.name,
+					email: user.email,
+					_id: user._id?.toString(),
+				}, loginInfo);
+				console.log(`Login notification email sent to ${user.email}`);
+			} catch (error) {
+				console.error(`Failed to send login notification to ${user.email}:`, error);
+			}
+		});
 
 		const token = jwt.sign(
 			{ id: (user._id as any).toString(), email: user.email },

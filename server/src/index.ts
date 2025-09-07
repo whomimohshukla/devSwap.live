@@ -19,6 +19,7 @@ import sessionRoutes from "./routes/session.routes";
 import aiRoutes from "./routes/ai.routes";
 import healthRoutes from "./routes/health.routes";
 import requestsRoutes from "./routes/requests.routes";
+import emailRoutes from "./routes/email.routes";
 
 import { SignalingController } from "./controllers/signaling.controller";
 import { setIO } from "./lib/socket";
@@ -171,6 +172,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/match", matchRoutes);
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/requests", requestsRoutes);
+app.use("/api/email", emailRoutes);
 if (envConfig.ENABLE_AI_FEATURES) {
     app.use("/api/ai", aiRoutes);
 }
