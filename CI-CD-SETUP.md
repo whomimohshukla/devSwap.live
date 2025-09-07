@@ -1,30 +1,20 @@
-# DevSwap.live CI/CD Setup Guide
+# DevSwap.live Server CI/CD Setup Guide
 
-## 🚀 Complete CI/CD Pipeline Setup
+## 🚀 Server-Only CI/CD Pipeline Setup
 
-Your DevSwap.live project now has a comprehensive CI/CD pipeline with **4 different workflows** that are **resilient to errors** - they will continue deployment even if linting or tests fail.
+Your DevSwap.live project now has a focused **server/backend CI/CD pipeline** with **2 robust workflows** that are **resilient to errors** - they will continue deployment even if linting or tests fail.
 
 ## 📋 Available Workflows
 
-### 1. `deploy-ec2.yml` (Your Original)
+### 1. `deploy-ec2.yml` (Your Original - Enhanced)
 - **Triggers**: Push to `main` branch (server changes only)
 - **Purpose**: Deploy backend to EC2 with full testing
-- **Features**: MongoDB + Redis services, comprehensive testing
+- **Features**: MongoDB + Redis services, comprehensive testing, error resilience
 
-### 2. `backend-deploy.yml` (New)
+### 2. `backend-deploy.yml` (Alternative Option)
 - **Triggers**: Push to `main`/`master` (server changes), manual dispatch
 - **Purpose**: Backend-focused deployment with Docker testing
-- **Features**: Docker image testing, health checks
-
-### 3. `frontend-deploy.yml` (New)
-- **Triggers**: Push to `main`/`master` (client changes), manual dispatch
-- **Purpose**: Frontend deployment to Vercel
-- **Features**: Lighthouse performance audits, Vercel integration
-
-### 4. `full-stack-deploy.yml` (New - Recommended)
-- **Triggers**: Push to any branch, manual dispatch with options
-- **Purpose**: Complete full-stack deployment with change detection
-- **Features**: Smart change detection, parallel deployments, comprehensive monitoring
+- **Features**: Docker image testing, health checks, simplified deployment
 
 ## 🔧 Required GitHub Secrets
 
@@ -37,18 +27,11 @@ EC2_USER=ubuntu
 EC2_SSH_KEY=your-private-ssh-key-content
 ```
 
-### Frontend/Vercel Secrets (Optional)
-```
-VERCEL_TOKEN=your-vercel-token
-VERCEL_ORG_ID=your-vercel-org-id
-VERCEL_PROJECT_ID=your-vercel-project-id
-```
+
 
 ### Environment Variables (Optional)
 ```
 MONGODB_TEST_URI=mongodb://localhost:27017/devswap_test
-VITE_API_URL=http://your-ec2-ip:5000
-VITE_FRONTEND_URL=https://your-vercel-app.vercel.app
 ```
 
 ## 🛠️ Setup Instructions
@@ -79,15 +62,11 @@ Your repo should have this structure:
 devSwap.live/
 ├── .github/workflows/
 │   ├── deploy-ec2.yml
-│   ├── backend-deploy.yml
-│   ├── frontend-deploy.yml
-│   └── full-stack-deploy.yml
-├── server/
-│   ├── package.json
-│   ├── Dockerfile
-│   └── docker-compose.yml
-└── client/
-    └── package.json
+│   └── backend-deploy.yml
+└── server/
+    ├── package.json
+    ├── Dockerfile
+    └── docker-compose.yml
 ```
 
 ## 🚀 How to Deploy
@@ -98,11 +77,9 @@ devSwap.live/
 
 ### Manual Deployment
 1. Go to: `https://github.com/whomimohshukla/devSwap.live/actions`
-2. Select "Full Stack CI/CD Pipeline"
+2. Select "Deploy to AWS EC2" or "Backend CI/CD Pipeline"
 3. Click "Run workflow"
-4. Choose options:
-   - ✅ Deploy Backend to EC2
-   - ✅ Deploy Frontend to Vercel
+4. Backend will deploy to your EC2 server
 
 ## 🔍 Monitoring & Debugging
 
