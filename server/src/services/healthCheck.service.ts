@@ -11,7 +11,7 @@ export interface HealthStatus {
   services: {
     database: ServiceHealth;
     redis: ServiceHealth;
-    openai: ServiceHealth;
+    gemini: ServiceHealth;
   };
   metrics: {
     memoryUsage: NodeJS.MemoryUsage;
@@ -37,16 +37,16 @@ class HealthCheckService {
   async getHealthStatus(): Promise<HealthStatus> {
     const timestamp = new Date().toISOString();
     
-    const [dbHealth, redisHealth, openaiHealth] = await Promise.allSettled([
+    const [dbHealth, redisHealth, geminiHealth] = await Promise.allSettled([
       this.checkDatabase(),
       this.checkRedis(),
-      this.checkOpenAI()
+      this.checkGemini()
     ]);
 
     const services = {
       database: this.getServiceResult(dbHealth),
       redis: this.getServiceResult(redisHealth),
-      openai: this.getServiceResult(openaiHealth)
+      gemini: this.getServiceResult(geminiHealth)
     };
 
     const overallStatus = this.determineOverallStatus(services);
@@ -115,12 +115,12 @@ class HealthCheckService {
     }
   }
 
-  private async checkOpenAI(): Promise<ServiceHealth> {
+  private async checkGemini(): Promise<ServiceHealth> {
     const startTime = Date.now();
     try {
       // Simple check - just verify API key is configured
-      if (!envConfig.OPENAI_API_KEY || envConfig.OPENAI_API_KEY === 'your-openai-api-key') {
-        throw new Error('OpenAI API key not configured');
+      if (!envConfig.GEMINI_API_KEY || envConfig.GEMINI_API_KEY === 'your-gemini-api-key') {
+        throw new Error('Gemini API key not configured');
       }
       
       return {
