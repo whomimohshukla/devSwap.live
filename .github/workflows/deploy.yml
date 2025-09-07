@@ -2,7 +2,9 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
+    paths:
+      - 'server/**'
   workflow_dispatch:
 
 jobs:
@@ -11,18 +13,117 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Deploy to Server
+    - name: Deploy to Server (robust)
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
+        timeout: 600s
+        command_timeout: 600s
+        script_stop: true
         script: |
-          echo "Starting deployment..."
-          cd ~/devSwap.live/server || cd ~/Desktop/DevSwap.live/server || exit 1
-          git pull origin main
-          sudo docker-compose down || true
-          sudo docker-compose up -d --build
-          sleep 30
-          curl -f http://localhost:5000/api/health || echo "Health check failed but continuing"
-          echo "Deployment complete!"
+          set -euo pipefail
+          echo "🚀 Starting backend deployment..."
+          echo "Timestamp: $(date)"
+
+          # Determine project directory or clone if missing
+          if [ -d "$HOME/devSwap.live/server" ]; then
+            cd "$HOME/devSwap.live/server"
+          elif [ -d "$HOME/Desktop/DevSwap.live/server" ]; then
+            cd "$HOME/Desktop/DevSwap.live/server"
+          else
+            echo "📥 Cloning repository (not found on server)..."
+            cd "$HOME"
+            git clone https://github.com/whomimohshukla/devSwap.live.git devSwap.live
+            cd devSwap.live/server
+          fi
+
+          echo "📍 PWD: $(pwd)"
+
+          # Ensure git is present
+          if ! command -v git >/dev/null 2>&1; then
+            echo "Installing git..."
+            sudo -n apt-get update && sudo -n apt-get install -y git || { echo "❌ Failed to install git"; exit 1; }
+          fi
+
+          # Ensure Docker is installed and running
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "🐳 Installing Docker engine..."
+            sudo -n apt-get update || true
+            sudo -n apt-get install -y ca-certificates curl gnupg lsb-release || true
+            sudo -n install -m 0755 -d /etc/apt/keyrings || true
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo -n gpg --dearmor -o /etc/apt/keyrings/docker.gpg || true
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+              $(. /etc/os-release && echo $VERSION_CODENAME) stable" | \
+              sudo -n tee /etc/apt/sources.list.d/docker.list > /dev/null || true
+            sudo -n apt-get update || true
+            sudo -n apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || true
+          fi
+
+          echo "🔧 Ensuring Docker service is running..."
+          sudo -n systemctl enable docker || true
+          sudo -n systemctl start docker || true
+
+          # Checkout and pull latest from main/master
+          git fetch origin
+          if git rev-parse --verify origin/main >/dev/null 2>&1; then
+            git reset --hard origin/main
+          else
+            git reset --hard origin/master
+          fi
+
+          # Detect docker compose command (v2: 'docker compose', v1: 'docker-compose')
+          COMPOSE=""
+          if command -v docker-compose >/dev/null 2>&1; then
+            COMPOSE="docker-compose"
+          elif docker compose version >/dev/null 2>&1; then
+            COMPOSE="docker compose"
+          else
+            echo "⚙️ Installing docker compose plugin..."
+            sudo -n apt-get update || true
+            sudo -n apt-get install -y docker-compose-plugin || true
+            if docker compose version >/dev/null 2>&1; then
+              COMPOSE="docker compose"
+            else
+              echo "❌ Docker Compose not available. Ensure Docker is installed with compose plugin."
+              exit 1
+            fi
+          fi
+
+          # Helper to run compose with sudo if needed (non-interactive)
+          run_compose() {
+            if sudo -n $COMPOSE "$@" 2>/dev/null; then
+              return 0
+            else
+              echo "ℹ️ Falling back to running compose without sudo"
+              $COMPOSE "$@"
+            fi
+          }
+
+          echo "🛑 Stopping existing containers..."
+          run_compose down || true
+
+          echo "🏗️ Building and starting containers..."
+          run_compose up -d --build
+
+          echo "⏳ Waiting for API to become healthy..."
+          for i in {1..12}; do
+            if curl -fsS http://localhost:5000/api/health >/dev/null; then
+              echo "✅ API is responding"
+              break
+            fi
+            echo "Attempt $i/12 failed, retrying in 10s..."
+            sleep 10
+            if [ "$i" -eq 12 ]; then
+              echo "❌ API did not become healthy in time"
+              echo "📋 Recent backend logs:"
+              run_compose logs --tail=100 devswap-backend || true
+              exit 1
+            fi
+          done
+
+          echo "📊 Compose status:"
+          run_compose ps
+          echo "🎉 Deployment complete!"
