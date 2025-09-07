@@ -91,106 +91,329 @@ class EmailService {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Welcome to DevSwap.live</title>
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
           body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: #1f2937;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+          }
+          
+          .email-wrapper {
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f8fafc;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
           }
-          .container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          }
+          
           .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
             text-align: center;
-            margin-bottom: 30px;
+            color: white;
           }
+          
           .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: #3b82f6;
-            margin-bottom: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: white;
           }
+          
+          .logo::before {
+            content: '🔄';
+            font-size: 28px;
+          }
+          
           .welcome-title {
-            font-size: 24px;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+          
+          .welcome-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 300;
+          }
+          
+          .content {
+            padding: 40px 30px;
+          }
+          
+          .greeting {
+            font-size: 18px;
+            margin-bottom: 24px;
+            color: #374151;
+          }
+          
+          .intro-text {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 32px;
+            line-height: 1.7;
+          }
+          
+          .features-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 32px;
+            margin: 32px 0;
+            border: 1px solid #e2e8f0;
+          }
+          
+          .features-title {
+            font-size: 20px;
+            font-weight: 600;
             color: #1f2937;
             margin-bottom: 20px;
+            text-align: center;
           }
-          .content {
-            margin-bottom: 30px;
+          
+          .features-grid {
+            display: grid;
+            gap: 16px;
           }
-          .features {
-            background: #f3f4f6;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-          }
+          
           .feature-item {
-            margin: 10px 0;
-            padding-left: 20px;
-            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
           }
-          .feature-item:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #10b981;
-            font-weight: bold;
+          
+          .feature-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
           }
+          
+          .feature-text {
+            font-size: 15px;
+            color: #374151;
+            line-height: 1.5;
+          }
+          
+          .cta-section {
+            text-align: center;
+            margin: 40px 0;
+          }
+          
+          .cta-text {
+            font-size: 18px;
+            color: #374151;
+            margin-bottom: 24px;
+            font-weight: 500;
+          }
+          
           .cta-button {
             display: inline-block;
-            background: #3b82f6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 12px 24px;
+            padding: 16px 32px;
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: 500;
-            margin: 20px 0;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.39);
+            transition: all 0.3s ease;
           }
-          .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            color: #6b7280;
+          
+          .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.5);
+          }
+          
+          .tips-section {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 32px 0;
+          }
+          
+          .tips-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          
+          .tips-text {
             font-size: 14px;
+            color: #92400e;
+            line-height: 1.6;
+          }
+          
+          .footer {
+            background: #f9fafb;
+            padding: 32px 30px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+          }
+          
+          .footer-text {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 16px;
+          }
+          
+          .footer-signature {
+            font-size: 16px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+          }
+          
+          .footer-team {
+            font-size: 14px;
+            color: #9ca3af;
+          }
+          
+          .social-links {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+          }
+          
+          .social-link {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: #e5e7eb;
+            border-radius: 50%;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+          }
+          
+          .social-link:hover {
+            background: #d1d5db;
+          }
+          
+          @media (max-width: 600px) {
+            .email-wrapper {
+              margin: 10px;
+              border-radius: 12px;
+            }
+            
+            .header {
+              padding: 30px 20px;
+            }
+            
+            .content {
+              padding: 30px 20px;
+            }
+            
+            .welcome-title {
+              font-size: 24px;
+            }
+            
+            .features-section {
+              padding: 24px 20px;
+            }
           }
         </style>
       </head>
       <body>
-        <div class="container">
+        <div class="email-wrapper">
           <div class="header">
             <div class="logo">DevSwap.live</div>
-            <h1 class="welcome-title">Welcome to DevSwap, ${user.name}! 🎉</h1>
+            <h1 class="welcome-title">Welcome to the Community!</h1>
+            <p class="welcome-subtitle">Your journey to skill mastery begins now</p>
           </div>
           
           <div class="content">
-            <p>We're thrilled to have you join our community of passionate developers and learners!</p>
-            
-            <p>DevSwap.live is your platform for skill-swapping and peer learning. Connect with fellow developers, share your expertise, and learn new technologies through interactive sessions.</p>
-            
-            <div class="features">
-              <h3>What you can do on DevSwap:</h3>
-              <div class="feature-item">Find learning partners based on your skills and interests</div>
-              <div class="feature-item">Join real-time coding sessions with video chat</div>
-              <div class="feature-item">Get AI-powered lesson plans tailored to your learning goals</div>
-              <div class="feature-item">Track your learning progress and build your developer network</div>
-              <div class="feature-item">Access curated learning roadmaps for various technologies</div>
+            <div class="greeting">
+              Hey ${user.name}! 👋
             </div>
             
-            <p>Ready to start your learning journey?</p>
+            <div class="intro-text">
+              We're absolutely thrilled to have you join our vibrant community of passionate developers, learners, and innovators! DevSwap.live is where knowledge meets opportunity, and skills transform into success.
+            </div>
             
-            <a href="${frontendUrl}/dashboard" class="cta-button">Explore DevSwap →</a>
+            <div class="features-section">
+              <h3 class="features-title">🚀 What awaits you on DevSwap</h3>
+              <div class="features-grid">
+                <div class="feature-item">
+                  <div class="feature-icon">🎯</div>
+                  <div class="feature-text"><strong>Smart Matching:</strong> Connect with developers who complement your skills and learning goals</div>
+                </div>
+                <div class="feature-item">
+                  <div class="feature-icon">💻</div>
+                  <div class="feature-text"><strong>Live Coding Sessions:</strong> Collaborate in real-time with video chat, screen sharing, and synchronized code editing</div>
+                </div>
+                <div class="feature-item">
+                  <div class="feature-icon">🤖</div>
+                  <div class="feature-text"><strong>AI-Powered Learning:</strong> Get personalized lesson plans and learning paths tailored just for you</div>
+                </div>
+                <div class="feature-item">
+                  <div class="feature-icon">📈</div>
+                  <div class="feature-text"><strong>Progress Tracking:</strong> Monitor your growth and build an impressive developer portfolio</div>
+                </div>
+                <div class="feature-item">
+                  <div class="feature-icon">🗺️</div>
+                  <div class="feature-text"><strong>Learning Roadmaps:</strong> Follow expert-curated paths for mastering any technology stack</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="tips-section">
+              <div class="tips-title">
+                💡 Pro Tip
+              </div>
+              <div class="tips-text">
+                Complete your profile and add your skills to get better matches! The more detailed your profile, the more relevant connections you'll make.
+              </div>
+            </div>
+            
+            <div class="cta-section">
+              <div class="cta-text">Ready to start swapping skills and accelerating your growth?</div>
+              <a href="${frontendUrl}/dashboard" class="cta-button">Launch Your Journey →</a>
+            </div>
           </div>
           
           <div class="footer">
-            <p>Happy learning!<br>The DevSwap.live Team</p>
-            <p>If you have any questions, feel free to reach out to us.</p>
+            <div class="footer-signature">Happy coding & learning! 🎉</div>
+            <div class="footer-team">The DevSwap.live Team</div>
+            <div class="footer-text">
+              Need help getting started? We're here for you! Reply to this email or check out our help center.
+            </div>
           </div>
         </div>
       </body>
@@ -209,128 +432,389 @@ class EmailService {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>New Login to DevSwap.live</title>
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
           body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: #1f2937;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            padding: 20px;
+            min-height: 100vh;
+          }
+          
+          .email-wrapper {
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f8fafc;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
           }
-          .container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          }
+          
           .header {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            padding: 40px 30px;
             text-align: center;
-            margin-bottom: 30px;
+            color: white;
           }
+          
           .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: #3b82f6;
-            margin-bottom: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: white;
           }
+          
+          .logo::before {
+            content: '🔄';
+            font-size: 28px;
+          }
+          
+          .security-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+          }
+          
           .login-title {
-            font-size: 24px;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+          
+          .login-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 300;
+          }
+          
+          .content {
+            padding: 40px 30px;
+          }
+          
+          .greeting {
+            font-size: 18px;
+            margin-bottom: 24px;
+            color: #374151;
+          }
+          
+          .intro-text {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 32px;
+            line-height: 1.7;
+          }
+          
+          .login-details {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 32px 0;
+            border: 1px solid #e2e8f0;
+          }
+          
+          .details-title {
+            font-size: 18px;
+            font-weight: 600;
             color: #1f2937;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
           }
-          .login-info {
-            background: #f3f4f6;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+          
+          .info-grid {
+            display: grid;
+            gap: 16px;
           }
-          .info-row {
-            margin: 8px 0;
+          
+          .info-item {
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
           }
+          
           .info-label {
             font-weight: 500;
             color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 8px;
           }
+          
           .info-value {
             color: #6b7280;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 4px;
           }
+          
           .security-notice {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 20px 0;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 32px 0;
+            text-align: center;
           }
+          
+          .security-icon-notice {
+            font-size: 32px;
+            margin-bottom: 12px;
+          }
+          
+          .security-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 12px;
+          }
+          
+          .security-text {
+            font-size: 15px;
+            color: #92400e;
+            line-height: 1.6;
+            margin-bottom: 20px;
+          }
+          
+          .action-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+          }
+          
           .cta-button {
             display: inline-block;
-            background: #dc2626;
-            color: white;
-            padding: 12px 24px;
+            padding: 14px 28px;
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: 500;
-            margin: 10px 5px;
-          }
-          .secondary-button {
-            background: #6b7280;
-          }
-          .footer {
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
             text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            color: #6b7280;
+            min-width: 140px;
+          }
+          
+          .primary-button {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.39);
+          }
+          
+          .primary-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(239, 68, 68, 0.5);
+          }
+          
+          .secondary-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.39);
+          }
+          
+          .secondary-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.5);
+          }
+          
+          .tips-section {
+            background: #e0f2fe;
+            border: 1px solid #0284c7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 32px 0;
+          }
+          
+          .tips-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          
+          .tips-text {
             font-size: 14px;
+            color: #0c4a6e;
+            line-height: 1.6;
+          }
+          
+          .footer {
+            background: #f9fafb;
+            padding: 32px 30px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+          }
+          
+          .footer-text {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 16px;
+          }
+          
+          .footer-signature {
+            font-size: 16px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+          }
+          
+          .footer-team {
+            font-size: 14px;
+            color: #9ca3af;
+          }
+          
+          .footer-disclaimer {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 16px;
+            font-style: italic;
+          }
+          
+          @media (max-width: 600px) {
+            .email-wrapper {
+              margin: 10px;
+              border-radius: 12px;
+            }
+            
+            .header {
+              padding: 30px 20px;
+            }
+            
+            .content {
+              padding: 30px 20px;
+            }
+            
+            .login-title {
+              font-size: 24px;
+            }
+            
+            .login-details {
+              padding: 20px;
+            }
+            
+            .action-buttons {
+              flex-direction: column;
+              align-items: center;
+            }
+            
+            .cta-button {
+              width: 100%;
+              max-width: 280px;
+            }
           }
         </style>
       </head>
       <body>
-        <div class="container">
+        <div class="email-wrapper">
           <div class="header">
             <div class="logo">DevSwap.live</div>
-            <h1 class="login-title">New Login Detected 🔐</h1>
+            <div class="security-icon">🔐</div>
+            <h1 class="login-title">New Login Detected</h1>
+            <p class="login-subtitle">Security notification for your account</p>
           </div>
           
           <div class="content">
-            <p>Hi ${user.name},</p>
+            <div class="greeting">
+              Hi ${user.name}! 👋
+            </div>
             
-            <p>We detected a new login to your DevSwap.live account. Here are the details:</p>
+            <div class="intro-text">
+              We detected a new login to your DevSwap.live account and wanted to make sure it was you. Your account security is our top priority.
+            </div>
             
-            <div class="login-info">
-              <div class="info-row">
-                <span class="info-label">Time:</span>
-                <span class="info-value">${loginInfo.timestamp.toLocaleString()}</span>
+            <div class="login-details">
+              <div class="details-title">
+                📊 Login Details
               </div>
-              ${loginInfo.ip ? `
-              <div class="info-row">
-                <span class="info-label">IP Address:</span>
-                <span class="info-value">${loginInfo.ip}</span>
+              <div class="info-grid">
+                <div class="info-item">
+                  <div class="info-label">
+                    🕐 Time
+                  </div>
+                  <div class="info-value">${loginInfo.timestamp.toLocaleString('en-US', { 
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                  })}</div>
+                </div>
+                ${loginInfo.ip ? `
+                <div class="info-item">
+                  <div class="info-label">
+                    🌐 IP Address
+                  </div>
+                  <div class="info-value">${loginInfo.ip}</div>
+                </div>
+                ` : ''}
+                ${loginInfo.userAgent ? `
+                <div class="info-item">
+                  <div class="info-label">
+                    💻 Device/Browser
+                  </div>
+                  <div class="info-value">${loginInfo.userAgent.length > 50 ? loginInfo.userAgent.substring(0, 50) + '...' : loginInfo.userAgent}</div>
+                </div>
+                ` : ''}
               </div>
-              ` : ''}
-              ${loginInfo.userAgent ? `
-              <div class="info-row">
-                <span class="info-label">Device/Browser:</span>
-                <span class="info-value">${loginInfo.userAgent}</span>
-              </div>
-              ` : ''}
             </div>
             
             <div class="security-notice">
-              <strong>Was this you?</strong> If you recognize this login, you can ignore this email. If you don't recognize this activity, please secure your account immediately.
+              <div class="security-icon-notice">⚠️</div>
+              <div class="security-title">Was this you?</div>
+              <div class="security-text">
+                If you recognize this login activity, you can safely ignore this email. However, if you don't recognize this login or suspect unauthorized access, please take immediate action to secure your account.
+              </div>
+              <div class="action-buttons">
+                <a href="${frontendUrl}/account/security" class="cta-button primary-button">🔒 Secure Account</a>
+                <a href="${frontendUrl}/dashboard" class="cta-button secondary-button">📊 Go to Dashboard</a>
+              </div>
             </div>
             
-            <div style="text-align: center;">
-              <a href="${frontendUrl}/account/security" class="cta-button">Secure My Account</a>
-              <a href="${frontendUrl}/dashboard" class="cta-button secondary-button">Go to Dashboard</a>
+            <div class="tips-section">
+              <div class="tips-title">
+                💡 Security Tips
+              </div>
+              <div class="tips-text">
+                • Always log out from shared devices<br>
+                • Use strong, unique passwords<br>
+                • Enable two-factor authentication when available<br>
+                • Regularly review your account activity
+              </div>
             </div>
           </div>
           
           <div class="footer">
-            <p>Stay secure!<br>The DevSwap.live Team</p>
-            <p>This is an automated security notification.</p>
+            <div class="footer-signature">Stay secure! 🛡️</div>
+            <div class="footer-team">The DevSwap.live Security Team</div>
+            <div class="footer-text">
+              We're committed to keeping your account safe. If you have any security concerns, don't hesitate to contact us.
+            </div>
+            <div class="footer-disclaimer">
+              This is an automated security notification. Please do not reply to this email.
+            </div>
           </div>
         </div>
       </body>
