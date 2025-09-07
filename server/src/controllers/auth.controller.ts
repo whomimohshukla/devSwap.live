@@ -46,6 +46,8 @@ async function findOrCreateUserFromOAuth(
 	if (!email) throw new Error("Email not provided by OAuth provider");
 
 	let user = await User.findOne({ email });
+	const isNewUser = !user;
+	
 	if (!user) {
 		user = new User({
 			name: profile.name || email.split("@")[0],
@@ -59,6 +61,24 @@ async function findOrCreateUserFromOAuth(
 					: undefined,
 		});
 		await user.save();
+		
+		// Send welcome email for new users (non-blocking)
+		setImmediate(async () => {
+			try {
+				if (user) {
+					await emailService.sendWelcomeEmail({
+						name: user.name,
+						email: user.email,
+						_id: user._id?.toString(),
+					});
+					console.log(`Welcome email sent to ${user.email} (OAuth registration)`);
+				}
+			} catch (error) {
+				if (user) {
+					console.error(`Failed to send welcome email to ${user.email} (OAuth):`, error);
+				}
+			}
+		});
 	} else {
 		const updates: any = { isOnline: true, lastSeen: new Date() };
 		if (profile.avatar && user.avatar !== profile.avatar)
@@ -174,6 +194,27 @@ export async function googleAuthCallback(req: Request, res: Response) {
 			},
 			{ name: "google", id: userInfo.sub }
 		);
+		
+		// Send login notification email (non-blocking)
+		setImmediate(async () => {
+			try {
+				const loginInfo = {
+					ip: req.ip || req.connection?.remoteAddress || 'Unknown',
+					userAgent: req.get('User-Agent') || 'Unknown',
+					timestamp: new Date(),
+				};
+				
+				await emailService.sendLoginNotification({
+					name: user.name,
+					email: user.email,
+					_id: user._id?.toString(),
+				}, loginInfo);
+				console.log(`Login notification email sent to ${user.email} (Google OAuth)`);
+			} catch (error) {
+				console.error(`Failed to send login notification to ${user.email} (Google OAuth):`, error);
+			}
+		});
+		
 		const token = signJwtForUser(user);
 		// Optionally set cookie
 		res.cookie("token", token, {
@@ -314,6 +355,27 @@ export async function githubAuthCallback(req: Request, res: Response) {
 			},
 			{ name: "github", id: String(ghUser.id || "") }
 		);
+		
+		// Send login notification email (non-blocking)
+		setImmediate(async () => {
+			try {
+				const loginInfo = {
+					ip: req.ip || req.connection?.remoteAddress || 'Unknown',
+					userAgent: req.get('User-Agent') || 'Unknown',
+					timestamp: new Date(),
+				};
+				
+				await emailService.sendLoginNotification({
+					name: user.name,
+					email: user.email,
+					_id: user._id?.toString(),
+				}, loginInfo);
+				console.log(`Login notification email sent to ${user.email} (GitHub OAuth)`);
+			} catch (error) {
+				console.error(`Failed to send login notification to ${user.email} (GitHub OAuth):`, error);
+			}
+		});
+		
 		const token = signJwtForUser(user);
 		res.cookie("token", token, {
 			httpOnly: true,
