@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// Normalize base URL: if VITE_API_URL is provided without the "/api" prefix, append it.
 const RAW_BASE_URL = import.meta.env.VITE_API_URL as string | undefined;
 function ensureApiPrefix(url: string) {
 	// If it already ends with /api or /api/, use as-is
