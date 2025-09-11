@@ -157,7 +157,7 @@ export async function generateSummary(req: Request, res: Response) {
 		res.status(500).json({ message: "Failed to generate summary" });
 	}
 }
-
+// get cached lesson plans
 export async function getCachedPlans(req: Request, res: Response) {
 	try {
 		const { skill } = req.query;
