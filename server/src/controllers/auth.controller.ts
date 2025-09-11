@@ -128,6 +128,8 @@ export async function googleAuthStart(req: Request, res: Response) {
 	}
 }
 
+// Google auth callback
+
 export async function googleAuthCallback(req: Request, res: Response) {
 	try {
 		const code = String(req.query.code || "");
@@ -268,7 +270,8 @@ export async function githubAuthStart(req: Request, res: Response) {
 		return res.redirect(url);
 	}
 }
-
+ 
+// GitHub auth callback
 export async function githubAuthCallback(req: Request, res: Response) {
 	try {
 		const code = String(req.query.code || "");
