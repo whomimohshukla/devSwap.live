@@ -466,6 +466,8 @@ export async function register(req: Request, res: Response) {
 	}
 }
 
+
+// login user
 export async function login(req: Request, res: Response) {
 	try {
 		const { email, password } = req.body;
@@ -541,6 +543,8 @@ export async function login(req: Request, res: Response) {
 	}
 }
 
+
+// logout user
 export async function logout(req: AuthenticatedRequest, res: Response) {
 	try {
 		if (!req.user?.id) {
@@ -562,6 +566,7 @@ export async function logout(req: AuthenticatedRequest, res: Response) {
 	}
 }
 
+// refresh JWT token
 export async function refreshToken(req: AuthenticatedRequest, res: Response) {
 	try {
 		if (!req.user?.id) {
@@ -588,6 +593,8 @@ export async function refreshToken(req: AuthenticatedRequest, res: Response) {
 		res.status(500).json({ message: "Token refresh failed" });
 	}
 }
+
+// get user profile
 
 export async function getProfile(req: AuthenticatedRequest, res: Response) {
 	try {
