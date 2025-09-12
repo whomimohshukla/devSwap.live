@@ -4,6 +4,8 @@ import Session from "../models/session.model";
 import User from "../models/user.model";
 import LessonPlan from "../models/lessonPlan.model";
 
+
+// Get session details
 export async function getSession(req: Request, res: Response) {
 	try {
 		const { sessionId } = req.params;
@@ -44,6 +46,8 @@ export async function getSession(req: Request, res: Response) {
 		res.status(500).json({ message: "Failed to get session" });
 	}
 }
+
+// End a session
 
 export async function endSession(req: Request, res: Response) {
 	try {
@@ -92,6 +96,7 @@ export async function endSession(req: Request, res: Response) {
 	}
 }
 
+// Get all sessions for a user with pagination and filtering
 export async function getUserSessions(req: Request, res: Response) {
 	try {
 		const userId = req.user?.id;
@@ -134,6 +139,8 @@ export async function getUserSessions(req: Request, res: Response) {
 	}
 }
 
+
+// Join a session
 export async function joinSession(req: Request, res: Response) {
 	try {
 		const { sessionId } = req.params;
