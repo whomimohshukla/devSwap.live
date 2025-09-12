@@ -397,6 +397,8 @@ export async function githubAuthCallback(req: Request, res: Response) {
 	}
 }
 
+
+// register user
 export async function register(req: Request, res: Response) {
 	try {
 		const { name, email, password, teachSkills, learnSkills, bio } = req.body;
