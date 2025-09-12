@@ -62,6 +62,8 @@ export async function getCurrentUser(req: AuthenticatedRequest, res: Response) {
 	}
 }
 
+
+// Get user by ID
 export async function getUserById(req: Request, res: Response) {
 	try {
 		const { id } = req.params;
@@ -98,6 +100,8 @@ export async function getUserById(req: Request, res: Response) {
 	}
 }
 
+
+// Update user profile
 export async function updateProfile(req: AuthenticatedRequest, res: Response) {
 	try {
 		const updates = req.body;
@@ -143,6 +147,8 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response) {
 		});
 	}
 }
+
+// Update user password
 
 export async function updatePassword(req: AuthenticatedRequest, res: Response) {
 	try {
@@ -197,6 +203,8 @@ export async function updatePassword(req: AuthenticatedRequest, res: Response) {
 	}
 }
 
+
+// Delete user account
 export async function deleteAccount(req: AuthenticatedRequest, res: Response) {
 	try {
 		if (!req.user?.id) {
@@ -231,6 +239,8 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response) {
 	}
 }
 
+
+// Search users with filters and pagination
 export async function searchUsers(req: Request, res: Response) {
 	try {
 		const page = parseInt(req.query.page as string) || 1;
