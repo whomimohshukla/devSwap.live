@@ -10,6 +10,8 @@ function getUserId(req: Request): string | null {
 	return user?.id || null;
 }
 
+
+// List incoming requests for the authenticated user
 export const RequestsController = {
 	// List incoming requests for the authenticated user
 	async getIncoming(req: Request, res: Response) {
