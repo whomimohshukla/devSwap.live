@@ -8,6 +8,8 @@ import {
 import User from "../models/user.model";
 import { getIO } from "../lib/socket";
 
+
+// Join the queue
 export async function joinMatching(req: Request, res: Response) {
 	if (!req.user?.id) {
 		return res.status(401).json({ message: "Authentication required" });
@@ -70,6 +72,8 @@ export async function joinMatching(req: Request, res: Response) {
 	});
 }
 
+
+// Leave the queue
 export async function leaveMatching(req: Request, res: Response) {
 	if (!req.user?.id) {
 		return res.status(401).json({ message: "Authentication required" });
