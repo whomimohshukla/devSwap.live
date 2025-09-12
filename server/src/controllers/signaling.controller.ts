@@ -11,6 +11,7 @@ interface AuthenticatedSocket extends Socket {
 	sessionId?: string;
 }
 
+// SignalingController handles WebRTC signaling and real-time events
 export class SignalingController {
 	private io: Server;
 	private connectedUsers: Map<string, string> = new Map(); // userId -> socketId
