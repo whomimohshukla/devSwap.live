@@ -7,6 +7,7 @@ export interface IAIRequestLog extends Document {
 	tokensUsed: number;
 }
 
+// Schema definition
 const aiRequestLogSchema = new Schema<IAIRequestLog>(
 	{
 		userId: {
