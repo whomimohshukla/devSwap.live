@@ -24,6 +24,8 @@ export interface ILessonPlan {
 	cached: boolean;
 }
 
+
+// Extend Document interface to include LessonPlan (for embedded documents)
 export interface ILessonPlanDocument extends ILessonPlan, Document {}
 
 const LessonPlanSchema = new Schema<ILessonPlanDocument>({
