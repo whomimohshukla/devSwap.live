@@ -7,6 +7,8 @@ export interface INotification extends Document {
 	read: boolean;
 }
 
+// Schema definition (no timestamps)
+
 const notificationSchema = new Schema<INotification>(
 	{
 		userId: {
