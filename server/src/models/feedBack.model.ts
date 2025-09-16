@@ -8,6 +8,8 @@ export interface IFeedback extends Document {
 	comment?: string;
 }
 
+// Schema definition
+
 const feedbackSchema = new Schema<IFeedback>(
 	{
 		sessionId: {
