@@ -7,6 +7,8 @@ export interface IMessage extends Document {
 	timestamp: Date;
 }
 
+
+// Schema definition
 const messageSchema = new Schema<IMessage>(
 	{
 		sessionId: {
