@@ -4,11 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
 	Menu,
 	X,
-	Code2,
+	Terminal,
+	Home,
+	LayoutDashboard,
+	Users2,
+	Video,
 	User,
 	LogOut,
 	Settings,
-	Users,
 	BookOpen,
 	Zap,
 	Loader2,
@@ -23,7 +26,6 @@ const Navbar: React.FC = () => {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 	const [isScrolled, setIsScrolled] = useState(false);
-	const [hoverReveal, setHoverReveal] = useState(false);
 	const [isLearnOpen, setIsLearnOpen] = useState(false);
 	const [isLearnMobileOpen, setIsLearnMobileOpen] = useState(false);
 	const location = useLocation();
@@ -61,15 +63,15 @@ const Navbar: React.FC = () => {
 	};
 
 	const navLinks = [
-		{ name: "Home", path: "/", icon: null },
+		{ name: "Home", path: "/", icon: Home },
 		{
 			name: "Dashboard",
 			path: "/dashboard",
-			icon: Settings,
+			icon: LayoutDashboard,
 			protected: true,
 		},
-		{ name: "Find Matches", path: "/matches", icon: Users, protected: true },
-		{ name: "Sessions", path: "/sessions", icon: BookOpen, protected: true },
+		{ name: "Find Matches", path: "/matches", icon: Users2, protected: true },
+		{ name: "Sessions", path: "/sessions", icon: Video, protected: true },
 	];
 
 	const isActivePath = (path: string) => {
@@ -77,34 +79,14 @@ const Navbar: React.FC = () => {
 		return location.pathname.startsWith(path);
 	};
 
-	const isHome = location.pathname === "/";
-	const shouldHideAtTop =
-		isHome && !isScrolled && !hoverReveal && !isMobileMenuOpen;
-
 	return (
 		<>
-			{/* Hover/Tap reveal zone at very top (visible only on Home when at top) */}
-			{isHome && !isScrolled && (
-				<div
-					className='fixed top-0 left-0 right-0 h-3 z-50'
-					onMouseEnter={() => setHoverReveal(true)}
-					onMouseLeave={() => setHoverReveal(false)}
-					onTouchStart={() => setHoverReveal(true)}
-				/>
-			)}
-
 			<nav
-				className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 select-none transform ${
+				className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 select-none border-b border-white/10 ${
 					isScrolled
-						? "bg-[#0b0c0d]/90 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
-						: "bg-[#0b0c0d]/70 backdrop-blur-md shadow-none"
-				} ${
-					shouldHideAtTop
-						? "-translate-y-full opacity-0 pointer-events-none"
-						: "translate-y-0 opacity-100"
+						? "bg-[#0b0c0d]/95 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+						: "bg-[#0b0c0d]/90 backdrop-blur-lg shadow-none"
 				}`}
-				onMouseEnter={() => setHoverReveal(true)}
-				onMouseLeave={() => setHoverReveal(false)}
 			>
 				<div className='w-full px-4 sm:px-6 lg:px-8'>
 					<div className='flex items-center justify-between h-16'>
@@ -114,11 +96,10 @@ const Navbar: React.FC = () => {
 							className='flex items-center space-x-2 group focus:outline-none focus-visible:outline-none'
 						>
 							<div className='relative'>
-								<Code2 className='h-8 w-8 text-[#00ef68] transition-colors' />
-								<div className='absolute -inset-1 bg-[#00ef68]/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity' />
+								<Terminal className='h-7 w-7 text-[#00ef68]' />
 							</div>
-							<span className='text-xl font-bold text-white'>
-								DevSwap.live
+							<span className='text-xl font-bold text-white tracking-tight'>
+								DevSwap<span className='text-[#00ef68]'>.</span>live
 							</span>
 						</Link>
 
