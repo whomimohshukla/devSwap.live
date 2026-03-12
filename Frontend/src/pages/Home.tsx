@@ -8,6 +8,7 @@ import {
 	Shield,
 	Brain,
 	Code2,
+	Zap,
 	MessageSquare,
 	Network,
 	Video,
@@ -16,99 +17,9 @@ import Seo from "../components/common/Seo";
 
 const Home: React.FC = () => {
     const [isVideoOpen, setIsVideoOpen] = useState(false);
-    const demoVideoMp4 =
-        (import.meta as any).env?.VITE_DEMO_VIDEO_MP4 ||
-        "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
     const demoEmbed =
         (import.meta as any).env?.VITE_DEMO_VIDEO_EMBED ||
         "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0&modestbranding=1";
-    const demoMode = ((import.meta as any).env?.VITE_DEMO_MODE || "false") === "true";
-
-    // Inline animated demo overlay for the frame
-    const DemoOverlay: React.FC = () => {
-        return (
-            <div className='absolute inset-0 overflow-hidden'>
-                {/* Mock Navbar */}
-                <motion.div
-                    initial={{ y: -20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.6 }}
-                    className='absolute top-10 left-8 right-8 h-10 rounded-lg bg-white/5 border border-white/10 backdrop-blur flex items-center px-4 gap-3'
-                >
-                    <div className='w-24 h-3 rounded bg-white/20' />
-                    <div className='w-16 h-3 rounded bg-white/10' />
-                    <div className='w-16 h-3 rounded bg-white/10' />
-                    <div className='ml-auto w-8 h-8 rounded-full bg-[#00ef68]/30 border border-[#00ef68]/30' />
-                </motion.div>
-
-                {/* Mock Cards grid animating in */}
-                <div className='absolute top-28 left-8 right-8 grid grid-cols-1 md:grid-cols-3 gap-4'>
-                    {[0, 1, 2].map((i) => (
-                        <motion.div
-                            key={i}
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ duration: 0.5, delay: 0.15 * i }}
-                            className='h-28 rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur p-4'
-                        >
-                            <div className='h-4 w-24 rounded bg-white/30 mb-2' />
-                            <div className='h-3 w-40 rounded bg-white/20' />
-                            <div className='mt-4 h-2 w-3/4 rounded bg-[#00ef68]/40' />
-                        </motion.div>
-                    ))}
-                </div>
-
-                {/* Mock Session/Chat panel */}
-                <motion.div
-                    initial={{ x: 40, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.5 }}
-                    className='absolute bottom-16 right-8 w-80 hidden md:block rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur'
-                >
-                    <div className='p-3 border-b border-white/10 flex items-center gap-2'>
-                        <div className='w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse' />
-                        <span className='text-xs text-white/80'>Realtime session connected</span>
-                    </div>
-                    <div className='p-3 space-y-2'>
-                        <div className='w-3/4 h-3 rounded bg-white/20' />
-                        <div className='w-1/2 h-3 rounded bg-white/10' />
-                        <div className='w-5/6 h-3 rounded bg-white/20' />
-                    </div>
-                </motion.div>
-
-                {/* Animated cursor path */}
-                <motion.div
-                    className='absolute w-5 h-5 rounded-full bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.5)]'
-                    initial={{ x: 40, y: 160, scale: 0.9 }}
-                    animate={{
-                        x: [40, 320, 320, 720, 720, 120, 120],
-                        y: [160, 160, 260, 260, 420, 420, 200],
-                        scale: [0.9, 0.9, 0.9, 1, 1, 0.9, 0.9],
-                    }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                />
-
-                {/* Click ripples */}
-                <motion.div
-                    className='absolute w-8 h-8 rounded-full border-2 border-white/70'
-                    initial={{ opacity: 0, x: 312, y: 152, scale: 0.5 }}
-                    animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 1.8] }}
-                    transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 6.4 }}
-                />
-
-                {/* Caption badge */}
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8 }}
-                    className='absolute bottom-6 left-8 inline-flex items-center gap-2 rounded-full bg-black/40 border border-white/10 text-white/90 px-3 py-1 backdrop-blur'
-                >
-                    <span className='w-2 h-2 rounded-full bg-[#00ef68]' />
-                    <span className='text-xs'>Live Matching • Skill Progress • Sessions</span>
-                </motion.div>
-            </div>
-        );
-    };
 	const features = [
 		{
 			icon: Brain,
@@ -185,662 +96,381 @@ const Home: React.FC = () => {
 				canonical="/"
 			/>
 			{/* Hero Section */}
-			<section className='relative overflow-hidden bg-[#0b0c0d]'>
-				{/* Background Effects */}
-				<div className='absolute inset-0'>
-					<div className='absolute top-1/4 left-1/4 w-72 h-72 bg-[#00ef68]/10 rounded-full blur-3xl'></div>
-					<div className='absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#00ef68]/5 rounded-full blur-3xl'></div>
-					{/* Animated particles */}
-					<motion.div
-						className='absolute top-10 left-10 w-2 h-2 rounded-full bg-[#00ef68]/80'
-						animate={{ y: [0, -12, 0] }}
-						transition={{
-							duration: 3,
-							repeat: Infinity,
-							ease: "easeInOut",
-						}}
-					/>
-					<motion.div
-						className='absolute bottom-12 left-1/3 w-2 h-2 rounded-full bg-[#00ef68]/60'
-						animate={{ y: [0, 10, 0] }}
-						transition={{
-							duration: 2.6,
-							repeat: Infinity,
-							ease: "easeInOut",
-							delay: 0.3,
-						}}
-					/>
-					<motion.div
-						className='absolute top-1/3 right-1/4 w-2 h-2 rounded-full bg-[#00ef68]/60'
-						animate={{ y: [0, -8, 0] }}
-						transition={{
-							duration: 2.2,
-							repeat: Infinity,
-							ease: "easeInOut",
-							delay: 0.6,
-						}}
-					/>
+			<section className='relative min-h-[90vh] flex items-center overflow-hidden bg-[#0b0c0d] pt-20'>
+				{/* Advanced Background Layering */}
+				<div className='absolute inset-0 overflow-hidden pointer-events-none'>
+					<div className='absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]' />
 				</div>
 
-				<div className='relative w-full px-4 sm:px-6 lg:px-8 py-20 md:py-28'>
-					<div className='text-center'>
-						<motion.div
-							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.8 }}
-							className='mb-8'
-						>
-							<div className='inline-flex items-center px-4 py-2 bg-[#00ef68]/10 border border-[#00ef68]/20 rounded-full text-[#00ef68] text-sm font-medium mb-6'>
-								<Brain className='w-4 h-4 mr-2' />
-								AI-powered skill exchange for developers
-							</div>
+				<div className='relative w-full px-4 sm:px-6 lg:px-8 py-20'>
+					<div className='mx-auto max-w-7xl'>
+						<div className='text-center max-w-4xl mx-auto'>
+							<motion.div
+								initial={{ opacity: 0, scale: 0.9 }}
+								animate={{ opacity: 1, scale: 1 }}
+								transition={{ duration: 0.5 }}
+								className='inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00ef68]/10 border border-[#00ef68]/20 text-[#00ef68] text-xs sm:text-sm font-medium mb-8'
+							>
+								<Zap className='w-4 h-4 fill-current' />
+								<span>The future of peer-to-peer learning is here</span>
+							</motion.div>
 
 							<motion.h1
-								initial='hidden'
-								animate='visible'
-								variants={{
-									hidden: { opacity: 0 },
-									visible: {
-										opacity: 1,
-										transition: { staggerChildren: 0.12 },
-									},
-								}}
-								className='text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight'
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.6, delay: 0.1 }}
+								className='text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1] mb-8'
 							>
-								<span>Learn by </span>
-								<motion.span
-									variants={{
-										hidden: { opacity: 0, y: 12 },
-										visible: { opacity: 1, y: 0 },
-									}}
-									className='text-transparent bg-clip-text bg-gradient-to-r from-[#00ef68] to-[#00ef68]'
-								>
-									Teaching
-								</motion.span>
+								Master any skill.
 								<br />
-								<span>Teach by </span>
-								<motion.span
-									variants={{
-										hidden: { opacity: 0, y: 12 },
-										visible: { opacity: 1, y: 0 },
-									}}
-									className='text-transparent bg-clip-text bg-gradient-to-r from-[#00ef68] to-[#00ef68]'
-								>
-									Learning
-								</motion.span>
+								<span className='text-[#00ef68] relative'>
+									Swap your knowledge.
+									<svg className="absolute -bottom-2 left-0 w-full h-2 text-[#00ef68]/20" viewBox="0 0 100 10" preserveAspectRatio="none">
+										<path d="M0 5 L 100 5" fill="none" stroke="currentColor" strokeWidth="2" />
+									</svg>
+								</span>
 							</motion.h1>
 
-							<p className='text-xl md:text-2xl text-white/80 mb-8'>
-								The revolutionary platform where developers exchange
-								skills in real-time. Master new technologies while
-								sharing your expertise with others.
-							</p>
-						</motion.div>
-
-						<motion.div
-							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.8, delay: 0.2 }}
-							className='flex flex-col sm:flex-row gap-4 justify-center items-center mb-12'
-						>
-							<Link
-								to='/register'
-								className='group relative px-8 py-4 bg-[#00ef68] hover:bg-[#00ef68] text-[#0b0c0d] font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-[#00ef68]/25'
+							<motion.p
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.6, delay: 0.2 }}
+								className='text-lg sm:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed mb-12'
 							>
-								<span className='flex items-center'>
-									Start Learning Today
-									<ArrowRight className='ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform' />
-								</span>
-								<div className='absolute inset-0 bg-[#00ef68] rounded-lg blur opacity-0 group-hover:opacity-20 transition-opacity -z-10'></div>
-							</Link>
+								Connect with experts worldwide. Trade what you know for what you want to learn.
+								Real-time collaboration, AI-powered paths, and a community of builders.
+							</motion.p>
 
-							<button
-                                onClick={() => setIsVideoOpen(true)}
-                                className='group flex items-center px-8 py-4 text-white font-semibold border border-[#25282c] hover:bg-[#25282c] rounded-lg transition-all duration-300'
-                            >
-                                <Play className='mr-2 w-5 h-5' />
-                                Watch Demo
-                            </button>
-						</motion.div>
+							<motion.div
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.6, delay: 0.3 }}
+								className='flex flex-col sm:flex-row items-center justify-center gap-4'
+							>
+								<Link
+									to='/register'
+									className='w-full sm:w-auto px-8 py-4 rounded-xl bg-[#00ef68] text-[#0b0c0d] font-bold text-lg hover:shadow-[0_0_30px_rgba(0,239,104,0.4)] transition-all duration-300 transform hover:-translate-y-1'
+								>
+									Start Swapping Now
+								</Link>
+								<button
+									onClick={() => setIsVideoOpen(true)}
+									className='w-full sm:w-auto px-8 py-4 rounded-xl border border-white/10 bg-white/5 text-white font-semibold text-lg hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2 group'
+								>
+									<Play className='w-5 h-5 fill-current group-hover:scale-110 transition-transform' />
+									See how it works
+								</button>
+							</motion.div>
+						</div>
 
-						{/* Demo Video Frame */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.35 }}
-                            className='relative mx-auto max-w-6xl w-full'
-                        >
-                            {/* Glow accents */}
-                            <div className='pointer-events-none absolute -inset-1 rounded-3xl bg-gradient-to-r from-[#00ef68]/0 via-[#00ef68]/20 to-[#00ef68]/0 blur-2xl' />
-                            {/* Frame */}
-                            <div
-                                className='relative aspect-video overflow-hidden rounded-2xl border border-[#25282c] bg-gradient-to-b from-[#0f1113] to-[#0b0c0d] shadow-2xl shadow-black/40 cursor-pointer'
-                                onClick={() => setIsVideoOpen(true)}
-                            >
-                                {/* Top bar */}
-                                <div className='absolute inset-x-0 top-0 h-10 bg-[#0b0c0d]/80 backdrop-blur border-b border-[#25282c] flex items-center px-4 gap-2'>
-                                    <span className='w-3 h-3 rounded-full bg-red-500/80' />
-                                    <span className='w-3 h-3 rounded-full bg-yellow-500/80' />
-                                    <span className='w-3 h-3 rounded-full bg-green-500/80' />
-                                    <span className='ml-3 text-xs text-white/60'>DevSwap Demo</span>
-                                </div>
-                                {/* Video */}
-                                {demoMode ? (
-                                    <DemoOverlay />
-                                ) : (
-                                    <video
-                                        src={demoVideoMp4}
-                                        muted
-                                        loop
-                                        playsInline
-                                        autoPlay
-                                        className='absolute inset-0 h-full w-full object-cover'
-                                    />
-                                )}
-                                {/* Overlay */}
-                                <div className='absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10 pointer-events-none' />
-                                {/* CTA Play */}
-                                <div className='absolute inset-0 flex items-center justify-center'>
-                                    <div className='group inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white/90 backdrop-blur border border-white/20 hover:bg-white/15 transition'>
-                                        <Play className='w-4 h-4' />
-                                        <span className='text-sm'>Click to expand</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
+						{/* Floating Feature Icons */}
+						<div className='mt-24 relative max-w-5xl mx-auto'>
+							<motion.div
+								initial={{ opacity: 0, y: 40 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ duration: 1, delay: 0.4 }}
+								className='relative aspect-[16/9] rounded-2xl border border-white/10 bg-[#0f1113] shadow-2xl overflow-hidden group'
+							>
+								<div className='absolute inset-0 bg-[#00ef68]/5' />
+								<div className='absolute inset-0 bg-black/40' />
+								
+								{/* Mock UI Content */}
+								<div className='relative h-full p-8 flex flex-col'>
+									<div className='flex items-center justify-between mb-8'>
+										<div className='flex items-center gap-3'>
+											<div className='w-3 h-3 rounded-full bg-red-500/50' />
+											<div className='w-3 h-3 rounded-full bg-yellow-500/50' />
+											<div className='w-3 h-3 rounded-full bg-green-500/50' />
+										</div>
+										<div className='px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/40 text-xs'>
+											devswap.live/session/pair-programming
+										</div>
+									</div>
+									
+									<div className='flex-1 grid grid-cols-12 gap-6'>
+										<div className='col-span-8 rounded-xl bg-black/40 border border-white/5 p-6'>
+											<div className='flex items-center gap-4 mb-6'>
+												<div className='w-10 h-10 rounded-lg bg-[#00ef68]/20 flex items-center justify-center'>
+													<Code2 className='w-6 h-6 text-[#00ef68]' />
+												</div>
+												<div className='h-4 w-48 bg-white/10 rounded' />
+											</div>
+											<div className='space-y-4'>
+												<div className='h-3 w-full bg-white/5 rounded' />
+												<div className='h-3 w-[90%] bg-white/5 rounded' />
+												<div className='h-3 w-[95%] bg-white/5 rounded' />
+												<div className='h-3 w-[85%] bg-white/5 rounded' />
+											</div>
+										</div>
+										<div className='col-span-4 space-y-4'>
+											<div className='h-1/2 rounded-xl bg-black/40 border border-white/5 p-4'>
+												<div className='flex items-center gap-3 mb-4'>
+													<div className='w-8 h-8 rounded-full bg-[#00ef68]/20' />
+													<div className='h-3 w-24 bg-white/10 rounded' />
+												</div>
+												<div className='space-y-2'>
+													<div className='h-2 w-full bg-white/5 rounded' />
+													<div className='h-2 w-full bg-white/5 rounded' />
+												</div>
+											</div>
+											<div className='h-1/2 rounded-xl bg-black/40 border border-white/5 p-4'>
+												<div className='h-full w-full bg-[#00ef68]/10 rounded-lg flex items-center justify-center'>
+													<Video className='w-8 h-8 text-[#00ef68]/50' />
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
 
-                        {/* Video Modal */}
-                        <AnimatePresence>
-                            {isVideoOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className='fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4'
-                                    onClick={() => setIsVideoOpen(false)}
-                                >
-                                    <motion.div
-                                        initial={{ scale: 0.96, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        exit={{ scale: 0.96, opacity: 0 }}
-                                        transition={{ type: "spring", stiffness: 300, damping: 24 }}
-                                        className='relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden border border-[#25282c] bg-[#0b0c0d]'
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <iframe
-                                            className='w-full h-full'
-                                            src={demoEmbed}
-                                            title='DevSwap Demo'
-                                            allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
-                                            referrerPolicy='strict-origin-when-cross-origin'
-                                            allowFullScreen
-                                        />
-                                        <button
-                                            className='absolute top-3 right-3 text-white/70 hover:text-white text-sm bg-white/10 hover:bg-white/15 border border-white/20 rounded px-2 py-1'
-                                            onClick={() => setIsVideoOpen(false)}
-                                        >
-                                            Close
-                                        </button>
-                                    </motion.div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+								{/* Animated floating badges */}
+								<motion.div
+									animate={{ y: [0, -10, 0] }}
+									transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+									className='absolute top-20 -left-6 px-4 py-3 rounded-xl bg-[#0b0c0d] border border-white/10 shadow-xl hidden lg:flex items-center gap-3 z-20'
+								>
+									<div className='w-10 h-10 rounded-full bg-[#00ef68]/20 flex items-center justify-center text-[#00ef68]'>
+										<Brain className='w-5 h-5' />
+									</div>
+									<div>
+										<p className='text-xs text-white font-semibold'>AI Lesson Plan</p>
+										<p className='text-[10px] text-white/50'>Generated in seconds</p>
+									</div>
+								</motion.div>
 
-                        {/* No vanity stats — focus on capabilities */}
+								<motion.div
+									animate={{ y: [0, 10, 0] }}
+									transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+									className='absolute bottom-20 -right-6 px-4 py-3 rounded-xl bg-[#0b0c0d] border border-white/10 shadow-xl hidden lg:flex items-center gap-3 z-20'
+								>
+									<div className='w-10 h-10 rounded-full bg-[#00ef68]/20 flex items-center justify-center text-[#00ef68]'>
+										<Network className='w-5 h-5' />
+									</div>
+									<div>
+										<p className='text-xs text-white font-semibold'>Live Matching</p>
+										<p className='text-[10px] text-white/50'>Find experts now</p>
+									</div>
+								</motion.div>
+							</motion.div>
+						</div>
 					</div>
 				</div>
 			</section>
+
+			{/* Video Modal */}
+			<AnimatePresence>
+				{isVideoOpen && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						className='fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4'
+						onClick={() => setIsVideoOpen(false)}
+					>
+						<motion.div
+							initial={{ scale: 0.96, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0.96, opacity: 0 }}
+							transition={{ type: "spring", stiffness: 300, damping: 24 }}
+							className='relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden border border-[#25282c] bg-[#0b0c0d]'
+							onClick={(e) => e.stopPropagation()}
+						>
+							<iframe
+								className='w-full h-full'
+								src={demoEmbed}
+								title='DevSwap Demo'
+								allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+								referrerPolicy='strict-origin-when-cross-origin'
+								allowFullScreen
+							/>
+							<button
+								className='absolute top-3 right-3 text-white/70 hover:text-white text-sm bg-white/10 hover:bg-white/15 border border-white/20 rounded px-2 py-1'
+								onClick={() => setIsVideoOpen(false)}
+							>
+								Close
+							</button>
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 
 			{/* Quick Links Section */}
-			<section className='py-12 md:py-16 bg-[#0b0c0d]'>
+			<section className='bg-[#0b0c0d] py-10 sm:py-14'>
 				<div className='w-full px-4 sm:px-6 lg:px-8'>
 					<div className='mx-auto max-w-6xl'>
-						<div className='flex items-center justify-between mb-6'>
-							<h2 className='text-2xl md:text-3xl font-bold text-white'>Quick Links</h2>
-							<p className='text-sm text-white/70'>Jump right into the most popular areas</p>
+						<div className='flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6'>
+							<div>
+								<h2 className='text-2xl sm:text-3xl font-bold text-white'>Start anywhere</h2>
+								<p className='mt-1 text-white/60'>Pick a path and jump in.</p>
+							</div>
+							<p className='text-sm text-white/50'>Roadmaps, matches, sessions, and practice.</p>
 						</div>
 						<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-							<Link
-								to='/roadmaps'
-								className='group p-5 rounded-xl bg-[#25282c] border border-[#25282c] hover:border-[#00ef68]/50 ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all hover:-translate-y-0.5'
-							>
-								<div className='w-10 h-10 rounded-lg bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-3'>
-									<Brain className='w-5 h-5 text-[#00ef68]' />
-								</div>
-								<div className='flex items-center justify-between'>
-									<div>
-										<h3 className='text-white font-semibold'>Roadmaps</h3>
-										<p className='text-white/70 text-sm'>Step-by-step learning paths</p>
+							{[
+								{ to: "/roadmaps", title: "Roadmaps", desc: "Curated learning paths", icon: Brain },
+								{ to: "/matches", title: "Find a match", desc: "Pair with complementary skills", icon: Network },
+								{ to: "/sessions", title: "Sessions", desc: "Join or manage swaps", icon: Video },
+								{ to: "/learn", title: "Learn", desc: "Practice topics", icon: Code2 },
+							].map((item) => (
+								<Link
+									key={item.to}
+									to={item.to}
+									className='group rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.06] hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30 hover:shadow-[0_10px_40px_rgba(0,239,104,0.15)]'
+								>
+									<div className='flex items-start justify-between gap-3'>
+										<div>
+											<div className='h-10 w-10 rounded-xl bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center'>
+												<item.icon className='w-5 h-5 text-[#00ef68]' />
+											</div>
+											<h3 className='mt-4 text-white font-semibold'>{item.title}</h3>
+											<p className='mt-1 text-sm text-white/60'>{item.desc}</p>
+										</div>
+										<ArrowRight className='w-4 h-4 text-white/30 group-hover:text-[#00ef68] transition-colors' />
 									</div>
-									<ArrowRight className='w-4 h-4 text-[#00ef68] opacity-0 group-hover:opacity-100 transition-opacity' />
-								</div>
-							</Link>
-
-							<Link
-								to='/matches'
-								className='group p-5 rounded-xl bg-[#25282c] border border-[#25282c] hover:border-[#00ef68]/50 ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all hover:-translate-y-0.5'
-							>
-								<div className='w-10 h-10 rounded-lg bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-3'>
-									<Network className='w-5 h-5 text-[#00ef68]' />
-								</div>
-								<div className='flex items-center justify-between'>
-									<div>
-										<h3 className='text-white font-semibold'>Find Matches</h3>
-										<p className='text-white/70 text-sm'>Pair with complementary skills</p>
-									</div>
-									<ArrowRight className='w-4 h-4 text-[#00ef68] opacity-0 group-hover:opacity-100 transition-opacity' />
-								</div>
-							</Link>
-
-							<Link
-								to='/sessions'
-								className='group p-5 rounded-xl bg-[#25282c] border border-[#25282c] hover:border-[#00ef68]/50 ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all hover:-translate-y-0.5'
-							>
-								<div className='w-10 h-10 rounded-lg bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-3'>
-									<Video className='w-5 h-5 text-[#00ef68]' />
-								</div>
-								<div className='flex items-center justify-between'>
-									<div>
-										<h3 className='text-white font-semibold'>Sessions</h3>
-										<p className='text-white/70 text-sm'>Join or manage your swaps</p>
-									</div>
-									<ArrowRight className='w-4 h-4 text-[#00ef68] opacity-0 group-hover:opacity-100 transition-opacity' />
-								</div>
-							</Link>
-
-							<Link
-								to='/learn'
-								className='group p-5 rounded-xl bg-[#25282c] border border-[#25282c] hover:border-[#00ef68]/50 ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all hover:-translate-y-0.5'
-							>
-								<div className='w-10 h-10 rounded-lg bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-3'>
-									<Code2 className='w-5 h-5 text-[#00ef68]' />
-								</div>
-								<div className='flex items-center justify-between'>
-									<div>
-										<h3 className='text-white font-semibold'>Learn</h3>
-										<p className='text-white/70 text-sm'>Practice topics and skills</p>
-									</div>
-									<ArrowRight className='w-4 h-4 text-[#00ef68] opacity-0 group-hover:opacity-100 transition-opacity' />
-								</div>
-							</Link>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* Platform Engine (Backend-Driven) */}
-			<section className='py-20 bg-[#0b0c0d]'>
-				<div className='w-full px-4 sm:px-6 lg:px-8'>
-					<div className='text-center mb-16'>
-						<h2 className='text-3xl md:text-4xl font-bold text-white mb-4'>
-							The DevSwap Platform Engine
-						</h2>
-						<p className='text-lg text-white/80'>
-							Powered by microservices: Auth, Sessions, AI, Realtime,
-							Matching, and Users
-						</p>
-					</div>
-					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-						{[
-							{
-								title: "Authentication",
-								desc: "Secure auth, profiles, and session controls.",
-								api: "/api/auth/*",
-							},
-							{
-								title: "Sessions",
-								desc: "Create, join, and manage skill-swap sessions.",
-								api: "/api/sessions/*",
-							},
-							{
-								title: "AI Services",
-								desc: "Lesson plans and summaries with caching.",
-								api: "/api/ai/*",
-							},
-							{
-								title: "Realtime Signaling",
-								desc: "WebRTC signaling, chat, and presence.",
-								api: "/api/signaling/*",
-							},
-							{
-								title: "Matching",
-								desc: "Redis-based skill matching and availability.",
-								api: "/api/match/*",
-							},
-							{
-								title: "Users",
-								desc: "User management and skill profiles.",
-								api: "/api/users/*",
-							},
-						].map((item, idx) => (
-							<motion.div
-								key={idx}
-								initial={{ opacity: 0, y: 20 }}
-								whileInView={{ opacity: 1, y: 0 }}
-								whileHover={{ y: -4 }}
-								transition={{ duration: 0.6, delay: idx * 0.06 }}
-								viewport={{ once: true }}
-								className='p-6 rounded-xl bg-[#25282c] border border-[#25282c] ring-1 ring-transparent hover:ring-[#00ef68]/40 hover:border-[#00ef68]/50'
-							>
-								<h3 className='text-white font-semibold mb-2'>
-									{item.title}
-								</h3>
-								<p className='text-white/80 text-sm mb-3'>
-									{item.desc}
-								</p>
-								<span className='inline-block text-xs px-2 py-1 rounded bg-[#00ef68]/10 border border-[#00ef68]/20 text-[#00ef68]'>
-									{item.api}
-								</span>
-							</motion.div>
-						))}
-					</div>
-				</div>
-			</section>
-
-			{/* AI & Realtime Section */}
-			<section className='py-20 bg-[#0b0c0d]'>
-				<div className='w-full px-4 sm:px-6 lg:px-8'>
-					<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch'>
-						{/* Capability Cards */}
-						<div className='space-y-6'>
-							<motion.div
-								whileHover={{ y: -4 }}
-								transition={{
-									type: "spring",
-									stiffness: 300,
-									damping: 20,
-								}}
-								className='p-6 bg-[#25282c] rounded-xl border border-[#25282c] ring-1 ring-transparent hover:ring-[#00ef68]/40 hover:border-[#00ef68]/50 transition-all'
-							>
-								<div className='flex items-center mb-3'>
-									<Brain className='w-5 h-5 text-[#00ef68] mr-2' />
-									<h3 className='text-white font-semibold'>
-										AI Lesson Plans
-									</h3>
-								</div>
-								<p className='text-white/80 text-sm leading-relaxed'>
-									Generate personalized lesson plans with{" "}
-									<span className='text-[#00ef68]'>
-										/api/ai/lesson-plan
-									</span>
-									. Plans are cached for speed and updated as you
-									progress.
-								</p>
-							</motion.div>
-							<motion.div
-								whileHover={{ y: -4 }}
-								transition={{
-									type: "spring",
-									stiffness: 300,
-									damping: 20,
-								}}
-								className='p-6 bg-[#25282c] rounded-xl border border-[#25282c] ring-1 ring-transparent hover:ring-[#00ef68]/40 hover:border-[#00ef68]/50 transition-all'
-							>
-								<div className='flex items-center mb-3'>
-									<Video className='w-5 h-5 text-[#00ef68] mr-2' />
-									<h3 className='text-white font-semibold'>
-										Realtime Sessions
-									</h3>
-								</div>
-								<p className='text-white/80 text-sm leading-relaxed'>
-									WebRTC media, Socket.io signaling, and collaborative
-									editing — all optimized for low latency.
-								</p>
-							</motion.div>
-							<motion.div
-								whileHover={{ y: -4 }}
-								transition={{
-									type: "spring",
-									stiffness: 300,
-									damping: 20,
-								}}
-								className='p-6 bg-[#25282c] rounded-xl border border-[#25282c] ring-1 ring-transparent hover:ring-[#00ef68]/40 hover:border-[#00ef68]/50 transition-all'
-							>
-								<div className='flex items-center mb-3'>
-									<MessageSquare className='w-5 h-5 text-[#00ef68] mr-2' />
-									<h3 className='text-white font-semibold'>
-										Auto Session Summaries (Coming Soon)
-									</h3>
-								</div>
-								<p className='text-white/80 text-sm leading-relaxed'>
-									After each session, receive an AI-generated recap via{" "}
-									<span className='text-[#00ef68]'>
-										/api/ai/summary
-									</span>{" "}
-									with resources and next steps.
-								</p>
-							</motion.div>
-						</div>
-
-						{/* Sample Learning Summary */}
-						<div className='p-6 bg-[#25282c] rounded-xl border border-[#25282c]'>
-							<h3 className='text-white font-semibold mb-4'>
-								Sample Learning Summary
-							</h3>
-							<div className='bg-[#0b0c0d] border border-[#25282c] rounded-lg p-4 text-sm'>
-								<pre className='whitespace-pre-wrap text-white/80'>
-									{`Topic: Intro to WebRTC Data Channels
-Session Outcome:
-- Implemented a peer connection and data channel
-- Exchanged SDP via Socket.io signaling
-- Sent/received JSON messages in the editor
-
-What to Practice Next:
-1) Add media tracks and screen share
-2) Handle reconnection events
-3) Persist chat history in your session store
-
-Resources:
-- MDN: WebRTC Data Channels
-- WebRTC samples on GitHub`}
-								</pre>
-							</div>
-							<div className='mt-4 flex flex-wrap gap-2'>
-								<span className='px-2 py-1 text-xs rounded bg-[#00ef68]/10 text-[#00ef68] border border-[#00ef68]/20'>
-									/api/ai/summary
-								</span>
-								<span className='px-2 py-1 text-xs rounded bg-[#00ef68]/10 text-[#00ef68] border border-[#00ef68]/20'>
-									WebRTC
-								</span>
-								<span className='px-2 py-1 text-xs rounded bg-[#00ef68]/10 text-[#00ef68] border border-[#00ef68]/20'>
-									Socket.io
-								</span>
-							</div>
+								</Link>
+							))}
 						</div>
 					</div>
 				</div>
 			</section>
 
 			{/* Features Section */}
-			<section className='py-20 bg-[#25282c]'>
+			<section className='bg-[#0b0c0d] py-16 sm:py-20'>
 				<div className='w-full px-4 sm:px-6 lg:px-8'>
-					<div className='text-center mb-16'>
-						<h2 className='text-3xl md:text-4xl font-bold text-white mb-4'>
-							Built for Real Developer Workflows
-						</h2>
-						<p className='text-xl text-white/80'>
-							From AI lesson plans to real-time sessions — everything you
-							need to learn and mentor effectively
-						</p>
-					</div>
-
-					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-						{features.map((feature, index) => (
-							<motion.div
-								key={index}
-								initial={{ opacity: 0, y: 20 }}
-								whileInView={{ opacity: 1, y: 0 }}
-								whileHover={{ y: -4 }}
-								transition={{ duration: 0.6, delay: index * 0.1 }}
-								viewport={{ once: true }}
-								className='group p-6 bg-[#25282c] hover:bg-[#25282c] rounded-xl border border-[#25282c] hover:border-[#00ef68]/50 ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all'
-							>
-								<div className='w-12 h-12 rounded-lg bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-4'>
-									<feature.icon className='w-6 h-6 text-[#00ef68]' />
-								</div>
-								<h3 className='text-lg font-semibold text-white mb-2'>
-									{feature.title}
-								</h3>
-								<p className='text-white/80'>{feature.description}</p>
-							</motion.div>
-						))}
+					<div className='mx-auto max-w-6xl'>
+						<div className='max-w-2xl'>
+							<h2 className='text-3xl sm:text-4xl font-bold text-white'>Designed for real sessions</h2>
+							<p className='mt-3 text-white/60'>Everything you need to learn, teach, and stay consistent.</p>
+						</div>
+						<div className='mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+							{features.map((feature, index) => (
+								<motion.div
+									key={index}
+									initial={{ opacity: 0, y: 16 }}
+									whileInView={{ opacity: 1, y: 0 }}
+									transition={{ duration: 0.5, delay: index * 0.06 }}
+									viewport={{ once: true }}
+									className='group rounded-2xl border border-white/10 bg-white/[0.04] p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.06] hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30 hover:shadow-[0_10px_40px_rgba(0,239,104,0.15)]'
+								>
+									<div className='flex items-center justify-between'>
+										<div className='h-11 w-11 rounded-xl bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center'>
+											<feature.icon className='w-5 h-5 text-[#00ef68]' />
+										</div>
+										<div className='h-2 w-20 rounded-full bg-white/10 group-hover:bg-white/20 transition-colors' />
+									</div>
+									<h3 className='mt-5 text-lg font-semibold text-white'>{feature.title}</h3>
+									<p className='mt-2 text-sm text-white/60 leading-relaxed'>{feature.description}</p>
+								</motion.div>
+							))}
+						</div>
 					</div>
 				</div>
 			</section>
 
 			{/* How It Works Section */}
-			<section className='py-20 bg-[#0b0c0d]'>
-				<div className='max-w-full mx-auto px-4 sm:px-6 lg:px-8'>
-					<div className='text-center mb-16'>
-						<h2 className='text-3xl md:text-4xl font-bold text-white mb-4'>
-							How DevSwap Works
-						</h2>
-						<p className='text-xl text-white/80'>
-							Get started in minutes and begin your skill exchange
-							journey
-						</p>
-					</div>
-
-					<div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-						{[
-							{
-								step: "01",
-								title: "Create Your Profile",
-								description:
-									"List the skills you can teach and what you want to learn. Our AI analyzes your expertise level.",
-							},
-							{
-								step: "02",
-								title: "Get Matched",
-								description:
-									"Our smart algorithm finds the perfect learning partners based on complementary skills and schedules.",
-							},
-							{
-								step: "03",
-								title: "Start Learning",
-								description:
-									"Join live sessions with screen sharing, code collaboration, and real-time communication.",
-							},
-						].map((step, index) => (
-							<motion.div
-								key={index}
-								initial={{ opacity: 0, y: 20 }}
-								whileInView={{ opacity: 1, y: 0 }}
-								transition={{ duration: 0.6, delay: index * 0.2 }}
-								viewport={{ once: true }}
-								className='relative text-center'
-							>
-								<div className='w-16 h-16 bg-[#00ef68] text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-6'>
-									{step.step}
-								</div>
-								<h3 className='text-xl font-semibold text-white mb-4'>
-									{step.title}
-								</h3>
-								<p className='text-white/80 leading-relaxed'>
-									{step.description}
-								</p>
-
-								{index < 2 && (
-									<div className='hidden md:block absolute top-8 left-full w-full'>
-										<ArrowRight className='w-6 h-6 text-[#00ef68] mx-auto' />
+			<section className='bg-[#0b0c0d] py-16 sm:py-20'>
+				<div className='w-full px-4 sm:px-6 lg:px-8'>
+					<div className='mx-auto max-w-6xl'>
+						<div className='grid grid-cols-1 lg:grid-cols-12 gap-10 items-start'>
+							<div className='lg:col-span-5'>
+								<h2 className='text-3xl sm:text-4xl font-bold text-white'>How it works</h2>
+								<p className='mt-3 text-white/60'>A simple loop: match, session, progress.</p>
+							</div>
+							<div className='lg:col-span-7 space-y-4'>
+								{[
+									{ n: "01", title: "Set what you teach + learn", desc: "Add skills to your profile and your goal." },
+									{ n: "02", title: "Get matched instantly", desc: "Find a partner with complementary skills." },
+									{ n: "03", title: "Run a realtime session", desc: "Video + chat + shared code, all in one place." },
+									{ n: "04", title: "Stay consistent", desc: "Use AI guidance + roadmaps to keep momentum." },
+								].map((s) => (
+									<div key={s.n} className='rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.06] hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30 hover:shadow-[0_10px_40px_rgba(0,239,104,0.15)]'>
+										<div className='flex items-start gap-4'>
+											<div className='h-10 w-10 rounded-xl bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center text-[#00ef68] font-bold'>
+												{s.n}
+											</div>
+											<div>
+												<p className='text-white font-semibold'>{s.title}</p>
+												<p className='mt-1 text-sm text-white/60'>{s.desc}</p>
+											</div>
+										</div>
 									</div>
-								)}
-							</motion.div>
-						))}
+								))}
+							</div>
+						</div>
 					</div>
 				</div>
 			</section>
 
 			{/* Testimonials Section */}
-			<section className='py-20 bg-[#25282c]'>
-				<div className='max-w-full mx-auto px-4 sm:px-6 lg:px-8'>
-					<div className='text-center mb-16'>
-						<h2 className='text-3xl md:text-4xl font-bold text-white mb-4'>
-							Loved by Developers Worldwide
-						</h2>
-						<p className='text-xl text-white/80'>
-							See what our community has to say about their DevSwap
-							experience
-						</p>
-					</div>
+			<section className='bg-[#0b0c0d] py-16 sm:py-20'>
+				<div className='w-full px-4 sm:px-6 lg:px-8'>
+					<div className='mx-auto max-w-6xl'>
+						<div className='flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3'>
+							<div>
+								<h2 className='text-3xl sm:text-4xl font-bold text-white'>What developers say</h2>
+								<p className='mt-2 text-white/60'>Real people. Real growth.</p>
+							</div>
+							<div className='hidden sm:flex items-center gap-1 text-[#00ef68]'>
+								{[...Array(5)].map((_, i) => (
+									<Star key={i} className='w-4 h-4 fill-current' />
+								))}
+							</div>
+						</div>
 
-					<div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-						{testimonials.map((testimonial, index) => (
-							<motion.div
-								key={index}
-								initial={{ opacity: 0, y: 20 }}
-								whileInView={{ opacity: 1, y: 0 }}
-								whileHover={{ y: -4 }}
-								transition={{ duration: 0.6, delay: index * 0.1 }}
-								viewport={{ once: true }}
-								className='p-6 bg-[#0b0c0d] rounded-xl border border-[#25282c]'
-							>
-								<div className='flex items-center mb-4'>
-									<div className='w-12 h-12 bg-[#00ef68] rounded-full flex items-center justify-center text-white font-semibold mr-4'>
-										{testimonial.avatar}
+						<div className='mt-10 grid grid-cols-1 md:grid-cols-3 gap-4'>
+							{testimonials.map((testimonial, index) => (
+								<motion.div
+									key={index}
+									initial={{ opacity: 0, y: 16 }}
+									whileInView={{ opacity: 1, y: 0 }}
+									transition={{ duration: 0.5, delay: index * 0.06 }}
+									viewport={{ once: true }}
+									className='rounded-2xl border border-white/10 bg-white/[0.04] p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.06] hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30 hover:shadow-[0_10px_40px_rgba(0,239,104,0.15)]'
+								>
+									<div className='flex items-center gap-3'>
+										<div className='h-11 w-11 rounded-full bg-[#00ef68] text-[#0b0c0d] font-bold flex items-center justify-center'>
+											{testimonial.avatar}
+										</div>
+										<div>
+											<p className='text-white font-semibold leading-none'>{testimonial.name}</p>
+											<p className='mt-1 text-xs text-white/60'>{testimonial.role} • {testimonial.company}</p>
+										</div>
 									</div>
-									<div>
-										<h4 className='text-white font-semibold'>
-											{testimonial.name}
-										</h4>
-										<p className='text-white/80 text-sm'>
-											{testimonial.role} at {testimonial.company}
-										</p>
-									</div>
-								</div>
-								<p className='text-white/80 leading-relaxed'>
-									"{testimonial.content}"
-								</p>
-								<div className='flex mt-4'>
-									{[...Array(5)].map((_, i) => (
-										<Star
-											key={i}
-											className='w-4 h-4 text-[#00ef68] fill-current'
-										/>
-									))}
-								</div>
-							</motion.div>
-						))}
+									<p className='mt-4 text-sm text-white/70 leading-relaxed'>"{testimonial.content}"</p>
+								</motion.div>
+							))}
+						</div>
 					</div>
 				</div>
 			</section>
 
 			{/* CTA Section */}
-			<section className='py-20 bg-[#0b0c0d]'>
+			<section className='bg-[#0b0c0d] py-16 sm:py-20'>
 				<div className='w-full px-4 sm:px-6 lg:px-8'>
-					<motion.div
-						initial={{ opacity: 0, y: 24 }}
-						whileInView={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.8 }}
-						viewport={{ once: true }}
-						className='relative mx-auto max-w-5xl overflow-hidden rounded-2xl border border-[#25282c] bg-[#25282c] p-10 text-center ring-1 ring-transparent hover:ring-[#00ef68]/40 transition-all'
-					>
-						{/* Subtle green glow */}
-						<div className='pointer-events-none absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[#00ef68]/10 blur-3xl' />
-						<h2 className='relative text-3xl md:text-4xl font-bold text-white mb-4'>
-							Ready to Transform Your Learning?
-						</h2>
-						<p className='relative text-lg md:text-xl text-white/80 mb-8'>
-							Pair up with developers to teach what you know and learn
-							what you need through guided sessions.
-						</p>
-						<div className='relative flex flex-col sm:flex-row gap-4 justify-center'>
-							<Link
-								to='/register'
-								className='group inline-flex items-center px-7 py-3 rounded-lg font-semibold bg-[#00ef68] text-[#0b0c0d] hover:bg-[#00ef68] transition-transform duration-200 will-change-transform hover:-translate-y-0.5'
-							>
-								Get Started
-								<ArrowRight className='ml-2 w-4 h-4 transition-transform group-hover:translate-x-1' />
-							</Link>
-							<Link
-								to='/learn-more'
-								className='group inline-flex items-center px-7 py-3 rounded-lg font-semibold border border-white text-white hover:bg-white hover:text-[#0b0c0d] transition-colors'
-							>
-								<Play className='mr-2 w-4 h-4' />
-								Watch Demo
-							</Link>
+					<div className='mx-auto max-w-6xl rounded-3xl border border-white/10 bg-[#0f1113] p-7 sm:p-10 overflow-hidden relative'>
+						<div className='absolute -top-24 -right-24 w-72 h-72 bg-[#00ef68]/10 rounded-full blur-3xl' />
+						<div className='absolute -bottom-24 -left-24 w-72 h-72 bg-[#00ef68]/10 rounded-full blur-3xl' />
+						<div className='relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center'>
+							<div className='lg:col-span-7'>
+								<h2 className='text-3xl sm:text-4xl font-bold text-white'>Ready to do your first swap?</h2>
+								<p className='mt-3 text-white/60'>Create a profile, add 2 skills, and start matching in minutes.</p>
+							</div>
+							<div className='lg:col-span-5 flex flex-col sm:flex-row lg:flex-col gap-3 lg:items-stretch'>
+								<Link
+									to='/register'
+									className='inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[#00ef68] text-[#0b0c0d] font-semibold hover:shadow-2xl hover:shadow-[#00ef68]/20 transition'
+								>
+									Create account
+									<ArrowRight className='ml-2 w-4 h-4' />
+								</Link>
+								<Link
+									to='/roadmaps'
+									className='inline-flex items-center justify-center px-6 py-3 rounded-lg border border-white/10 bg-white/5 text-white/90 hover:bg-white/10 transition'
+								>
+									Explore roadmaps
+								</Link>
+							</div>
 						</div>
-					</motion.div>
+					</div>
 				</div>
 			</section>
 		</div>
