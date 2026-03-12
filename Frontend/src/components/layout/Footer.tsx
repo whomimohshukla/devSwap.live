@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Code2, Github, Twitter, Linkedin, Mail } from "lucide-react";
+import { Terminal, Github, Twitter, Linkedin, Mail } from "lucide-react";
 
 const Footer: React.FC = () => {
 	const currentYear = new Date().getFullYear();
@@ -9,8 +9,8 @@ const Footer: React.FC = () => {
 		product: [
 			{ name: "Features", href: "/features" },
 			{ name: "Skills", href: "/skills" },
-			{ name: "How it Works", href: "/how-it-works" },
-			{ name: "Pricing", href: "/pricing" },
+			{ name: "Roadmaps", href: "/roadmaps" },
+			{ name: "Learn", href: "/learn" },
 		],
 		company: [
 			{ name: "About", href: "/about" },
@@ -21,14 +21,12 @@ const Footer: React.FC = () => {
 		support: [
 			{ name: "Help Center", href: "/help" },
 			{ name: "Community", href: "/community" },
-			{ name: "Documentation", href: "/docs" },
 			{ name: "Status", href: "/status" },
 		],
 		legal: [
 			{ name: "Privacy Policy", href: "/privacy" },
 			{ name: "Terms of Service", href: "/terms" },
 			{ name: "Cookie Policy", href: "/cookies" },
-			{ name: "GDPR", href: "/gdpr" },
 		],
 	};
 
@@ -52,37 +50,35 @@ const Footer: React.FC = () => {
 	];
 
 	return (
-		<footer className='bg-black border-t border-gray-800'>
-			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12'>
+		<footer className='bg-[#0b0c0d] border-t border-white/5'>
+			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16'>
 				{/* Main Footer Content */}
-				<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8'>
+				<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12'>
 					{/* Brand Section */}
 					<div className='lg:col-span-2'>
 						<Link
 							to='/'
-							className='flex items-center space-x-2 group mb-4'
+							className='flex items-center space-x-2 group mb-6'
 						>
 							<div className='relative'>
-								<Code2 className='h-8 w-8 text-emerald-500 group-hover:text-emerald-400 transition-colors' />
-								<div className='absolute -inset-1 bg-emerald-500/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity' />
+								<Terminal className='h-7 w-7 text-[#00ef68] transition-transform duration-300 group-hover:scale-110' />
 							</div>
-							<span className='text-xl font-bold text-white group-hover:text-emerald-400 transition-colors'>
-								DevSwap.live
+							<span className='text-xl font-bold text-white tracking-tight'>
+								DevSwap<span className='text-[#00ef68]'>.</span>live
 							</span>
 						</Link>
-						<p className='text-gray-400 text-sm leading-relaxed mb-6'>
-							The premier platform for developers and engineers to
-							exchange skills, learn from each other, and grow together
-							through real-time collaboration.
+						<p className='text-white/50 text-sm leading-relaxed mb-8 max-w-xs'>
+							The modern platform for developers to exchange skills,
+							collaborate in real-time, and accelerate their learning journey.
 						</p>
-						<div className='flex space-x-4'>
+						<div className='flex space-x-3'>
 							{socialLinks.map((social) => (
 								<a
 									key={social.name}
 									href={social.href}
 									target='_blank'
 									rel='noopener noreferrer'
-									className='p-2 text-gray-400 hover:text-emerald-400 hover:bg-gray-800 rounded-lg transition-colors'
+									className='p-2.5 text-white/40 hover:text-[#00ef68] hover:bg-white/5 rounded-xl transition-all duration-300'
 									aria-label={social.name}
 								>
 									<social.icon className='h-5 w-5' />
@@ -93,13 +89,13 @@ const Footer: React.FC = () => {
 
 					{/* Product Links */}
 					<div>
-						<h3 className='text-white font-semibold mb-4'>Product</h3>
-						<ul className='space-y-3'>
+						<h3 className='text-white text-sm font-semibold mb-6 uppercase tracking-wider'>Product</h3>
+						<ul className='space-y-4'>
 							{footerLinks.product.map((link) => (
 								<li key={link.name}>
 									<Link
 										to={link.href}
-										className='text-gray-400 hover:text-white text-sm transition-colors'
+										className='text-white/50 hover:text-[#00ef68] text-sm transition-colors duration-200'
 									>
 										{link.name}
 									</Link>
@@ -110,13 +106,13 @@ const Footer: React.FC = () => {
 
 					{/* Company Links */}
 					<div>
-						<h3 className='text-white font-semibold mb-4'>Company</h3>
-						<ul className='space-y-3'>
+						<h3 className='text-white text-sm font-semibold mb-6 uppercase tracking-wider'>Company</h3>
+						<ul className='space-y-4'>
 							{footerLinks.company.map((link) => (
 								<li key={link.name}>
 									<Link
 										to={link.href}
-										className='text-gray-400 hover:text-white text-sm transition-colors'
+										className='text-white/50 hover:text-[#00ef68] text-sm transition-colors duration-200'
 									>
 										{link.name}
 									</Link>
@@ -127,13 +123,13 @@ const Footer: React.FC = () => {
 
 					{/* Support Links */}
 					<div>
-						<h3 className='text-white font-semibold mb-4'>Support</h3>
-						<ul className='space-y-3'>
+						<h3 className='text-white text-sm font-semibold mb-6 uppercase tracking-wider'>Support</h3>
+						<ul className='space-y-4'>
 							{footerLinks.support.map((link) => (
 								<li key={link.name}>
 									<Link
 										to={link.href}
-										className='text-gray-400 hover:text-white text-sm transition-colors'
+										className='text-white/50 hover:text-[#00ef68] text-sm transition-colors duration-200'
 									>
 										{link.name}
 									</Link>
@@ -144,13 +140,13 @@ const Footer: React.FC = () => {
 
 					{/* Legal Links */}
 					<div>
-						<h3 className='text-white font-semibold mb-4'>Legal</h3>
-						<ul className='space-y-3'>
+						<h3 className='text-white text-sm font-semibold mb-6 uppercase tracking-wider'>Legal</h3>
+						<ul className='space-y-4'>
 							{footerLinks.legal.map((link) => (
 								<li key={link.name}>
 									<Link
 										to={link.href}
-										className='text-gray-400 hover:text-white text-sm transition-colors'
+										className='text-white/50 hover:text-[#00ef68] text-sm transition-colors duration-200'
 									>
 										{link.name}
 									</Link>
@@ -161,19 +157,19 @@ const Footer: React.FC = () => {
 				</div>
 
 				{/* Bottom Section */}
-				<div className='mt-12 pt-8 border-t border-gray-800'>
-					<div className='flex flex-col md:flex-row justify-between items-center'>
-						<p className='text-gray-400 text-sm'>
-							© {currentYear} DevSwap.live. All rights reserved.
+				<div className='mt-20 pt-8 border-t border-white/5'>
+					<div className='flex flex-col md:flex-row justify-between items-center gap-6'>
+						<p className='text-white/40 text-xs tracking-wide'>
+							© {currentYear} DEVSWAP. ALL RIGHTS RESERVED.
 						</p>
-						<div className='flex items-center space-x-6 mt-4 md:mt-0'>
-							<span className='text-gray-400 text-sm'>
-								Made with ❤️ for developers
+						<div className='flex items-center space-x-8'>
+							<span className='text-white/40 text-xs tracking-wide'>
+								BUILT FOR DEVELOPERS
 							</span>
-							<div className='flex items-center space-x-2'>
-								<div className='w-2 h-2 bg-emerald-500 rounded-full animate-pulse'></div>
-								<span className='text-gray-400 text-sm'>
-									All systems operational
+							<div className='flex items-center space-x-2.5'>
+								<div className='w-1.5 h-1.5 bg-[#00ef68] rounded-full animate-pulse shadow-[0_0_8px_#00ef68]'></div>
+								<span className='text-white/60 text-xs font-medium tracking-wide uppercase'>
+									System Status: Operational
 								</span>
 							</div>
 						</div>
