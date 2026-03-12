@@ -92,7 +92,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 									</button>
 									<button
 										onClick={acceptCookies}
-										className='inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400'
+										className='inline-flex items-center rounded-md bg-[#00ef68] px-4 py-2 text-sm font-medium text-[#0b0c0d] hover:shadow-[0_0_20px_rgba(0,239,104,0.25)] focus:outline-none focus:ring-2 focus:ring-[#00ef68]/40'
 									>
 										Accept
 									</button>
