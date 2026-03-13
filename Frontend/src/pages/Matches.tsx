@@ -242,12 +242,13 @@ const Matches: React.FC = () => {
 			// eslint-disable-next-line no-console
 			console.log("[matches] event match:found", payload);
 			setSearching(false);
+			const partner = payload?.partner ?? payload ?? null;
 			setMatchedPartner({
-				id: payload?.partner?.id || payload?.partnerId,
-				name: payload?.partner?.name || payload?.name,
-				avatarUrl: payload?.partner?.avatarUrl,
-				skills: payload?.partner?.skills,
-				timezone: payload?.partner?.timezone,
+				id: partner?._id || partner?.id || payload?.partnerId,
+				name: partner?.name || payload?.name,
+				avatarUrl: partner?.avatar,
+				skills: [...(partner?.teachSkills ?? []), ...(partner?.learnSkills ?? [])].slice(0, 8),
+				timezone: partner?.timezone,
 			});
 			setToast({ type: "success", msg: "We found a match for you!" });
 			setTimeout(() => setToast(null), 2500);
@@ -391,24 +392,27 @@ const Matches: React.FC = () => {
 	}, [sentPending, sentHistory, sentView]);
 
 	return (
-		<div className='min-h-screen bg-black pt-24 pb-8'>
+		<div className='relative min-h-screen bg-[#0b0c0d] pt-24 pb-16'>
+			<div className='absolute inset-0 overflow-hidden pointer-events-none'>
+				<div className='absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]' />
+			</div>
 			{/* Match Found Modal */}
 			{matchedPartner && (
 				<div className='fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm'>
-					<div className='bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl'>
+					<div className='w-full max-w-md rounded-3xl border border-white/10 bg-[#0b0c0d] p-6 shadow-2xl'>
 						<div className='flex items-center justify-between mb-4'>
 							<h3 className='text-white text-lg font-semibold'>
 								Match Found
 							</h3>
 							<button
 								onClick={() => setMatchedPartner(null)}
-								className='text-gray-400 hover:text-white'
+								className='text-white/50 hover:text-white'
 							>
 								<X className='w-5 h-5' />
 							</button>
 						</div>
 						<div className='flex items-center gap-4 mb-4'>
-							<div className='w-14 h-14 rounded-full bg-emerald-600/20 flex items-center justify-center text-white text-lg font-semibold'>
+							<div className='w-14 h-14 rounded-full bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center text-[#00ef68] text-lg font-semibold'>
 								{matchedPartner.name?.[0]?.toUpperCase() || "U"}
 							</div>
 							<div>
@@ -423,7 +427,7 @@ const Matches: React.FC = () => {
 												.map((s, i) => (
 													<span
 														key={i}
-														className='px-2 py-0.5 bg-gray-800 rounded text-xs text-gray-300'
+														className='px-2 py-0.5 rounded-full border border-[#00ef68]/20 bg-[#0b0c0d] text-xs text-[#00ef68]'
 													>
 														{s}
 													</span>
@@ -432,14 +436,13 @@ const Matches: React.FC = () => {
 									)}
 							</div>
 						</div>
-						<p className='text-gray-300 mb-6'>
-							You’ve been matched! Start a session or chat to kick things
-							off.
+						<p className='text-[#00ef68] mb-6'>
+							You’ve been paired with a complementary developer. Start a session now, or come back later from Sessions.
 						</p>
 						<div className='flex justify-end gap-3'>
 							<button
 								onClick={() => setMatchedPartner(null)}
-								className='px-4 py-2 rounded-lg bg-gray-800 text-gray-200 hover:bg-gray-700'
+								className='px-4 py-2 rounded-2xl border border-[#00ef68]/20 bg-[#0b0c0d] text-[#00ef68] hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/20 transition-all'
 							>
 								Later
 							</button>
@@ -447,7 +450,7 @@ const Matches: React.FC = () => {
 								onClick={() => {
 									window.location.href = "/sessions";
 								}}
-								className='px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700'
+								className='px-4 py-2 rounded-2xl bg-[#00ef68] text-[#0b0c0d] font-semibold hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(0,239,104,0.25)] transition-all'
 							>
 								Start Session
 							</button>
@@ -459,7 +462,7 @@ const Matches: React.FC = () => {
 			{searching && (
 				<div className='fixed top-16 left-0 right-0 z-30'>
 					<div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
-						<div className='rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-4 py-3 flex items-center justify-between backdrop-blur'>
+						<div className='rounded-2xl bg-[#00ef68]/10 border border-[#00ef68]/20 text-[#00ef68] px-4 py-3 flex items-center justify-between backdrop-blur'>
 							<div className='flex items-center gap-3'>
 								<Loader2 className='w-4 h-4 animate-spin' />
 								<p className='text-sm'>
@@ -469,7 +472,7 @@ const Matches: React.FC = () => {
 							</div>
 							<button
 								onClick={handleLeaveQueue}
-								className='px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm'
+								className='px-3 py-1.5 rounded-xl bg-[#00ef68] text-[#0b0c0d] font-semibold text-sm hover:-translate-y-0.5 transition-all'
 							>
 								Cancel
 							</button>
@@ -484,7 +487,7 @@ const Matches: React.FC = () => {
 					<div
 						className={`px-4 py-3 rounded-lg border shadow-lg ${
 							toast.type === "success"
-								? "bg-emerald-600/90 border-emerald-400 text-white"
+								? "bg-[#00ef68]/15 border-[#00ef68]/30 text-white"
 								: "bg-red-600/90 border-red-400 text-white"
 						}`}
 					>
@@ -492,7 +495,7 @@ const Matches: React.FC = () => {
 					</div>
 				</div>
 			)}
-			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+			<div className='relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
 				{/* Header */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
@@ -500,24 +503,24 @@ const Matches: React.FC = () => {
 					transition={{ duration: 0.6 }}
 					className='mb-8'
 				>
-					<h1 className='text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-200 bg-clip-text text-transparent'>
+					<h1 className='text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 text-white'>
 						Find Learning Partners
 					</h1>
-					<p className='text-gray-300 max-w-2xl'>
-						Connect with developers who have complementary skills
+					<p className='text-white/60 max-w-2xl'>
+						Join the queue to get paired based on teach/learn overlap. Then send or accept a request to start a session.
 					</p>
 					{error && <p className='text-red-400 mt-2 text-sm'>{error}</p>}
 					<div className='mt-5 flex gap-3'>
 						<button
 							onClick={() => handleJoinQueue()}
-							className='inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_0_28px_rgba(0,239,104,0.25)] transition'
+							className='inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#00ef68] text-[#0b0c0d] font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(0,239,104,0.25)] focus:outline-none focus:ring-2 focus:ring-[#00ef68]/40'
 						>
 							<Users className='w-4 h-4' />
 							Join Matching Queue
 						</button>
 						<button
 							onClick={handleLeaveQueue}
-							className='inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-100 border border-gray-700 transition'
+							className='inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-white/10 bg-white/[0.04] text-white/80 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/20'
 						>
 							<X className='w-4 h-4' />
 							Leave Queue
@@ -532,7 +535,7 @@ const Matches: React.FC = () => {
 					transition={{ duration: 0.6, delay: 0.1 }}
 					className='mb-8'
 				>
-					<div className='flex space-x-1 bg-[#0f1113] border border-gray-800 p-1 rounded-xl w-fit shadow-inner'>
+					<div className='flex space-x-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1 w-fit'>
 						{[
 							{
 								key: "matches",
@@ -556,13 +559,13 @@ const Matches: React.FC = () => {
 								onClick={() => setActiveTab(tab.key as any)}
 								className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
 									activeTab === tab.key
-										? "bg-emerald-600 text-white shadow"
-										: "text-gray-400 hover:text-white hover:bg-gray-900"
+										? "bg-[#00ef68] text-[#0b0c0d] shadow"
+										: "text-white/60 hover:text-white hover:bg-white/[0.06]"
 								}`}
 							>
 								{tab.label}
 								{tab.count > 0 && (
-									<span className='ml-2 px-2 py-0.5 bg-gray-700 rounded-full text-xs'>
+									<span className='ml-2 px-2 py-0.5 bg-white/10 rounded-full text-xs text-white/80'>
 										{tab.count}
 									</span>
 								)}
@@ -579,35 +582,35 @@ const Matches: React.FC = () => {
 					className='mb-8'
 				>
 					<div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
-						<div className='bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5'>
+						<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-5'>
 							<h3 className='text-white font-semibold mb-2'>
 								How matching works
 							</h3>
-							<ol className='list-decimal list-inside text-sm text-gray-300 space-y-1'>
-								<li>Join the queue with your skills and goals</li>
-								<li>We pair you with a complementary partner</li>
-								<li>Send/accept a request to connect</li>
-								<li>Start a live session to swap skills</li>
+							<ol className='list-decimal list-inside text-sm text-white/70 space-y-1'>
+								<li>Join the queue with your teach/learn skills</li>
+								<li>We compute a two-way match and surface candidates</li>
+								<li>Send or accept a request to confirm the session</li>
+								<li>Join the live room and pair-program</li>
 							</ol>
 						</div>
-						<div className='bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5'>
+						<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-5'>
 							<h3 className='text-white font-semibold mb-2'>
 								Tips for better matches
 							</h3>
-							<ul className='list-disc list-inside text-sm text-gray-300 space-y-1'>
+							<ul className='list-disc list-inside text-sm text-white/70 space-y-1'>
 								<li>Keep your skills and levels up to date</li>
 								<li>
-									Add a short bio about what you want to learn/teach
+									Add a short bio with what you want to build or debug
 								</li>
-								<li>Be responsive to incoming requests</li>
-								<li>Use the Upcoming tab to plan ahead</li>
+								<li>Respond quickly to requests to reduce queue churn</li>
+								<li>Use Sessions to keep context and follow-ups</li>
 							</ul>
 						</div>
-						<div className='bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5'>
+						<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-5'>
 							<h3 className='text-white font-semibold mb-2'>
 								Safety & respect
 							</h3>
-							<p className='text-sm text-gray-300'>
+							<p className='text-sm text-white/70'>
 								Be kind and professional. Share only what you're
 								comfortable with. Recording or sharing content outside a
 								session requires explicit consent.
@@ -630,25 +633,25 @@ const Matches: React.FC = () => {
 									{Array.from({ length: 4 }).map((_, i) => (
 										<div
 											key={i}
-											className='bg-gray-900 rounded-xl p-6 border border-gray-800 animate-pulse'
+											className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 animate-pulse'
 										>
 											<div className='flex items-start justify-between mb-4'>
 												<div className='flex items-center space-x-4'>
-													<div className='w-16 h-16 bg-gray-800 rounded-full' />
+													<div className='w-16 h-16 bg-white/10 rounded-full' />
 													<div>
-														<div className='h-4 w-40 bg-gray-800 rounded mb-2' />
-														<div className='h-3 w-24 bg-gray-800 rounded' />
+														<div className='h-4 w-40 bg-white/10 rounded mb-2' />
+														<div className='h-3 w-24 bg-white/10 rounded' />
 													</div>
 												</div>
-												<div className='h-4 w-14 bg-gray-800 rounded' />
+												<div className='h-4 w-14 bg-white/10 rounded' />
 											</div>
-											<div className='h-3 w-full bg-gray-800 rounded mb-2' />
-											<div className='h-3 w-3/4 bg-gray-800 rounded mb-6' />
+											<div className='h-3 w-full bg-white/10 rounded mb-2' />
+											<div className='h-3 w-3/4 bg-white/10 rounded mb-6' />
 											<div className='flex gap-2'>
 												{Array.from({ length: 4 }).map((__, j) => (
 													<div
 														key={j}
-														className='h-6 w-20 bg-gray-800 rounded'
+														className='h-6 w-20 bg-white/10 rounded'
 													/>
 												))}
 											</div>
@@ -657,20 +660,20 @@ const Matches: React.FC = () => {
 								</>
 							)}
 							{!loading && normalizedMatches.length === 0 && (
-								<div className='bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center'>
-									<div className='mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4'>
-										<Users className='w-8 h-8 text-emerald-400' />
+								<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-10 text-center'>
+									<div className='mx-auto w-16 h-16 rounded-full bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-4'>
+										<Users className='w-8 h-8 text-[#00ef68]' />
 									</div>
 									<h3 className='text-xl font-semibold text-white mb-2'>
 										No matches yet
 									</h3>
-									<p className='text-gray-400 mb-6'>
+									<p className='text-white/60 mb-6'>
 										Join the queue and we’ll find the best partners
 										for you.
 									</p>
 									<button
 										onClick={() => handleJoinQueue()}
-										className='inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white'
+										className='inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#00ef68] text-[#0b0c0d] font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(0,239,104,0.25)]'
 									>
 										<Users className='w-4 h-4' />
 										Join Matching Queue
@@ -684,35 +687,35 @@ const Matches: React.FC = () => {
 										initial={{ opacity: 0, y: 20 }}
 										animate={{ opacity: 1, y: 0 }}
 										transition={{ duration: 0.6, delay: index * 0.1 }}
-										className='bg-gray-900 rounded-xl p-6 border border-gray-800 hover:border-gray-700 transition-colors'
+										className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.06] hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30'
 									>
 										{/* Header */}
 										<div className='flex items-start justify-between mb-4'>
 											<div className='flex items-center space-x-4'>
 												<div className='relative'>
-													<div className='w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-lg'>
+													<div className='w-16 h-16 bg-[#00ef68]/10 border border-[#00ef68]/20 rounded-full flex items-center justify-center text-[#00ef68] font-bold text-lg'>
 														{match.avatar}
 													</div>
 													{match.isOnline && (
-														<div className='absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-gray-900 rounded-full'></div>
+														<div className='absolute -bottom-1 -right-1 w-5 h-5 bg-[#00ef68] border-2 border-[#0b0c0d] rounded-full shadow-[0_0_10px_rgba(0,239,104,0.35)]'></div>
 													)}
 												</div>
 												<div>
 													<h3 className='text-xl font-semibold text-white'>
 														{match.name}
 													</h3>
-													<div className='flex items-center space-x-2 text-gray-400 text-sm'>
+													<div className='flex items-center space-x-2 text-white/50 text-sm'>
 														<MapPin className='w-4 h-4' />
 														<span>{match.location}</span>
 													</div>
 													<div className='flex items-center space-x-4 mt-1'>
 														<div className='flex items-center space-x-1'>
-															<Star className='w-4 h-4 text-yellow-400 fill-current' />
+															<Star className='w-4 h-4 text-[#00ef68] fill-current' />
 															<span className='text-white text-sm'>
 																{match.rating}
 															</span>
 														</div>
-														<span className='text-gray-400 text-sm'>
+														<span className='text-white/50 text-sm'>
 															{match.sessionsCompleted} sessions
 														</span>
 													</div>
@@ -720,18 +723,12 @@ const Matches: React.FC = () => {
 											</div>
 											<div className='text-right'>
 												<div className='flex items-center space-x-2 mb-1'>
-													<span
-														className='inline-block w-2 h-2 rounded-full'
-														style={{
-															backgroundColor:
-																"var(--color-brand)",
-														}}
-													></span>
-													<span className='text-[var(--color-brand)] font-medium'>
+													<span className='inline-block w-2 h-2 rounded-full bg-[#00ef68] shadow-[0_0_10px_rgba(0,239,104,0.35)]'></span>
+													<span className='text-[#00ef68] font-medium'>
 														{match.matchScore}%
 													</span>
 												</div>
-												<span className='text-gray-400 text-sm'>
+												<span className='text-white/50 text-sm'>
 													{match.isOnline
 														? "Online now"
 														: `Last seen ${match.lastSeen}`}
@@ -740,14 +737,14 @@ const Matches: React.FC = () => {
 										</div>
 
 										{/* Bio */}
-										<p className='text-gray-300 text-sm mb-4 leading-relaxed'>
+										<p className='text-white/70 text-sm mb-4 leading-relaxed'>
 											{match.bio}
 										</p>
 
 										{/* Skills */}
 										<div className='space-y-3 mb-6'>
 											<div>
-												<p className='text-gray-400 text-sm mb-2'>
+												<p className='text-white/50 text-sm mb-2'>
 													Can teach:
 												</p>
 												<div className='flex flex-wrap gap-2'>
@@ -755,7 +752,7 @@ const Matches: React.FC = () => {
 														(skill: string) => (
 															<span
 																key={skill}
-																className='px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm border border-emerald-500/30'
+																className='px-3 py-1 bg-[#00ef68]/10 text-[#00ef68] rounded-full text-sm border border-[#00ef68]/20'
 															>
 																{skill}
 															</span>
@@ -764,7 +761,7 @@ const Matches: React.FC = () => {
 												</div>
 											</div>
 											<div>
-												<p className='text-gray-400 text-sm mb-2'>
+												<p className='text-white/50 text-sm mb-2'>
 													Wants to learn:
 												</p>
 												<div className='flex flex-wrap gap-2'>
@@ -772,7 +769,7 @@ const Matches: React.FC = () => {
 														(skill: string) => (
 															<span
 																key={skill}
-																className='px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm border border-blue-500/30'
+																className='px-3 py-1 bg-white/[0.04] text-white/80 rounded-full text-sm border border-white/10'
 															>
 																{skill}
 															</span>
@@ -796,10 +793,10 @@ const Matches: React.FC = () => {
 															handleConnect(String(match.id))
 														}
 														disabled={hasPending}
-														className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+														className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-2xl font-semibold transition-all duration-300 ${
 															hasPending
-																? "bg-gray-700 text-gray-300 cursor-not-allowed"
-																: "bg-emerald-600 hover:bg-emerald-700 text-white"
+																? "bg-white/10 text-white/50 cursor-not-allowed"
+																: "bg-[#00ef68] text-[#0b0c0d] hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(0,239,104,0.25)]"
 														}`}
 													>
 														<MessageCircle className='w-4 h-4' />
@@ -820,7 +817,7 @@ const Matches: React.FC = () => {
 														onClick={() =>
 															handleVideoAction(String(match.id))
 														}
-														className='px-4 py-2 border border-gray-600 hover:border-emerald-500 text-gray-300 hover:text-white rounded-lg transition-colors'
+														className='px-4 py-2 rounded-2xl border border-white/10 bg-white/[0.04] text-white/80 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/20'
 													>
 														<Video className='w-4 h-4' />
 													</button>
@@ -833,10 +830,10 @@ const Matches: React.FC = () => {
 														onClick={() =>
 															toggleFavorite(String(match.id))
 														}
-														className={`px-4 py-2 rounded-lg transition-colors border ${
+														className={`px-4 py-2 rounded-2xl transition-all duration-300 border ${
 															favorites.has(String(match.id))
 																? "border-red-500 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-																: "border-gray-600 text-gray-300 hover:text-red-400 hover:border-red-500"
+																: "border-white/10 bg-white/[0.04] text-white/80 hover:border-red-500 hover:text-red-400"
 														}`}
 													>
 														<Heart
@@ -865,8 +862,8 @@ const Matches: React.FC = () => {
 								<button
 									className={`px-3 py-1.5 rounded-md text-sm ${
 										incomingView === "pending"
-											? "bg-emerald-600 text-white"
-											: "bg-gray-800 text-gray-300"
+											? "bg-[#00ef68] text-[#0b0c0d]"
+											: "border border-white/10 bg-white/[0.04] text-white/70 hover:border-[#00ef68]/30"
 									}`}
 									onClick={() => setIncomingView("pending")}
 								>
@@ -875,8 +872,8 @@ const Matches: React.FC = () => {
 								<button
 									className={`px-3 py-1.5 rounded-md text-sm ${
 										incomingView === "history"
-											? "bg-emerald-600 text-white"
-											: "bg-gray-800 text-gray-300"
+											? "bg-[#00ef68] text-[#0b0c0d]"
+											: "border border-white/10 bg-white/[0.04] text-white/70 hover:border-[#00ef68]/30"
 									}`}
 									onClick={() => setIncomingView("history")}
 								>
@@ -884,9 +881,9 @@ const Matches: React.FC = () => {
 								</button>
 							</div>
 							{incomingRequests.length === 0 ? (
-								<div className='bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center'>
-									<div className='mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4'>
-										<Users className='w-8 h-8 text-emerald-400' />
+								<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-10 text-center'>
+									<div className='mx-auto w-16 h-16 rounded-full bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-4'>
+										<Users className='w-8 h-8 text-[#00ef68]' />
 									</div>
 									<h3 className='text-xl font-semibold text-white mb-2'>
 										No{" "}
@@ -894,7 +891,7 @@ const Matches: React.FC = () => {
 											? "incoming requests"
 											: "history"}
 									</h3>
-									<p className='text-gray-400'>
+									<p className='text-white/60'>
 										You’ll see partner requests here.
 									</p>
 								</div>
@@ -903,23 +900,23 @@ const Matches: React.FC = () => {
 									{incomingRequests.map((r) => (
 										<div
 											key={r.id}
-											className='bg-gray-900 rounded-xl p-6 border border-gray-800'
+											className='rounded-3xl border border-white/10 bg-white/[0.04] p-6'
 										>
 											<div className='flex items-center justify-between mb-3'>
 												<div className='flex items-center gap-3'>
-													<div className='w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-white font-medium'>
+													<div className='w-10 h-10 rounded-full bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center text-[#00ef68] font-medium'>
 														{r.name?.[0]?.toUpperCase() || "U"}
 													</div>
 													<div>
 														<div className='text-white font-medium'>
 															{r.name || "Developer"}
 														</div>
-														<div className='text-gray-400 text-sm'>
+														<div className='text-white/50 text-sm'>
 															sent a request
 														</div>
 													</div>
 												</div>
-												<div className='text-gray-400 text-xs'>
+												<div className='text-white/50 text-xs'>
 													{r.createdAt
 														? new Date(
 																r.createdAt
@@ -928,7 +925,7 @@ const Matches: React.FC = () => {
 												</div>
 											</div>
 											{r.message && (
-												<p className='text-gray-300 text-sm mb-3'>
+												<p className='text-white/70 text-sm mb-3'>
 													{r.message}
 												</p>
 											)}
@@ -938,7 +935,7 @@ const Matches: React.FC = () => {
 														onClick={() =>
 															handleDeclineRequest(r.id)
 														}
-														className='px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200'
+														className='px-3 py-1.5 rounded-2xl border border-white/10 bg-white/[0.04] text-white/80 hover:border-red-500/40 hover:text-red-300 transition-all'
 													>
 														Decline
 													</button>
@@ -946,7 +943,7 @@ const Matches: React.FC = () => {
 														onClick={() =>
 															handleAcceptRequest(r.id)
 														}
-														className='px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white'
+														className='px-3 py-1.5 rounded-2xl bg-[#00ef68] text-[#0b0c0d] font-semibold hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(0,239,104,0.25)] transition-all'
 													>
 														Accept
 													</button>
@@ -983,10 +980,10 @@ const Matches: React.FC = () => {
 																		)
 																	}
 																	disabled={!sid}
-																	className={`px-3 py-1.5 rounded-lg ${
+																	className={`px-3 py-1.5 rounded-2xl font-semibold transition-all duration-300 ${
 																		sid
-																			? "bg-emerald-600 hover:bg-emerald-700 text-white"
-																			: "bg-gray-800 text-gray-400 cursor-not-allowed"
+																			? "bg-[#00ef68] text-[#0b0c0d] hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(0,239,104,0.25)]"
+																			: "bg-white/10 text-white/50 cursor-not-allowed"
 																	}`}
 																>
 																	Join Session
@@ -1012,8 +1009,8 @@ const Matches: React.FC = () => {
 								<button
 									className={`px-3 py-1.5 rounded-md text-sm ${
 										sentView === "pending"
-											? "bg-emerald-600 text-white"
-											: "bg-gray-800 text-gray-300"
+											? "bg-[#00ef68] text-[#0b0c0d]"
+											: "border border-white/10 bg-white/[0.04] text-white/70 hover:border-[#00ef68]/30"
 									}`}
 									onClick={() => setSentView("pending")}
 								>
@@ -1022,8 +1019,8 @@ const Matches: React.FC = () => {
 								<button
 									className={`px-3 py-1.5 rounded-md text-sm ${
 										sentView === "history"
-											? "bg-emerald-600 text-white"
-											: "bg-gray-800 text-gray-300"
+											? "bg-[#00ef68] text-[#0b0c0d]"
+											: "border border-white/10 bg-white/[0.04] text-white/70 hover:border-[#00ef68]/30"
 									}`}
 									onClick={() => setSentView("history")}
 								>
@@ -1031,9 +1028,9 @@ const Matches: React.FC = () => {
 								</button>
 							</div>
 							{outgoingRequests.length === 0 ? (
-								<div className='bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center'>
-									<div className='mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4'>
-										<Users className='w-8 h-8 text-emerald-400' />
+								<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-10 text-center'>
+									<div className='mx-auto w-16 h-16 rounded-full bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-4'>
+										<Users className='w-8 h-8 text-[#00ef68]' />
 									</div>
 									<h3 className='text-xl font-semibold text-white mb-2'>
 										No{" "}
@@ -1041,7 +1038,7 @@ const Matches: React.FC = () => {
 											? "sent requests"
 											: "history"}
 									</h3>
-									<p className='text-gray-400'>
+									<p className='text-white/60'>
 										Your outgoing requests will appear here.
 									</p>
 								</div>
@@ -1050,23 +1047,23 @@ const Matches: React.FC = () => {
 									{outgoingRequests.map((r) => (
 										<div
 											key={r.id}
-											className='bg-gray-900 rounded-xl p-6 border border-gray-800'
+											className='rounded-3xl border border-white/10 bg-white/[0.04] p-6'
 										>
 											<div className='flex items-center justify-between mb-3'>
 												<div className='flex items-center gap-3'>
-													<div className='w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-white font-medium'>
+													<div className='w-10 h-10 rounded-full bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center text-[#00ef68] font-medium'>
 														{r.name?.[0]?.toUpperCase() || "U"}
 													</div>
 													<div>
 														<div className='text-white font-medium'>
 															{r.name || "Developer"}
 														</div>
-														<div className='text-gray-400 text-sm'>
+														<div className='text-white/50 text-sm'>
 															{r.status || "request pending"}
 														</div>
 													</div>
 												</div>
-												<div className='text-gray-400 text-xs'>
+												<div className='text-white/50 text-xs'>
 													{r.createdAt
 														? new Date(
 																r.createdAt
@@ -1075,12 +1072,12 @@ const Matches: React.FC = () => {
 												</div>
 											</div>
 											{r.message && (
-												<p className='text-gray-300 text-sm mb-1'>
+												<p className='text-white/70 text-sm mb-1'>
 													{r.message}
 												</p>
 											)}
 											{r.status && (
-												<span className='inline-block mt-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs'>
+												<span className='inline-block mt-1 px-2 py-0.5 rounded-full border border-white/10 bg-white/[0.04] text-white/70 text-xs'>
 													{r.status}
 												</span>
 											)}
@@ -1102,25 +1099,25 @@ const Matches: React.FC = () => {
 									{Array.from({ length: 2 }).map((_, i) => (
 										<div
 											key={i}
-											className='bg-gray-900 rounded-xl p-6 border border-gray-800 animate-pulse'
+											className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 animate-pulse'
 										>
-											<div className='h-4 w-40 bg-gray-800 rounded mb-2' />
-											<div className='h-3 w-28 bg-gray-800 rounded mb-4' />
-											<div className='h-3 w-full bg-gray-800 rounded mb-2' />
-											<div className='h-3 w-3/4 bg-gray-800 rounded' />
+											<div className='h-4 w-40 bg-white/10 rounded mb-2' />
+											<div className='h-3 w-28 bg-white/10 rounded mb-4' />
+											<div className='h-3 w-full bg-white/10 rounded mb-2' />
+											<div className='h-3 w-3/4 bg-white/10 rounded' />
 										</div>
 									))}
 								</>
 							)}
 							{!loading && sessions.length === 0 && (
-								<div className='bg-[#0f1113] border border-gray-800 rounded-2xl p-10 text-center lg:col-span-2'>
-									<div className='mx-auto w-16 h-16 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center mb-4'>
-										<Clock className='w-8 h-8 text-emerald-400' />
+								<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-10 text-center lg:col-span-2'>
+									<div className='mx-auto w-16 h-16 rounded-full bg-[#00ef68]/10 border border-[#00ef68]/20 flex items-center justify-center mb-4'>
+										<Clock className='w-8 h-8 text-[#00ef68]' />
 									</div>
 									<h3 className='text-xl font-semibold text-white mb-2'>
 										No upcoming sessions
 									</h3>
-									<p className='text-gray-400'>
+									<p className='text-white/60'>
 										Join the matching queue to schedule a new session.
 									</p>
 								</div>
@@ -1128,28 +1125,28 @@ const Matches: React.FC = () => {
 							{sessions.map((s) => (
 								<div
 									key={s.id || s._id}
-									className='bg-gray-900 rounded-xl p-6 border border-gray-800'
+									className='rounded-3xl border border-white/10 bg-white/[0.04] p-6'
 								>
 									<div className='flex items-start justify-between mb-2'>
 										<div>
 											<div className='text-white font-semibold'>
 												{s.topic || "Skill Swap Session"}
 											</div>
-											<div className='text-gray-400 text-sm'>
+											<div className='text-white/50 text-sm'>
 												with{" "}
 												{s.partner?.name ||
 													s.user?.name ||
 													"Partner"}
 											</div>
 										</div>
-										<span className='text-emerald-400 text-sm'>
+										<span className='text-white/70 text-sm'>
 											{new Date(
 												s.scheduledAt || s.createdAt || Date.now()
 											).toLocaleString()}
 										</span>
 									</div>
 									{s.notes && (
-										<p className='text-gray-300 text-sm'>{s.notes}</p>
+										<p className='text-white/70 text-sm'>{s.notes}</p>
 									)}
 								</div>
 							))}
@@ -1162,18 +1159,18 @@ const Matches: React.FC = () => {
 					(activeTab === "requests" && incomingRequests.length === 0) ||
 					(activeTab === "sent" && outgoingRequests.length === 0)) && (
 					<motion.div
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.3 }}
 						className='text-center py-12'
 					>
-						<Users className='w-16 h-16 text-gray-600 mx-auto mb-4' />
-						<h3 className='text-xl font-medium text-gray-400 mb-2'>
+						<Users className='w-16 h-16 text-white/20 mx-auto mb-4' />
+						<h3 className='text-xl font-medium text-white/60 mb-2'>
 							{activeTab === "matches" && "No matches found"}
 							{activeTab === "requests" && "No requests received"}
 							{activeTab === "sent" && "No requests sent"}
 						</h3>
-						<p className='text-gray-500'>
+						<p className='text-white/40'>
 							{activeTab === "matches" &&
 								"Try updating your skills or preferences to find better matches"}
 							{activeTab === "requests" &&

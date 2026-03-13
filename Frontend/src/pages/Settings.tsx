@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuthStore } from "../lib/auth";
 import { usersAPI } from "../lib/api";
+import { Link } from "react-router-dom";
 import {
 	CheckCircle2,
 	AlertCircle,
@@ -148,39 +149,42 @@ const Settings: React.FC = () => {
 	};
 
 	return (
-		<div className='min-h-screen bg-black pt-24 pb-8'>
-			<div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8'>
-				<h1 className='text-3xl font-bold text-white mb-8'>Settings</h1>
+		<div className='relative min-h-screen bg-[#0b0c0d] pt-24 pb-16'>
+			<div className='absolute inset-0 overflow-hidden pointer-events-none'>
+				<div className='absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]' />
+			</div>
+			<div className='relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8'>
+				<h1 className='text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-8'>System Settings</h1>
 
 				{/* Match & Profile Preferences */}
-				<div className='bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6'>
-					<div className='flex items-center gap-3 mb-4'>
-						<div className='p-2 rounded-lg bg-gray-800 text-emerald-400'>
+				<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 mb-6'>
+					<div className='flex items-center gap-3 mb-6'>
+						<div className='p-2 rounded-xl bg-[#00ef68]/10 border border-[#00ef68]/20 text-[#00ef68]'>
 							<SlidersHorizontal className='w-4 h-4' />
 						</div>
-						<h2 className='text-lg font-semibold text-white'>
-							Match & Profile Preferences
+						<h2 className='text-xl font-semibold text-white tracking-tight'>
+							Protocol Preferences
 						</h2>
 					</div>
-					<form onSubmit={savePreferences} className='space-y-4'>
+					<form onSubmit={savePreferences} className='space-y-6'>
 						{prefsMsg && (
 							<div
-								className={`text-sm ${
+								className={`text-sm font-medium ${
 									prefsMsg.includes("saved")
-										? "text-emerald-400"
+										? "text-[#00ef68]"
 										: "text-red-400"
 								}`}
 							>
 								{prefsMsg}
 							</div>
 						)}
-						<div className='flex items-center justify-between'>
+						<div className='flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5'>
 							<div>
-								<p className='text-white text-sm'>
-									Show me in matching
+								<p className='text-white font-medium text-sm'>
+									Matching Queue Discovery
 								</p>
-								<p className='text-gray-400 text-xs'>
-									If off, you won't appear in match queue.
+								<p className='text-white/40 text-xs mt-1'>
+									Toggle visibility within the peer-to-peer matching engine.
 								</p>
 							</div>
 							<label className='relative inline-flex items-center cursor-pointer'>
@@ -190,14 +194,14 @@ const Settings: React.FC = () => {
 									checked={showInMatching}
 									onChange={(e) => setShowInMatching(e.target.checked)}
 								/>
-								<div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+								<div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00ef68]"></div>
 							</label>
 						</div>
-						<div className='flex items-center justify-between'>
+						<div className='flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5'>
 							<div>
-								<p className='text-white text-sm'>Public profile</p>
-								<p className='text-gray-400 text-xs'>
-									Allow others to view your profile.
+								<p className='text-white font-medium text-sm'>Public Indexing</p>
+								<p className='text-white/40 text-xs mt-1'>
+									Allow your technical profile to be indexed by other developers.
 								</p>
 							</div>
 							<label className='relative inline-flex items-center cursor-pointer'>
@@ -207,34 +211,33 @@ const Settings: React.FC = () => {
 									checked={publicProfile}
 									onChange={(e) => setPublicProfile(e.target.checked)}
 								/>
-								<div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+								<div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00ef68]"></div>
 							</label>
 						</div>
 						<div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
 							<div>
-								<label className='block text-sm text-gray-300 mb-1'>
-									Preferred times
+								<label className='block text-xs font-bold text-white/40 uppercase tracking-widest mb-2'>
+									Execution Window
 								</label>
 								<input
 									type='text'
 									value={preferredTimes}
 									onChange={(e) => setPreferredTimes(e.target.value)}
-									className='w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
-									placeholder='e.g., Weeknights 7-10pm'
+									className='w-full px-4 py-2 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30 transition-all text-sm'
+									placeholder='e.g., Weeknights 19:00 - 22:00'
 								/>
 							</div>
 							<div>
-								<label className='block text-sm text-gray-300 mb-1'>
-									Timezone
+								<label className='block text-xs font-bold text-white/40 uppercase tracking-widest mb-2'>
+									System Timezone
 								</label>
 								<div className='flex items-center gap-2'>
-									<Clock className='w-4 h-4 text-gray-400' />
 									<input
 										type='text'
 										value={timezone}
 										onChange={(e) => setTimezone(e.target.value)}
-										className='w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
-										placeholder='Timezone, e.g., Asia/Kolkata'
+										className='w-full px-4 py-2 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30 transition-all text-sm'
+										placeholder='Timezone identifier'
 									/>
 								</div>
 							</div>
@@ -242,28 +245,27 @@ const Settings: React.FC = () => {
 						<button
 							type='submit'
 							disabled={prefsSaving}
-							className='px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm disabled:opacity-60'
+							className='px-6 py-2.5 bg-[#00ef68] text-[#0b0c0d] rounded-2xl text-sm font-bold hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(0,239,104,0.25)] transition-all disabled:opacity-50'
 						>
-							{prefsSaving ? "Saving…" : "Save Preferences"}
+							{prefsSaving ? "Committing..." : "Save Preferences"}
 						</button>
 					</form>
 				</div>
 
 				{/* Online Status */}
-				<div className='bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6'>
+				<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 mb-6'>
 					<div className='flex items-center gap-3 mb-4'>
-						<div className='p-2 rounded-lg bg-gray-800 text-emerald-400'>
+						<div className='p-2 rounded-xl bg-[#00ef68]/10 border border-[#00ef68]/20 text-[#00ef68]'>
 							<Wifi className='w-4 h-4' />
 						</div>
-						<h2 className='text-lg font-semibold text-white'>
-							Availability
+						<h2 className='text-xl font-semibold text-white tracking-tight'>
+							Network Availability
 						</h2>
 					</div>
-					<p className='text-gray-400 text-sm mb-4'>
-						Control whether other users see you as online and available
-						for matches.
+					<p className='text-white/50 text-sm mb-6'>
+						Manage your presence state within the real-time collaboration engine.
 					</p>
-					<div className='flex items-center gap-3'>
+					<div className='flex items-center gap-4 p-4 rounded-2xl bg-black/20 border border-white/5 w-fit'>
 						<label className='relative inline-flex items-center cursor-pointer'>
 							<input
 								type='checkbox'
@@ -272,33 +274,33 @@ const Settings: React.FC = () => {
 								onChange={(e) => handleOnlineToggle(e.target.checked)}
 								disabled={savingOnline}
 							/>
-							<div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+							<div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00ef68]"></div>
 						</label>
-						<span className='text-sm text-gray-300'>
+						<span className={`text-sm font-bold uppercase tracking-widest ${isOnline ? "text-[#00ef68]" : "text-white/30"}`}>
 							{isOnline ? "Online" : "Offline"}
 						</span>
 					</div>
 				</div>
 
 				{/* Change Password */}
-				<div className='bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6'>
-					<div className='flex items-center gap-3 mb-4'>
-						<div className='p-2 rounded-lg bg-gray-800 text-blue-400'>
+				<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 mb-6'>
+					<div className='flex items-center gap-3 mb-6'>
+						<div className='p-2 rounded-xl bg-white/5 border border-white/10 text-white/60'>
 							<KeyRound className='w-4 h-4' />
 						</div>
-						<h2 className='text-lg font-semibold text-white'>
-							Change Password
+						<h2 className='text-xl font-semibold text-white tracking-tight'>
+							Credential Management
 						</h2>
 					</div>
-					<form onSubmit={handlePasswordChange} className='space-y-4'>
+					<form onSubmit={handlePasswordChange} className='space-y-6'>
 						{pwSuccess && (
-							<div className='flex items-center gap-2 text-emerald-400 text-sm'>
+							<div className='flex items-center gap-2 text-[#00ef68] text-sm font-medium'>
 								<CheckCircle2 className='w-4 h-4' />
 								<span>{pwSuccess}</span>
 							</div>
 						)}
 						{pwError && (
-							<div className='flex items-center gap-2 text-red-400 text-sm'>
+							<div className='flex items-center gap-2 text-red-400 text-sm font-medium'>
 								<AlertCircle className='w-4 h-4' />
 								<span>{pwError}</span>
 							</div>
@@ -308,46 +310,46 @@ const Settings: React.FC = () => {
 								type='password'
 								value={currentPassword}
 								onChange={(e) => setCurrentPassword(e.target.value)}
-								className='w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-								placeholder='Current password'
+								className='w-full px-4 py-2 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30 transition-all text-sm'
+								placeholder='Existing credential'
 							/>
 							<input
 								type='password'
 								value={newPassword}
 								onChange={(e) => setNewPassword(e.target.value)}
-								className='w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-								placeholder='New password'
+								className='w-full px-4 py-2 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30 transition-all text-sm'
+								placeholder='New credential'
 							/>
 						</div>
 						<button
 							type='submit'
 							disabled={pwLoading}
-							className='px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm disabled:opacity-60'
+							className='px-6 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 text-white rounded-2xl text-sm font-bold transition-all disabled:opacity-50'
 						>
-							{pwLoading ? "Updating…" : "Update Password"}
+							{pwLoading ? "Updating entropy..." : "Rotate Password"}
 						</button>
 					</form>
 				</div>
 
 				{/* Localization */}
-				<div className='bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6'>
-					<div className='flex items-center gap-3 mb-4'>
-						<div className='p-2 rounded-lg bg-gray-800 text-indigo-400'>
+				<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 mb-6'>
+					<div className='flex items-center gap-3 mb-6'>
+						<div className='p-2 rounded-xl bg-white/5 border border-white/10 text-white/60'>
 							<Globe className='w-4 h-4' />
 						</div>
-						<h2 className='text-lg font-semibold text-white'>Language</h2>
+						<h2 className='text-xl font-semibold text-white tracking-tight'>Localization</h2>
 					</div>
 					<div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
 						<div>
-							<label className='block text-sm text-gray-300 mb-1'>
-								App Language
+							<label className='block text-xs font-bold text-white/40 uppercase tracking-widest mb-2'>
+								Interface Language
 							</label>
 							<select
 								value={language}
 								onChange={(e) => setLanguage(e.target.value)}
-								className='w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500'
+								className='w-full px-4 py-2 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#00ef68]/30 transition-all text-sm'
 							>
-								<option value='en'>English</option>
+								<option value='en'>English (Standard)</option>
 								<option value='hi'>हिन्दी (Hindi)</option>
 								<option value='es'>Español (Spanish)</option>
 							</select>
@@ -356,34 +358,34 @@ const Settings: React.FC = () => {
 				</div>
 
 				{/* Notifications */}
-				<div className='bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6'>
-					<div className='flex items-center gap-3 mb-4'>
-						<div className='p-2 rounded-lg bg-gray-800 text-yellow-400'>
+				<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 mb-6'>
+					<div className='flex items-center gap-3 mb-6'>
+						<div className='p-2 rounded-xl bg-white/5 border border-white/10 text-white/60'>
 							<Bell className='w-4 h-4' />
 						</div>
-						<h2 className='text-lg font-semibold text-white'>
-							Notifications
+						<h2 className='text-xl font-semibold text-white tracking-tight'>
+							Notification Protocol
 						</h2>
 					</div>
 					<div className='space-y-4'>
-						<label className='flex items-center justify-between'>
-							<span className='text-sm text-gray-300'>
-								Email notifications
+						<label className='flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5 cursor-pointer hover:bg-black/30 transition-all'>
+							<span className='text-sm text-white/70'>
+								Email Telemetry Alerts
 							</span>
 							<input
 								type='checkbox'
-								className='scale-110'
+								className='scale-110 accent-[#00ef68]'
 								checked={notifEmail}
 								onChange={(e) => setNotifEmail(e.target.checked)}
 							/>
 						</label>
-						<label className='flex items-center justify-between'>
-							<span className='text-sm text-gray-300'>
-								Product updates
+						<label className='flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5 cursor-pointer hover:bg-black/30 transition-all'>
+							<span className='text-sm text-white/70'>
+								Product Lifecycle Updates
 							</span>
 							<input
 								type='checkbox'
-								className='scale-110'
+								className='scale-110 accent-[#00ef68]'
 								checked={notifProduct}
 								onChange={(e) => setNotifProduct(e.target.checked)}
 							/>
@@ -392,71 +394,68 @@ const Settings: React.FC = () => {
 				</div>
 
 				{/* Privacy */}
-				<div className='bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6'>
-					<div className='flex items-center gap-3 mb-4'>
-						<div className='p-2 rounded-lg bg-gray-800 text-purple-400'>
+				<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 mb-6'>
+					<div className='flex items-center gap-3 mb-6'>
+						<div className='p-2 rounded-xl bg-white/5 border border-white/10 text-white/60'>
 							<Shield className='w-4 h-4' />
 						</div>
-						<h2 className='text-lg font-semibold text-white'>Privacy</h2>
+						<h2 className='text-xl font-semibold text-white tracking-tight'>Security & Data</h2>
 					</div>
-					<p className='text-gray-300 text-sm mb-3'>
-						Manage how we store data in your browser. You can review our
-						policy on the
-						<a
-							className='text-indigo-400 hover:text-indigo-300 underline ml-1'
-							href='/privacy'
-						>
-							Privacy page
-						</a>
-						.
+					<p className='text-white/50 text-sm mb-6 leading-relaxed'>
+						Manage local storage artifacts and session data. Review the complete protocol documentation.
 					</p>
-					<div className='flex items-center gap-3'>
+					<div className='flex flex-wrap items-center gap-4'>
 						<button
 							onClick={reopenCookieDecision}
-							className='px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm border border-gray-700'
+							className='px-4 py-2 rounded-2xl border border-white/10 bg-white/[0.04] text-white/70 text-sm font-semibold hover:border-[#00ef68]/30 hover:text-white transition-all'
 						>
-							Change cookie decision
+							Reset Preference Cache
 						</button>
-						<span className='text-xs text-gray-400'>
-							This will reload the page and show the cookie banner again.
-						</span>
+						<Link
+							to='/privacy'
+							className='text-[#00ef68] hover:text-white text-sm font-semibold transition-all'
+						>
+							Privacy Policy
+						</Link>
 					</div>
 				</div>
 
 				{/* Danger Zone */}
-				<div className='bg-gray-900 rounded-xl p-6 border border-gray-800'>
-					<div className='flex items-center gap-3 mb-4'>
-						<div className='p-2 rounded-lg bg-gray-800 text-red-400'>
+				<div className='rounded-3xl border border-red-500/20 bg-red-500/5 p-6'>
+					<div className='flex items-center gap-3 mb-6'>
+						<div className='p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400'>
 							<Trash2 className='w-4 h-4' />
 						</div>
-						<h2 className='text-lg font-semibold text-white'>
-							Danger Zone
+						<h2 className='text-xl font-semibold text-white tracking-tight'>
+							Termination Phase
 						</h2>
 					</div>
-					<form onSubmit={handleDelete} className='space-y-3'>
+					<form onSubmit={handleDelete} className='space-y-4'>
 						{delError && (
-							<div className='flex items-center gap-2 text-red-400 text-sm'>
+							<div className='flex items-center gap-2 text-red-400 text-sm font-medium'>
 								<AlertCircle className='w-4 h-4' />
 								<span>{delError}</span>
 							</div>
 						)}
-						<p className='text-gray-400 text-sm'>
-							Type DELETE to confirm account deletion.
+						<p className='text-white/50 text-sm mb-2'>
+							Enter <span className="font-mono text-red-400 font-bold">DELETE</span> to confirm permanent record erasure.
 						</p>
-						<input
-							type='text'
-							value={delConfirm}
-							onChange={(e) => setDelConfirm(e.target.value)}
-							className='w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent'
-							placeholder='DELETE'
-						/>
-						<button
-							type='submit'
-							disabled={delLoading}
-							className='px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm disabled:opacity-60'
-						>
-							{delLoading ? "Deleting…" : "Delete Account"}
-						</button>
+						<div className="flex gap-3">
+							<input
+								type='text'
+								value={delConfirm}
+								onChange={(e) => setDelConfirm(e.target.value)}
+								className='flex-1 px-4 py-2 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-red-500/30 focus:ring-1 focus:ring-red-500/30 transition-all text-sm'
+								placeholder='Confirmation string'
+							/>
+							<button
+								type='submit'
+								disabled={delLoading}
+								className='px-6 py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/30 rounded-2xl text-sm font-bold transition-all disabled:opacity-50'
+							>
+								{delLoading ? "Processing..." : "Purge Account"}
+							</button>
+						</div>
 					</form>
 				</div>
 			</div>

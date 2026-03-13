@@ -40,7 +40,7 @@ router.put("/skills/level", requireAuth, updateSkillLevel);
 // Status & activity
 router.put("/status/online", requireAuth, updateOnlineStatus);
 router.put("/status/last-seen", requireAuth, updateLastSeen);
-router.get("/stats/overview", strictLimiter, getUserStats);
+router.get("/stats/overview", requireAuth, strictLimiter, getUserStats);
 router.get("/activity", requireAuth, getUserActivity);
 
 // This MUST be last to avoid shadowing static routes like /search

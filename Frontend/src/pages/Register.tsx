@@ -8,7 +8,7 @@ import {
 	Mail,
 	Lock,
 	User,
-	Code2,
+	Terminal,
 	ArrowRight,
 	AlertCircle,
 	X,
@@ -154,8 +154,11 @@ const Register: React.FC = () => {
 	};
 
 	return (
-		<div className='min-h-screen bg-[var(--color-ink)]'>
-			<div className='px-6 sm:px-8 lg:px-12 py-16'>
+		<div className='relative min-h-screen bg-[#0b0c0d]'>
+			<div className='absolute inset-0 overflow-hidden pointer-events-none'>
+				<div className='absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]' />
+			</div>
+			<div className='relative px-4 sm:px-6 lg:px-8 py-16'>
 				<div className='max-w-4xl mx-auto'>
 					<motion.div
 						initial={{ opacity: 0, y: 20 }}
@@ -166,24 +169,20 @@ const Register: React.FC = () => {
 						{/* Logo */}
 						<Link
 							to='/'
-							className='inline-flex items-center space-x-2 group mb-8'
+							className='inline-flex items-center space-x-2 group mb-8 focus:outline-none focus-visible:outline-none'
 						>
 							<div className='relative'>
-								<Code2 className='h-10 w-10 text-[var(--color-brand)] transition-colors' />
-								<div
-									className='absolute -inset-1 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity'
-									style={{ backgroundColor: "rgba(0,239,104,0.2)" }}
-								/>
+								<Terminal className='h-8 w-8 text-[#00ef68] transition-transform duration-300 group-hover:scale-110' />
 							</div>
-							<span className='text-2xl font-bold text-white'>
-								DevSwap
+							<span className='text-2xl font-bold text-white tracking-tight'>
+								DevSwap<span className='text-[#00ef68]'>.</span>live
 							</span>
 						</Link>
 
-						<h2 className='text-3xl font-bold text-white'>
+						<h2 className='text-3xl font-bold text-white tracking-tight'>
 							Create your account
 						</h2>
-						<p className='mt-2 text-muted'>
+						<p className='mt-2 text-white/60'>
 							Join thousands of developers learning and teaching together
 						</p>
 					</motion.div>
@@ -200,7 +199,7 @@ const Register: React.FC = () => {
 								type='button'
 								aria-label='Sign up with Google'
 								onClick={() => startOAuth("google")}
-								className='w-full inline-flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-[var(--color-surface)] bg-[var(--color-ink)] text-white hover:bg-white/10 transition-colors'
+								className='w-full inline-flex items-center justify-center gap-3 py-3 px-4 rounded-2xl border border-white/10 bg-white/[0.04] text-white hover:-translate-y-0.5 hover:bg-white/[0.06] hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30 hover:shadow-[0_10px_40px_rgba(0,239,104,0.15)] transition-all duration-300'
 							>
 								<span className='inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#0b0c0d] text-xs font-bold'>
 									G
@@ -211,18 +210,18 @@ const Register: React.FC = () => {
 								type='button'
 								aria-label='Sign up with GitHub'
 								onClick={() => startOAuth("github")}
-								className='w-full inline-flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-[var(--color-surface)] bg-[var(--color-ink)] text-white hover:bg-white/10 transition-colors'
+								className='w-full inline-flex items-center justify-center gap-3 py-3 px-4 rounded-2xl border border-white/10 bg-white/[0.04] text-white hover:-translate-y-0.5 hover:bg-white/[0.06] hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30 hover:shadow-[0_10px_40px_rgba(0,239,104,0.15)] transition-all duration-300'
 							>
 								<Github className='w-5 h-5' />
 								<span>Sign up with GitHub</span>
 							</button>
 						</div>
 						<div className='flex items-center gap-3'>
-							<div className='h-px flex-1 bg-[var(--color-surface)]' />
-							<span className='text-xs text-muted'>
+							<div className='h-px flex-1 bg-white/10' />
+							<span className='text-xs text-white/50'>
 								or continue with email
 							</span>
-							<div className='h-px flex-1 bg-[var(--color-surface)]' />
+							<div className='h-px flex-1 bg-white/10' />
 						</div>
 					</motion.div>
 
@@ -230,17 +229,17 @@ const Register: React.FC = () => {
 						initial={{ opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.6 }}
-						className='card rounded-2xl p-6 md:p-8 border border-[var(--color-surface)] hover:shadow-lg transition-shadow'
+						className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 md:p-8'
 					>
 						<form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
 							{error && (
-								<div className='flex items-center space-x-2 p-4 card text-white/90'>
+								<div className='flex items-center space-x-2 rounded-2xl border border-white/10 bg-black/30 p-4 text-white/90'>
 									<AlertCircle className='w-5 h-5 flex-shrink-0 text-white/80' />
 									<span className='text-sm'>{error}</span>
 								</div>
 							)}
 							{success && (
-								<div className='flex items-center space-x-2 p-4 card text-emerald-400/90'>
+								<div className='flex items-center space-x-2 rounded-2xl border border-[#00ef68]/20 bg-[#00ef68]/10 p-4 text-[#00ef68]'>
 									<span className='text-sm'>{success}</span>
 								</div>
 							)}
@@ -250,7 +249,7 @@ const Register: React.FC = () => {
 								<div>
 									<label
 										htmlFor='name'
-										className='block text-sm font-medium label mb-2'
+										className='block text-sm font-medium text-white/80 mb-2'
 									>
 										Full Name
 									</label>
@@ -268,7 +267,7 @@ const Register: React.FC = () => {
 												},
 											})}
 											type='text'
-											className='block w-full pl-10 pr-3 py-3 input'
+											className='block w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-10 pr-3 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30'
 											placeholder='Enter your full name'
 										/>
 									</div>
@@ -283,7 +282,7 @@ const Register: React.FC = () => {
 								<div>
 									<label
 										htmlFor='email'
-										className='block text-sm font-medium label mb-2'
+										className='block text-sm font-medium text-white/80 mb-2'
 									>
 										Email Address
 									</label>
@@ -300,7 +299,7 @@ const Register: React.FC = () => {
 												},
 											})}
 											type='email'
-											className='block w-full pl-10 pr-3 py-3 input'
+											className='block w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-10 pr-3 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30'
 											placeholder='Enter your email'
 										/>
 									</div>
@@ -317,7 +316,7 @@ const Register: React.FC = () => {
 								<div>
 									<label
 										htmlFor='password'
-										className='block text-sm font-medium label mb-2'
+										className='block text-sm font-medium text-white/80 mb-2'
 									>
 										Password
 									</label>
@@ -340,18 +339,18 @@ const Register: React.FC = () => {
 												},
 											})}
 											type={showPassword ? "text" : "password"}
-											className='block w-full pl-10 pr-12 py-3 input'
+											className='block w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-10 pr-12 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30'
 											placeholder='Create a password'
 										/>
 										<button
 											type='button'
-											className='absolute inset-y-0 right-0 pr-3 flex items-center'
+											className='absolute inset-y-0 right-0 pr-3 flex items-center text-white/60 hover:text-white/80'
 											onClick={() => setShowPassword(!showPassword)}
 										>
 											{showPassword ? (
-												<EyeOff className='h-5 w-5 text-white/60 hover:text-white/80' />
+												<EyeOff className='h-5 w-5' />
 											) : (
-												<Eye className='h-5 w-5 text-white/60 hover:text-white/80' />
+												<Eye className='h-5 w-5' />
 											)}
 										</button>
 									</div>
@@ -366,7 +365,7 @@ const Register: React.FC = () => {
 								<div>
 									<label
 										htmlFor='confirmPassword'
-										className='block text-sm font-medium label mb-2'
+										className='block text-sm font-medium text-white/80 mb-2'
 									>
 										Confirm Password
 									</label>
@@ -384,20 +383,20 @@ const Register: React.FC = () => {
 											type={
 												showConfirmPassword ? "text" : "password"
 											}
-											className='block w-full pl-10 pr-12 py-3 input'
+											className='block w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-10 pr-12 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30'
 											placeholder='Confirm your password'
 										/>
 										<button
 											type='button'
-											className='absolute inset-y-0 right-0 pr-3 flex items-center'
+											className='absolute inset-y-0 right-0 pr-3 flex items-center text-white/60 hover:text-white/80'
 											onClick={() =>
 												setShowConfirmPassword(!showConfirmPassword)
 											}
 										>
 											{showConfirmPassword ? (
-												<EyeOff className='h-5 w-5 text-white/60 hover:text-white/80' />
+												<EyeOff className='h-5 w-5' />
 											) : (
-												<Eye className='h-5 w-5 text-white/60 hover:text-white/80' />
+												<Eye className='h-5 w-5' />
 											)}
 										</button>
 									</div>
@@ -413,14 +412,14 @@ const Register: React.FC = () => {
 							<div>
 								<label
 									htmlFor='bio'
-									className='block text-sm font-medium label mb-2'
+									className='block text-sm font-medium text-white/80 mb-2'
 								>
 									Bio (Optional)
 								</label>
 								<textarea
 									{...register("bio")}
 									rows={3}
-									className='block w-full px-3 py-3 input resize-none'
+									className='block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30 resize-none'
 									placeholder="Tell us about yourself, your experience, and what you're passionate about..."
 								/>
 							</div>
@@ -429,7 +428,7 @@ const Register: React.FC = () => {
 							<div className='space-y-6'>
 								{/* Skills I Can Teach */}
 								<div>
-									<label className='block text-sm font-medium label mb-3'>
+									<label className='block text-sm font-medium text-white/80 mb-3'>
 										Skills I Can Teach{" "}
 										<span className='text-red-400'>*</span>
 									</label>
@@ -441,13 +440,13 @@ const Register: React.FC = () => {
 												setSkillSearchTerm(e.target.value)
 											}
 											onFocus={() => setActiveSkillType("teach")}
-											className='block w-full px-3 py-3 input'
+											className='block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30'
 											placeholder='Search and select skills you can teach...'
 										/>
 
 										{activeSkillType === "teach" &&
 											skillSearchTerm && (
-												<div className='absolute z-10 mt-1 w-full card rounded-lg shadow-lg max-h-48 overflow-y-auto'>
+												<div className='absolute z-10 mt-2 w-full rounded-2xl border border-white/10 bg-[#0b0c0d] shadow-[0_18px_60px_rgba(0,0,0,0.55)] max-h-48 overflow-y-auto'>
 													{filteredSkills.map((skill) => (
 														<button
 															key={skill}
@@ -455,7 +454,7 @@ const Register: React.FC = () => {
 															onClick={() =>
 																addSkill(skill, "teach")
 															}
-															className='w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors'
+															className='w-full px-4 py-2.5 text-left text-white/80 hover:text-white hover:bg-white/[0.06] transition-colors'
 														>
 															{skill}
 														</button>
@@ -468,7 +467,7 @@ const Register: React.FC = () => {
 										{selectedTeachSkills.map((skill) => (
 											<span
 												key={skill}
-												className='inline-flex items-center px-3 py-1 chip-brand text-sm'
+												className='inline-flex items-center px-3 py-1 rounded-full border border-[#00ef68]/30 bg-[#00ef68]/10 text-[#00ef68] text-sm'
 											>
 												{skill}
 												<button
@@ -476,7 +475,7 @@ const Register: React.FC = () => {
 													onClick={() =>
 														removeSkill(skill, "teach")
 													}
-													className='ml-2 hover:text-white'
+													className='ml-2 text-[#00ef68] hover:text-white'
 												>
 													<X className='w-3 h-3' />
 												</button>
@@ -487,7 +486,7 @@ const Register: React.FC = () => {
 
 								{/* Skills I Want to Learn */}
 								<div>
-									<label className='block text-sm font-medium label mb-3'>
+									<label className='block text-sm font-medium text-white/80 mb-3'>
 										Skills I Want to Learn{" "}
 										<span className='text-red-400'>*</span>
 									</label>
@@ -499,13 +498,13 @@ const Register: React.FC = () => {
 												setSkillSearchTerm(e.target.value)
 											}
 											onFocus={() => setActiveSkillType("learn")}
-											className='block w-full px-3 py-3 input'
+											className='block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30'
 											placeholder='Search and select skills you want to learn...'
 										/>
 
 										{activeSkillType === "learn" &&
 											skillSearchTerm && (
-												<div className='absolute z-10 mt-1 w-full card rounded-lg shadow-lg max-h-48 overflow-y-auto'>
+												<div className='absolute z-10 mt-2 w-full rounded-2xl border border-white/10 bg-[#0b0c0d] shadow-[0_18px_60px_rgba(0,0,0,0.55)] max-h-48 overflow-y-auto'>
 													{filteredSkills.map((skill) => (
 														<button
 															key={skill}
@@ -513,7 +512,7 @@ const Register: React.FC = () => {
 															onClick={() =>
 																addSkill(skill, "learn")
 															}
-															className='w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors'
+															className='w-full px-4 py-2.5 text-left text-white/80 hover:text-white hover:bg-white/[0.06] transition-colors'
 														>
 															{skill}
 														</button>
@@ -526,7 +525,7 @@ const Register: React.FC = () => {
 										{selectedLearnSkills.map((skill) => (
 											<span
 												key={skill}
-												className='inline-flex items-center px-3 py-1 chip-brand text-sm'
+												className='inline-flex items-center px-3 py-1 rounded-full border border-[#00ef68]/30 bg-[#00ef68]/10 text-[#00ef68] text-sm'
 											>
 												{skill}
 												<button
@@ -534,7 +533,7 @@ const Register: React.FC = () => {
 													onClick={() =>
 														removeSkill(skill, "learn")
 													}
-													className='ml-2 hover:text-white'
+													className='ml-2 text-[#00ef68] hover:text-white'
 												>
 													<X className='w-3 h-3' />
 												</button>
@@ -551,23 +550,23 @@ const Register: React.FC = () => {
 									name='terms'
 									type='checkbox'
 									required
-									className='h-4 w-4 rounded accent-[var(--color-brand)] border-[var(--color-surface)] bg-[var(--color-surface)] mt-1'
+									className='h-4 w-4 rounded accent-[#00ef68] border-white/10 bg-white/10 mt-1'
 								/>
 								<label
 									htmlFor='terms'
-									className='text-sm label leading-relaxed'
+									className='text-sm text-white/70 leading-relaxed'
 								>
 									I agree to the{" "}
 									<Link
 										to='/terms'
-										className='text-[var(--color-brand)] hover:text-white'
+										className='text-[#00ef68] hover:text-white'
 									>
 										Terms of Service
 									</Link>{" "}
 									and{" "}
 									<Link
 										to='/privacy'
-										className='text-[var(--color-brand)] hover:text-white'
+										className='text-[#00ef68] hover:text-white'
 									>
 										Privacy Policy
 									</Link>
@@ -578,7 +577,7 @@ const Register: React.FC = () => {
 							<button
 								type='submit'
 								disabled={isLoading || !canSubmit}
-								className='group relative w-full flex justify-center py-3 px-4 text-sm font-medium rounded-lg btn-primary disabled:opacity-50 disabled:cursor-not-allowed'
+								className='group relative w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#00ef68] px-4 py-3 text-sm font-semibold text-[#0b0c0d] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(0,239,104,0.25)] focus:outline-none focus:ring-2 focus:ring-[#00ef68]/40 disabled:opacity-50 disabled:cursor-not-allowed'
 							>
 								{isLoading ? (
 									<div className='w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin' />
@@ -592,11 +591,11 @@ const Register: React.FC = () => {
 
 							{/* Sign in link */}
 							<div className='text-center'>
-								<p className='text-muted'>
+								<p className='text-white/60'>
 									Already have an account?{" "}
 									<Link
 										to='/login'
-										className='font-medium text-[var(--color-brand)] hover:text-white transition-colors'
+										className='font-medium text-[#00ef68] hover:text-white transition-colors'
 									>
 										Sign in
 									</Link>

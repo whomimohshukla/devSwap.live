@@ -651,6 +651,14 @@ export async function updateLastSeen(req: AuthenticatedRequest, res: Response) {
 
 export async function getUserStats(req: Request, res: Response) {
 	try {
+		const userId = (req as any).user?.id as string | undefined;
+		if (!userId) {
+			return res.status(401).json({
+				success: false,
+				message: "Authentication required",
+			});
+		}
+
 		const stats = await User.aggregate([
 			{
 				$group: {
@@ -664,6 +672,34 @@ export async function getUserStats(req: Request, res: Response) {
 				},
 			},
 		]);
+
+		const me = await User.findById(userId).populate({
+			path: "pastSessions",
+			select: "isActive startedAt endedAt skillFromA skillFromB userA userB",
+			options: { sort: { startedAt: -1 }, limit: 50 },
+		});
+		if (!me) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		const pastSessions = (me as any).pastSessions ?? [];
+		const sessionsCompleted = Array.isArray(pastSessions)
+			? pastSessions.filter((s: any) => s && (s.isActive === false || Boolean(s.endedAt))).length
+			: 0;
+		const hoursExchanged = Array.isArray(pastSessions)
+			? pastSessions.reduce((sum: number, s: any) => {
+				const start = s?.startedAt ? new Date(s.startedAt).getTime() : 0;
+				const end = s?.endedAt ? new Date(s.endedAt).getTime() : 0;
+				if (!start || !end || end <= start) return sum;
+				return sum + (end - start) / (1000 * 60 * 60);
+			}, 0)
+			: 0;
+
+		const skillsTaught = me.teachSkills?.length || 0;
+		const skillsLearned = me.learnSkills?.length || 0;
 
 		const topTeachSkills = await User.aggregate([
 			{ $unwind: "$teachSkills" },
@@ -687,6 +723,12 @@ export async function getUserStats(req: Request, res: Response) {
 		res.status(200).json({
 			success: true,
 			data: {
+				// Dashboard-facing fields (per-user)
+				sessionsCompleted,
+				hoursExchanged: Math.round(hoursExchanged * 10) / 10,
+				skillsTaught,
+				skillsLearned,
+				// Keep the existing response for compatibility
 				overview: stats[0] || {
 					totalUsers: 0,
 					onlineUsers: 0,

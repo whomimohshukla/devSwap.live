@@ -847,6 +847,133 @@ class EmailService {
     });
   }
 
+  // Password reset email
+  async sendPasswordResetEmail(user: { name: string; email: string; resetUrl: string; _id: string }) {
+    const mailOptions = {
+      from: `"DevSwap.live" <${envConfig.FROM_EMAIL}>`,
+      to: user.email,
+      subject: "Reset Your Password - DevSwap.live",
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Your Password - DevSwap.live</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; padding: 20px 0; }
+        .logo { font-size: 24px; font-weight: bold; color: #00ef68; }
+        .content { background: #f8f9fa; padding: 30px; border-radius: 8px; margin: 20px 0; }
+        .button { display: inline-block; background: #00ef68; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+        .footer { text-align: center; color: #666; font-size: 14px; margin-top: 30px; }
+        .security { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🔄 DevSwap.live</div>
+            <h1>Reset Your Password</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hi ${user.name},</p>
+            <p>We received a request to reset your password for your DevSwap.live account. Click the button below to reset your password:</p>
+            
+            <div style="text-align: center;">
+                <a href="${user.resetUrl}" class="button">Reset Password</a>
+            </div>
+            
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; background: #e9ecef; padding: 10px; border-radius: 4px;">${user.resetUrl}</p>
+            
+            <div class="security">
+                <strong>🔒 Security Notice:</strong><br>
+                • This link will expire in 15 minutes<br>
+                • If you didn't request this, please ignore this email<br>
+                • Your password won't change until you click the link and set a new one
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Need help? Contact us at support@devswap.live</p>
+            <p>© 2024 DevSwap.live. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+      `,
+    };
+
+    return await this.sendEmail(mailOptions);
+  }
+
+  // Password reset confirmation email
+  async sendPasswordResetConfirmationEmail(user: { name: string; email: string; _id: string }) {
+    const mailOptions = {
+      from: `"DevSwap.live" <${envConfig.FROM_EMAIL}>`,
+      to: user.email,
+      subject: "Password Successfully Reset - DevSwap.live",
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset Successful - DevSwap.live</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; padding: 20px 0; }
+        .logo { font-size: 24px; font-weight: bold; color: #00ef68; }
+        .content { background: #f8f9fa; padding: 30px; border-radius: 8px; margin: 20px 0; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .footer { text-align: center; color: #666; font-size: 14px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">✅ DevSwap.live</div>
+            <h1>Password Reset Successful</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hi ${user.name},</p>
+            
+            <div class="success">
+                <strong>✅ Success!</strong><br>
+                Your password has been successfully reset for your DevSwap.live account.
+            </div>
+            
+            <p>You can now sign in with your new password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${envConfig.FRONTEND_URL || "http://localhost:5173"}/login" style="display: inline-block; background: #00ef68; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Sign In Now</a>
+            </div>
+            
+            <p><strong>Security Tips:</strong></p>
+            <ul>
+                <li>Choose a strong, unique password</li>
+                <li>Don't share your password with anyone</li>
+                <li>Enable two-factor authentication if available</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>If you didn't reset your password, please contact us immediately at support@devswap.live</p>
+            <p>© 2024 DevSwap.live. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+      `,
+    };
+
+    return await this.sendEmail(mailOptions);
+  }
+
   // Test email functionality
   async sendTestEmail(to: string): Promise<boolean> {
     const subject = 'DevSwap.live Email Service Test';

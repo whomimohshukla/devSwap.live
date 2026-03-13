@@ -14,12 +14,22 @@ import {
 	githubAuthStart,
 	githubAuthCallback,
 } from "../controllers/auth.controller";
+import {
+	requestPasswordReset,
+	verifyResetToken,
+	resetPassword,
+} from "../controllers/passwordReset.controller";
 
 const router = Router();
 
 // Public routes
 router.post("/register", strictLimiter, register);
 router.post("/login", strictLimiter, login);
+
+// Password reset routes
+router.post("/forgot-password", strictLimiter, requestPasswordReset);
+router.get("/verify-reset-token", verifyResetToken);
+router.post("/reset-password", strictLimiter, resetPassword);
 
 // OAuth routes
 router.get("/google", strictLimiter, googleAuthStart);

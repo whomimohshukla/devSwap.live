@@ -112,7 +112,7 @@ const Home: React.FC = () => {
 								className='inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00ef68]/10 border border-[#00ef68]/20 text-[#00ef68] text-xs sm:text-sm font-medium mb-8'
 							>
 								<Zap className='w-4 h-4 fill-current' />
-								<span>The future of peer-to-peer learning is here</span>
+								<span>Pair-program to learn faster—powered by skill swapping</span>
 							</motion.div>
 
 							<motion.h1
@@ -137,8 +137,8 @@ const Home: React.FC = () => {
 								transition={{ duration: 0.6, delay: 0.2 }}
 								className='text-lg sm:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed mb-12'
 							>
-								Connect with experts worldwide. Trade what you know for what you want to learn.
-								Real-time collaboration, AI-powered paths, and a community of builders.
+								Match with developers who teach what you want to learn and learn what you can teach.
+								Run a real-time session with chat, shared code, and optional AI guidance.
 							</motion.p>
 
 							<motion.div
@@ -151,14 +151,14 @@ const Home: React.FC = () => {
 									to='/register'
 									className='w-full sm:w-auto px-8 py-4 rounded-xl bg-[#00ef68] text-[#0b0c0d] font-bold text-lg hover:shadow-[0_0_30px_rgba(0,239,104,0.4)] transition-all duration-300 transform hover:-translate-y-1'
 								>
-									Start Swapping Now
+									Create your developer profile
 								</Link>
 								<button
 									onClick={() => setIsVideoOpen(true)}
 									className='w-full sm:w-auto px-8 py-4 rounded-xl border border-white/10 bg-white/5 text-white font-semibold text-lg hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2 group'
 								>
 									<Play className='w-5 h-5 fill-current group-hover:scale-110 transition-transform' />
-									See how it works
+									Watch the workflow
 								</button>
 							</motion.div>
 						</div>
@@ -299,17 +299,17 @@ const Home: React.FC = () => {
 					<div className='mx-auto max-w-6xl'>
 						<div className='flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6'>
 							<div>
-								<h2 className='text-2xl sm:text-3xl font-bold text-white'>Start anywhere</h2>
-								<p className='mt-1 text-white/60'>Pick a path and jump in.</p>
+								<h2 className='text-2xl sm:text-3xl font-bold text-white'>Jump in</h2>
+								<p className='mt-1 text-white/60'>Pick a starting point—then iterate.</p>
 							</div>
-							<p className='text-sm text-white/50'>Roadmaps, matches, sessions, and practice.</p>
+							<p className='text-sm text-white/50'>Roadmaps, matching, sessions, and hands-on practice.</p>
 						</div>
 						<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
 							{[
-								{ to: "/roadmaps", title: "Roadmaps", desc: "Curated learning paths", icon: Brain },
-								{ to: "/matches", title: "Find a match", desc: "Pair with complementary skills", icon: Network },
-								{ to: "/sessions", title: "Sessions", desc: "Join or manage swaps", icon: Video },
-								{ to: "/learn", title: "Learn", desc: "Practice topics", icon: Code2 },
+								{ to: "/roadmaps", title: "Roadmaps", desc: "Structured paths with resources", icon: Brain },
+								{ to: "/matches", title: "Find a match", desc: "Join the queue and get paired", icon: Network },
+								{ to: "/sessions", title: "Sessions", desc: "Run and review your swaps", icon: Video },
+								{ to: "/learn", title: "Practice", desc: "Hands-on topics and exercises", icon: Code2 },
 							].map((item) => (
 								<Link
 									key={item.to}
@@ -373,14 +373,14 @@ const Home: React.FC = () => {
 						<div className='grid grid-cols-1 lg:grid-cols-12 gap-10 items-start'>
 							<div className='lg:col-span-5'>
 								<h2 className='text-3xl sm:text-4xl font-bold text-white'>How it works</h2>
-								<p className='mt-3 text-white/60'>A simple loop: match, session, progress.</p>
+								<p className='mt-3 text-white/60'>A tight loop: queue → match → request → session.</p>
 							</div>
 							<div className='lg:col-span-7 space-y-4'>
 								{[
-									{ n: "01", title: "Set what you teach + learn", desc: "Add skills to your profile and your goal." },
-									{ n: "02", title: "Get matched instantly", desc: "Find a partner with complementary skills." },
-									{ n: "03", title: "Run a realtime session", desc: "Video + chat + shared code, all in one place." },
-									{ n: "04", title: "Stay consistent", desc: "Use AI guidance + roadmaps to keep momentum." },
+									{ n: "01", title: "Define teach/learn skills", desc: "Add skills and levels to your profile so matching stays accurate." },
+									{ n: "02", title: "Join the matching queue", desc: "We pair you with a complementary developer based on both directions of the swap." },
+									{ n: "03", title: "Confirm and start a session", desc: "Send or accept a request, then join a live room with chat and shared code." },
+									{ n: "04", title: "Track progress", desc: "Use roadmaps and session history to keep momentum week over week." },
 								].map((s) => (
 									<div key={s.n} className='rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.06] hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30 hover:shadow-[0_10px_40px_rgba(0,239,104,0.15)]'>
 										<div className='flex items-start gap-4'>
@@ -407,7 +407,7 @@ const Home: React.FC = () => {
 						<div className='flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3'>
 							<div>
 								<h2 className='text-3xl sm:text-4xl font-bold text-white'>What developers say</h2>
-								<p className='mt-2 text-white/60'>Real people. Real growth.</p>
+								<p className='mt-2 text-white/60'>Feedback from engineers using DevSwap in real sessions.</p>
 							</div>
 							<div className='hidden sm:flex items-center gap-1 text-[#00ef68]'>
 								{[...Array(5)].map((_, i) => (
@@ -451,22 +451,22 @@ const Home: React.FC = () => {
 						<div className='absolute -bottom-24 -left-24 w-72 h-72 bg-[#00ef68]/10 rounded-full blur-3xl' />
 						<div className='relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center'>
 							<div className='lg:col-span-7'>
-								<h2 className='text-3xl sm:text-4xl font-bold text-white'>Ready to do your first swap?</h2>
-								<p className='mt-3 text-white/60'>Create a profile, add 2 skills, and start matching in minutes.</p>
+								<h2 className='text-3xl sm:text-4xl font-bold text-white'>Ready to run your first swap?</h2>
+								<p className='mt-3 text-white/60'>Create a profile, add teach/learn skills, then join the matching queue.</p>
 							</div>
 							<div className='lg:col-span-5 flex flex-col sm:flex-row lg:flex-col gap-3 lg:items-stretch'>
 								<Link
 									to='/register'
 									className='inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[#00ef68] text-[#0b0c0d] font-semibold hover:shadow-2xl hover:shadow-[#00ef68]/20 transition'
 								>
-									Create account
+									Create profile
 									<ArrowRight className='ml-2 w-4 h-4' />
 								</Link>
 								<Link
 									to='/roadmaps'
 									className='inline-flex items-center justify-center px-6 py-3 rounded-lg border border-white/10 bg-white/5 text-white/90 hover:bg-white/10 transition'
 								>
-									Explore roadmaps
+									Browse roadmaps
 								</Link>
 							</div>
 						</div>

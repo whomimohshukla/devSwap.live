@@ -17,6 +17,24 @@ interface AuthenticatedRequest extends Request {
 	};
 }
 
+function getCookieOptions(req: Request, maxAge: number) {
+	const frontendUrl = envConfig.FRONTEND_URL || "http://localhost:3000";
+	const frontendOrigin = new URL(frontendUrl).origin;
+	const backendPublic = process.env.BACKEND_PUBLIC_URL;
+	const backendOrigin = backendPublic
+		? new URL(backendPublic).origin
+		: `${req.protocol}://${req.get("host")}`;
+	const isCrossSite = frontendOrigin !== backendOrigin;
+	const isSecure = envConfig.NODE_ENV === "production" || Boolean((req as any).secure);
+	const sameSite: "lax" | "none" = isCrossSite && isSecure ? "none" : "lax";
+	return {
+		httpOnly: true,
+		secure: isSecure,
+		sameSite,
+		maxAge,
+	} as const;
+}
+
 function buildFrontendCallbackUrl(query: Record<string, string>) {
 	const base = (envConfig.FRONTEND_URL || "http://localhost:3000").replace(
 		/\/$/,
@@ -102,12 +120,11 @@ export async function googleAuthStart(req: Request, res: Response) {
 		}
 		// CSRF protection: generate state and store in short-lived cookie
 		const state = crypto.randomBytes(16).toString("hex");
-		res.cookie("oauth_state_google", state, {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "lax",
-			maxAge: 1000 * 60 * 10, // 10 minutes
-		});
+		res.cookie(
+			"oauth_state_google",
+			state,
+			getCookieOptions(req, 1000 * 60 * 10)
+		);
 		const params = new URLSearchParams({
 			client_id: clientId,
 			redirect_uri: redirectUri,
@@ -219,12 +236,7 @@ export async function googleAuthCallback(req: Request, res: Response) {
 		
 		const token = signJwtForUser(user);
 		// Optionally set cookie
-		res.cookie("token", token, {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "lax",
-			maxAge: 1000 * 60 * 60 * 24 * 7,
-		});
+		res.cookie("token", token, getCookieOptions(req, 1000 * 60 * 60 * 24 * 7));
 		// Clear state cookie and redirect to frontend without leaking token in URL
 		res.clearCookie("oauth_state_google");
 		const url = buildFrontendCallbackUrl({});

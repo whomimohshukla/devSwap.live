@@ -29,6 +29,9 @@ export interface IUser {
 		google?: { id: string };
 		github?: { id: string };
 	};
+	// Password reset fields
+	passwordResetToken?: string;
+	passwordResetExpires?: Date;
 }
 
 export interface IUserDocument extends IUser, Document {
@@ -76,6 +79,9 @@ const UserSchema = new Schema<IUserDocument>(
 				id: { type: String },
 			},
 		},
+		// Password reset fields
+		passwordResetToken: { type: String, select: false },
+		passwordResetExpires: { type: Date, select: false },
 	},
 	{ timestamps: true }
 );

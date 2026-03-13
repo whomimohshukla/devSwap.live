@@ -246,21 +246,24 @@ const Sessions: React.FC = () => {
 	);
 
 	return (
-		<div className='min-h-screen bg-black pt-24 pb-8'>
-			<div className='max-w-none w-full mx-auto px-4 sm:px-6 lg:px-8'>
+		<div className='relative min-h-screen bg-[#0b0c0d] pt-24 pb-16'>
+			<div className='absolute inset-0 overflow-hidden pointer-events-none'>
+				<div className='absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]' />
+			</div>
+			<div className='relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
 				{/* Header */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6 }}
-					className='flex items-center justify-between mb-8'
+					className='mb-10'
 				>
 					<div>
-						<h1 className='text-3xl font-bold text-white mb-2'>
-							Learning Sessions
+						<h1 className='text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2'>
+							Session Management
 						</h1>
-						<p className='text-gray-400'>
-							Manage your skill exchange sessions
+						<p className='text-white/60'>
+							Review active connections, historical swaps, and AI-generated insights.
 						</p>
 					</div>
 					{/* Scheduling UI not implemented in backend; hiding for now */}
@@ -273,7 +276,7 @@ const Sessions: React.FC = () => {
 					transition={{ duration: 0.6, delay: 0.1 }}
 					className='mb-8'
 				>
-					<div className='flex space-x-1 bg-gray-900 p-1 rounded-lg w-fit'>
+					<div className='flex space-x-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1 w-fit'>
 						{[
 							{ key: "active", label: "Active", count: counts.active },
 							{
@@ -285,14 +288,14 @@ const Sessions: React.FC = () => {
 							<button
 								key={tab.key}
 								onClick={() => setActiveTab(tab.key as any)}
-								className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+								className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
 									activeTab === (tab.key as any)
-										? "bg-emerald-600 text-white"
-										: "text-gray-400 hover:text-white"
+										? "bg-[#00ef68] text-[#0b0c0d] shadow"
+										: "text-white/60 hover:text-white hover:bg-white/[0.06]"
 								}`}
 							>
 								{tab.label}
-								<span className='ml-2 px-2 py-0.5 text-xs rounded bg-gray-800 text-gray-300'>
+								<span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${activeTab === tab.key ? "bg-black/20 text-[#0b0c0d]/70" : "bg-white/10 text-white/70"}`}>
 									{tab.count}
 								</span>
 							</button>
@@ -307,86 +310,68 @@ const Sessions: React.FC = () => {
 					transition={{ duration: 0.5, delay: 0.1 }}
 					className='mb-8'
 				>
-					<div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
-						<div className='bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5'>
-							<h3 className='text-white font-semibold mb-2'>
-								How sessions work
+					<div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+						<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6'>
+							<h3 className='text-white font-semibold mb-3'>
+								Execution Flow
 							</h3>
-							<ol className='list-decimal list-inside text-sm text-gray-300 space-y-1'>
-								<li>
-									Accept a match request or create one from Matches
-								</li>
-								<li>
-									Join the room for live voice/video and screen share
-								</li>
-								<li>Collaborate, teach, and learn in real time</li>
-								<li>End the session — summaries and notes live here</li>
+							<ol className='list-decimal list-inside text-sm text-white/70 space-y-2'>
+								<li>Establish a connection via the Matching Queue</li>
+								<li>Join the real-time room for audio/video sync</li>
+								<li>Execute your skill-swap using shared code environments</li>
+								<li>Finalize the session to persist historical summaries</li>
 							</ol>
 						</div>
-						<div className='bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5'>
-							<h3 className='text-white font-semibold mb-2'>
-								What you can do
+						<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6'>
+							<h3 className='text-white font-semibold mb-3'>
+								Platform Capabilities
 							</h3>
-							<ul className='list-disc list-inside text-sm text-gray-300 space-y-1'>
-								<li>
-									1:1 voice/video, mute/camera toggle, push‑to‑talk
-								</li>
-								<li>Share your screen to demo or pair-program</li>
-								<li>Use in‑room chat and see participants</li>
-								<li>Save personal notes; generate AI summaries</li>
+							<ul className='list-disc list-inside text-sm text-white/70 space-y-2'>
+								<li>Peer-to-peer WebRTC voice and video streams</li>
+								<li>Synchronized screen sharing for pair-programming</li>
+								<li>Asynchronous persistent chat within active rooms</li>
+								<li>Automated AI recaps based on session artifacts</li>
 							</ul>
 						</div>
-						<div className='bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5'>
-							<h3 className='text-white font-semibold mb-2'>
-								Privacy & consent
+						<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6'>
+							<h3 className='text-white font-semibold mb-3'>
+								Protocol & Compliance
 							</h3>
-							<p className='text-sm text-gray-300'>
-								Ask before recording or sharing content. Use respectful
-								communication and protect sensitive information. You’re
-								in control of your mic/camera and what you share.
+							<p className='text-sm text-white/70 leading-relaxed'>
+								Ensure mutual consent before archiving session data. 
+								Control your hardware state using low-latency toggles. 
+								All session interactions are governed by our technical code of conduct.
 							</p>
 						</div>
-						<div className='bg-[#0b0c0d] rounded-2xl border border-[#25282c] p-5 lg:col-span-3'>
-							<h3 className='text-white font-semibold mb-2'>
-								Using AI on your sessions
+						<div className='rounded-3xl border border-white/10 bg-white/[0.04] p-6 lg:col-span-3'>
+							<h3 className='text-white font-semibold mb-4'>
+								AI-Assisted Workflow
 							</h3>
 							<div className='grid grid-cols-1 md:grid-cols-3 gap-3 text-sm'>
-								<div className='bg-black/40 border border-[#25282c] rounded-lg p-3'>
-									<div className='text-gray-200 font-medium mb-1'>
-										1) Take quick notes
+								<div className='bg-black/30 border border-white/10 rounded-2xl p-4'>
+									<div className='text-white font-medium mb-2'>
+										1. Telemetry Capture
 									</div>
-									<p className='text-gray-400'>
-										Jot down bullets during or after the call in "My
-										Notes". Notes stay local to your browser.
+									<p className='text-white/60'>
+										Document key technical takeaways in the "Notes" buffer. Data is persisted locally to your client.
 									</p>
 								</div>
-								<div className='bg-black/40 border border-[#25282c] rounded-lg p-3'>
-									<div className='text-gray-200 font-medium mb-1'>
-										2) Generate a summary
+								<div className='bg-black/30 border border-white/10 rounded-2xl p-4'>
+									<div className='text-white font-medium mb-2'>
+										2. Inference Generation
 									</div>
-									<p className='text-gray-400'>
-										Click Generate in the AI Summary panel. We send
-										your notes and session duration to the AI and show
-										a concise recap.
+									<p className='text-white/60'>
+										Dispatch local artifacts to our inference engine to generate a high-fidelity session recap.
 									</p>
 								</div>
-								<div className='bg-black/40 border border-[#25282c] rounded-lg p-3'>
-									<div className='text-gray-200 font-medium mb-1'>
-										Tips & troubleshooting
+								<div className='bg-black/30 border border-white/10 rounded-2xl p-4'>
+									<div className='text-white font-medium mb-2'>
+										Protocol Optimizations
 									</div>
-									<ul className='list-disc list-inside text-gray-400 space-y-1'>
-										<li>
-											Be specific in notes: goals, blockers, next
-											steps.
-										</li>
-										<li>
-											If you see an OpenAI auth error, remove
-											OPENAI_ORG/PROJECT from your .env.
-										</li>
-										<li>
-											Summaries are not auto-saved; copy important
-											points.
-										</li>
+									<ul className='list-disc list-inside text-white/60 space-y-1'>
+										<li>Structure notes with clear objectives</li>
+										<li>Verify environment configurations</li>
+										<li>Export critical insights post-session</li>
 									</ul>
 								</div>
 							</div>
@@ -426,11 +411,11 @@ const Sessions: React.FC = () => {
 										expanded[String(session._id || session.id)]
 											? "lg:col-span-2"
 											: ""
-									} bg-[#0b0c0d] rounded-2xl p-6 border border-[#25282c] hover:border-[#2f343a] transition-colors`}
+									} rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition-all duration-300 hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30`}
 								>
 									<div className='flex items-start justify-between'>
 										<div className='flex items-start space-x-4 flex-1'>
-											<div className='w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold bg-gradient-to-br from-emerald-500/30 to-indigo-500/30 border border-[#25282c]'>
+											<div className='w-12 h-12 rounded-full flex items-center justify-center text-[#00ef68] font-bold bg-[#00ef68]/10 border border-[#00ef68]/20'>
 												{(
 													partnerOf(session)?.name?.[0] || "U"
 												).toUpperCase()}
@@ -441,21 +426,23 @@ const Sessions: React.FC = () => {
 														{partnerOf(session)?.name ||
 															"Partner"}
 													</h3>
-													<span className='px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'>
+													<span className='px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#00ef68]/10 text-[#00ef68] border border-[#00ef68]/20'>
 														Active
 													</span>
 												</div>
-												<p className='text-gray-400 mb-2'>
-													Skill swap session
+												<p className='text-white/50 text-sm mb-3'>
+													Peer-to-peer session protocol
 												</p>
-												<div className='flex items-center space-x-4 text-sm text-gray-400 mb-3'>
-													<Clock className='w-4 h-4' />
-													<span>
-														Started{" "}
-														{new Date(
-															session.startedAt || Date.now()
-														).toLocaleString()}
-													</span>
+												<div className='flex items-center space-x-4 text-xs text-white/40'>
+													<div className='flex items-center gap-1.5'>
+														<Clock className='w-3.5 h-3.5' />
+														<span>
+															Initialised:{" "}
+															{new Date(
+																session.startedAt || Date.now()
+															).toLocaleString()}
+														</span>
+													</div>
 												</div>
 											</div>
 										</div>
@@ -466,9 +453,9 @@ const Sessions: React.FC = () => {
 														String(session._id || session.id)
 													)
 												}
-												className='px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center shadow-sm'
+												className='px-4 py-2 rounded-2xl bg-[#00ef68] text-[#0b0c0d] text-sm font-bold hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(0,239,104,0.25)] transition-all'
 											>
-												<Play className='w-4 h-4 mr-1' /> Join
+												Join Room
 											</button>
 											<button
 												onClick={() =>
@@ -476,9 +463,9 @@ const Sessions: React.FC = () => {
 														String(session._id || session.id)
 													)
 												}
-												className='px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center shadow-sm'
+												className='px-4 py-2 rounded-2xl border border-white/10 bg-white/[0.04] text-white/80 text-sm font-semibold hover:border-red-500/40 hover:text-red-400 transition-all'
 											>
-												<Square className='w-4 h-4 mr-1' /> End
+												Terminate
 											</button>
 											<button
 												onClick={() =>
@@ -486,21 +473,21 @@ const Sessions: React.FC = () => {
 														String(session._id || session.id)
 													)
 												}
-												className='px-3 py-1.5 border border-[#2f343a] hover:border-[#3a4047] text-gray-300 rounded-md'
+												className='px-4 py-2 rounded-2xl border border-white/10 bg-white/[0.04] text-white/60 text-sm font-semibold hover:text-white transition-all'
 											>
 												{expanded[String(session._id || session.id)]
-													? "Hide"
+													? "Collapse"
 													: "Details"}
 											</button>
 										</div>
 									</div>
 									{expanded[String(session._id || session.id)] && (
-										<div className='mt-4 space-y-4'>
+										<div className='mt-6 space-y-6 pt-6 border-t border-white/5'>
 											{/* AI Summary */}
-											<div className='bg-black/40 border border-[#25282c] rounded-xl p-3'>
-												<div className='flex items-center justify-between mb-2'>
+											<div className='rounded-2xl border border-white/10 bg-black/30 p-4'>
+												<div className='flex items-center justify-between mb-3'>
 													<h4 className='text-sm font-semibold text-white'>
-														AI Summary
+														AI Analysis
 													</h4>
 													<button
 														onClick={() =>
@@ -510,19 +497,17 @@ const Sessions: React.FC = () => {
 																)
 															)
 														}
-														className='px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded'
+														className='px-3 py-1 rounded-xl bg-[#00ef68] text-[#0b0c0d] text-xs font-bold hover:-translate-y-0.5 transition-all'
 													>
 														{summaryLoading[
 															String(session._id || session.id)
 														]
-															? "Generating…"
-															: "Generate"}
+															? "Processing..."
+															: "Generate Recap"}
 													</button>
 												</div>
-												<p className='text-xs text-gray-400 mb-2'>
-													Uses your notes and session duration to
-													produce a concise recap. Your notes
-													remain local.
+												<p className='text-xs text-white/50 mb-4'>
+													Synthesize session artifacts and telemetry into a technical summary.
 												</p>
 												{summaryError[
 													String(session._id || session.id)
@@ -537,16 +522,16 @@ const Sessions: React.FC = () => {
 														}
 													</div>
 												)}
-												<pre className='bg-black/50 text-gray-200 text-xs p-3 rounded border border-[#25282c] whitespace-pre-wrap'>
+												<pre className='bg-black/50 text-white/70 text-xs p-4 rounded-xl border border-white/5 whitespace-pre-wrap font-mono leading-relaxed'>
 													{summaries[
 														String(session._id || session.id)
-													] || "No summary yet."}
+													] || "Inference data unavailable."}
 												</pre>
 											</div>
 											{/* Lesson Plans */}
-											<div className='bg-black/40 border border-[#25282c] rounded-xl p-3'>
-												<h4 className='text-sm font-semibold text-white mb-2'>
-													Lesson Plans
+											<div className='rounded-2xl border border-white/10 bg-black/30 p-4'>
+												<h4 className='text-sm font-semibold text-white mb-3'>
+													Deployment Blueprints
 												</h4>
 												{Array.isArray(
 													plansBySession[
@@ -556,47 +541,45 @@ const Sessions: React.FC = () => {
 												plansBySession[
 													String(session._id || session.id)
 												].length > 0 ? (
-													<ul className='list-disc list-inside text-xs text-gray-300 space-y-1'>
+													<ul className='space-y-2'>
 														{plansBySession[
 															String(session._id || session.id)
 														].map((p: any, i: number) => (
-															<li key={i}>
-																<span className='font-medium'>
+															<li key={i} className="flex items-center justify-between text-xs text-white/60">
+																<span className='font-medium text-white/80'>
 																	{p.skill ||
 																		p.title ||
-																		"Plan"}
-																</span>{" "}
-																<span className='text-gray-500'>
-																	(
+																		"Blueprint"}
+																</span>
+																<span className='text-white/30'>
 																	{new Date(
 																		p.createdAt ||
 																			p.date ||
 																			Date.now()
-																	).toLocaleString()}
-																	)
+																	).toLocaleDateString()}
 																</span>
 															</li>
 														))}
 													</ul>
 												) : (
-													<div className='text-xs text-gray-400'>
-														No cached lesson plans found.
+													<div className='text-xs text-white/40'>
+														No blueprints indexed for this session.
 													</div>
 												)}
 											</div>
 											{/* Personal Notes */}
-											<div className='bg-black/40 border border-[#25282c] rounded-xl p-3'>
-												<div className='flex items-center justify-between mb-2'>
+											<div className='rounded-2xl border border-white/10 bg-black/30 p-4'>
+												<div className='flex items-center justify-between mb-3'>
 													<h4 className='text-sm font-semibold text-white'>
-														My Notes
+														Local Workspace Notes
 													</h4>
-													<span className='text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 border border-[#2f343a]'>
-														Saved locally
+													<span className='text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 font-bold tracking-wider uppercase'>
+														Client-Side Only
 													</span>
 												</div>
 												<textarea
-													className='w-full bg-black/50 text-gray-200 text-sm p-3 rounded border border-[#25282c] focus:outline-none focus:ring-1 focus:ring-emerald-600 min-h-[90px]'
-													placeholder='Write notes about this session...'
+													className='w-full bg-black/50 text-white/80 text-sm p-4 rounded-xl border border-white/10 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30 min-h-[120px] transition-all'
+													placeholder='Commit your observations and technical notes here...'
 													value={
 														notes[
 															String(session._id || session.id)
@@ -648,11 +631,11 @@ const Sessions: React.FC = () => {
 										expanded[String(session._id || session.id)]
 											? "lg:col-span-2"
 											: ""
-									} bg-[#0b0c0d] rounded-2xl p-6 border border-[#25282c] hover:border-[#2f343a] transition-colors`}
+									} rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition-all duration-300 hover:border-[#00ef68]/30 hover:ring-1 hover:ring-[#00ef68]/30`}
 								>
 									<div className='flex items-start justify-between'>
 										<div className='flex items-start space-x-4 flex-1'>
-											<div className='w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold bg-gradient-to-br from-emerald-500/30 to-indigo-500/30 border border-[#25282c]'>
+											<div className='w-12 h-12 rounded-full flex items-center justify-center text-[#00ef68] font-bold bg-[#00ef68]/10 border border-[#00ef68]/20'>
 												{(
 													partnerOf(session)?.name?.[0] || "U"
 												).toUpperCase()}
@@ -663,22 +646,26 @@ const Sessions: React.FC = () => {
 														{partnerOf(session)?.name ||
 															"Partner"}
 													</h3>
-													<span className='px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'>
-														Completed
+													<span className='px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/5 text-white/60 border border-white/10'>
+														Archive
 													</span>
-													<CheckCircle className='w-4 h-4 text-green-500' />
+													<CheckCircle className='w-4 h-4 text-[#00ef68]' />
 												</div>
-												<p className='text-gray-400 mb-2'>
-													Skill swap session
+												<p className='text-white/50 text-sm mb-3'>
+													Concluded session protocol
 												</p>
-												<div className='flex items-center space-x-4 text-sm text-gray-400 mb-3'>
-													<span>
-														{new Date(
-															session.endedAt ||
-																session.startedAt ||
-																Date.now()
-														).toLocaleString()}
-													</span>
+												<div className='flex items-center space-x-4 text-xs text-white/40'>
+													<div className='flex items-center gap-1.5'>
+														<Clock className='w-3.5 h-3.5' />
+														<span>
+															Concluded:{" "}
+															{new Date(
+																session.endedAt ||
+																	session.startedAt ||
+																	Date.now()
+															).toLocaleString()}
+														</span>
+													</div>
 												</div>
 											</div>
 										</div>
@@ -689,21 +676,21 @@ const Sessions: React.FC = () => {
 														String(session._id || session.id)
 													)
 												}
-												className='px-3 py-1.5 border border-[#2f343a] hover:border-[#3a4047] text-gray-300 rounded-md'
+												className='px-4 py-2 rounded-2xl border border-white/10 bg-white/[0.04] text-white/60 text-sm font-semibold hover:text-white transition-all'
 											>
 												{expanded[String(session._id || session.id)]
-													? "Hide"
+													? "Collapse"
 													: "Details"}
 											</button>
 										</div>
 									</div>
 									{expanded[String(session._id || session.id)] && (
-										<div className='mt-4 space-y-4'>
+										<div className='mt-6 space-y-6 pt-6 border-t border-white/5'>
 											{/* AI Summary */}
-											<div className='bg-black/40 border border-[#25282c] rounded-xl p-3'>
-												<div className='flex items-center justify-between mb-2'>
+											<div className='rounded-2xl border border-white/10 bg-black/30 p-4'>
+												<div className='flex items-center justify-between mb-3'>
 													<h4 className='text-sm font-semibold text-white'>
-														AI Summary
+														AI Analysis
 													</h4>
 													<button
 														onClick={() =>
@@ -713,19 +700,17 @@ const Sessions: React.FC = () => {
 																)
 															)
 														}
-														className='px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded'
+														className='px-3 py-1 rounded-xl bg-[#00ef68] text-[#0b0c0d] text-xs font-bold hover:-translate-y-0.5 transition-all'
 													>
 														{summaryLoading[
 															String(session._id || session.id)
 														]
-															? "Generating…"
-															: "Generate"}
+															? "Processing..."
+															: "Generate Recap"}
 													</button>
 												</div>
-												<p className='text-xs text-gray-400 mb-2'>
-													Uses your notes and session duration to
-													produce a concise recap. Your notes
-													remain local.
+												<p className='text-xs text-white/50 mb-4'>
+													Synthesize session artifacts and telemetry into a technical summary.
 												</p>
 												{summaryError[
 													String(session._id || session.id)
@@ -740,16 +725,16 @@ const Sessions: React.FC = () => {
 														}
 													</div>
 												)}
-												<pre className='bg-black/50 text-gray-200 text-xs p-3 rounded border border-[#25282c] whitespace-pre-wrap'>
+												<pre className='bg-black/50 text-white/70 text-xs p-4 rounded-xl border border-white/5 whitespace-pre-wrap font-mono leading-relaxed'>
 													{summaries[
 														String(session._id || session.id)
-													] || "No summary yet."}
+													] || "Inference data unavailable."}
 												</pre>
 											</div>
 											{/* Lesson Plans */}
-											<div className='bg-black/40 border border-[#25282c] rounded-xl p-3'>
-												<h4 className='text-sm font-semibold text-white mb-2'>
-													Lesson Plans
+											<div className='rounded-2xl border border-white/10 bg-black/30 p-4'>
+												<h4 className='text-sm font-semibold text-white mb-3'>
+													Deployment Blueprints
 												</h4>
 												{Array.isArray(
 													plansBySession[
@@ -759,47 +744,45 @@ const Sessions: React.FC = () => {
 												plansBySession[
 													String(session._id || session.id)
 												].length > 0 ? (
-													<ul className='list-disc list-inside text-xs text-gray-300 space-y-1'>
+													<ul className='space-y-2'>
 														{plansBySession[
 															String(session._id || session.id)
 														].map((p: any, i: number) => (
-															<li key={i}>
-																<span className='font-medium'>
+															<li key={i} className="flex items-center justify-between text-xs text-white/60">
+																<span className='font-medium text-white/80'>
 																	{p.skill ||
 																		p.title ||
-																		"Plan"}
-																</span>{" "}
-																<span className='text-gray-500'>
-																	(
+																		"Blueprint"}
+																</span>
+																<span className='text-white/30'>
 																	{new Date(
 																		p.createdAt ||
 																			p.date ||
 																			Date.now()
-																	).toLocaleString()}
-																	)
+																	).toLocaleDateString()}
 																</span>
 															</li>
 														))}
 													</ul>
 												) : (
-													<div className='text-xs text-gray-400'>
-														No cached lesson plans found.
+													<div className='text-xs text-white/40'>
+														No blueprints indexed for this session.
 													</div>
 												)}
 											</div>
 											{/* Personal Notes */}
-											<div className='bg-black/40 border border-[#25282c] rounded-xl p-3'>
-												<div className='flex items-center justify-between mb-2'>
+											<div className='rounded-2xl border border-white/10 bg-black/30 p-4'>
+												<div className='flex items-center justify-between mb-3'>
 													<h4 className='text-sm font-semibold text-white'>
-														My Notes
+														Local Workspace Notes
 													</h4>
-													<span className='text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 border border-[#2f343a]'>
-														Saved locally
+													<span className='text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 font-bold tracking-wider uppercase'>
+														Client-Side Only
 													</span>
 												</div>
 												<textarea
-													className='w-full bg-black/50 text-gray-200 text-sm p-3 rounded border border-[#25282c] focus:outline-none focus:ring-1 focus:ring-emerald-600 min-h-[90px]'
-													placeholder='Write notes about this session...'
+													className='w-full bg-black/50 text-white/80 text-sm p-4 rounded-xl border border-white/10 focus:outline-none focus:border-[#00ef68]/30 focus:ring-1 focus:ring-[#00ef68]/30 min-h-[120px] transition-all'
+													placeholder='Commit your observations and technical notes here...'
 													value={
 														notes[
 															String(session._id || session.id)
@@ -828,15 +811,15 @@ const Sessions: React.FC = () => {
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						transition={{ duration: 0.3 }}
-						className='text-center py-4 text-red-400'
+						className='text-center py-4 text-red-400 font-mono text-sm'
 					>
-						{error}
+						[Error] {error}
 					</motion.div>
 				)}
 				{toast && (
 					<div
-						className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-md text-white ${
-							toast.type === "success" ? "bg-emerald-600" : "bg-red-600"
+						className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl text-sm font-bold shadow-2xl transition-all duration-300 ${
+							toast.type === "success" ? "bg-[#00ef68] text-[#0b0c0d]" : "bg-red-600 text-white"
 						}`}
 					>
 						{toast.msg}

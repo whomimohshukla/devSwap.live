@@ -7,6 +7,7 @@ const DISABLE_REDIS = String(process.env.DISABLE_REDIS || "").toLowerCase() === 
 const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 const REDIS_DB = parseInt(process.env.REDIS_DB || "0", 10);
+const MAX_REDIS_RECONNECT_ATTEMPTS = parseInt(process.env.REDIS_MAX_RECONNECT_ATTEMPTS || "15", 10);
 
 export let isRedisAvailable = false;
 
@@ -73,7 +74,17 @@ if (DISABLE_REDIS) {
     lazyConnect: true,
     connectTimeout: 10000,
     commandTimeout: 5000,
+    password: REDIS_PASSWORD,
+    db: REDIS_DB,
+    retryStrategy: (times) => {
+      if (Number.isFinite(MAX_REDIS_RECONNECT_ATTEMPTS) && times > MAX_REDIS_RECONNECT_ATTEMPTS) {
+        return null;
+      }
+      return Math.min(times * 250, 3000);
+    },
   });
+
+  let reconnectLogCount = 0;
   client.on("error", (err) => {
     // Prevent unhandled error spam; log once at startup
     if (!isRedisAvailable) {
@@ -92,7 +103,10 @@ if (DISABLE_REDIS) {
   });
   
   client.on("reconnecting", () => {
-    console.log("[redis] Reconnecting...");
+    reconnectLogCount += 1;
+    if (reconnectLogCount === 1 || reconnectLogCount % 10 === 0) {
+      console.log(`[redis] Reconnecting... (${reconnectLogCount})`);
+    }
   });
   
   client.on("close", () => {
